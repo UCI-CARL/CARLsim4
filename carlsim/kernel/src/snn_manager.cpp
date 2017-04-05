@@ -85,7 +85,11 @@ SNN::~SNN() {
 		deleteObjects();
 }
 
-// synaptic projections from a pre-synaptic group to a post-synaptic group - declared in snn.h
+// ************************************************************************************************************ //
+// PUBLIC METHODS: SETTING UP A SIMULATION
+// ************************************************************************************************************ //
+
+// make from each neuron in grpId1 to 'numPostSynapses' neurons in grpId2
 short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float initWt, float maxWt, float prob,
 						uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 						float _mulSynFast, float _mulSynSlow, bool synWtType) {
@@ -576,9 +580,9 @@ void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInter
 	KERNEL_INFO("STDP scale factor = %1.3f, wtChangeDecay = %1.3f", stdpScaleFactor_, wtChangeDecay_);
 }
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: GENERATE A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: GENERATE A SIMULATION
+// ************************************************************************************************************ //
 
 // reorganize the network and do the necessary allocation
 // of all variable for carrying out the simulation..
@@ -600,9 +604,9 @@ void SNN::setupNetwork() {
 	}
 }
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: RUNNING A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: RUNNING A SIMULATION
+// ************************************************************************************************************ //
 
 int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	assert(_nmsec >= 0 && _nmsec < 1000);
@@ -713,9 +717,9 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 
 
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: INTERACTING WITH A SIMULATION
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: INTERACTING WITH A SIMULATION
+// ************************************************************************************************************ //
 
 // adds a bias to every weight in the connection
 void SNN::biasWeights(short int connId, float bias, bool updateWeightRange) {
@@ -888,7 +892,7 @@ void SNN::scaleWeights(short int connId, float scale, bool updateWeightRange) {
 	}
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
 	int netId = groupConfigMDMap[gGrpId].netId;
@@ -925,7 +929,7 @@ GroupMonitor* SNN::setGroupMonitor(int gGrpId, FILE* fid) {
 	return grpMonObj;
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where group(connect)Config[] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where group(connect)Config[] might not be available
 // or group(connect)ConfigMap is not sync with group(connect)Config[]
 ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid) {
 	// find connection based on pre-post pair
@@ -973,7 +977,7 @@ ConnectionMonitor* SNN::setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* 
 	return connMonObj;
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and SETUP_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // sets up a spike generator
 void SNN::setSpikeGenerator(int gGrpId, SpikeGeneratorCore* spikeGenFunc) {
@@ -1023,7 +1027,7 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 	}
 }
 
-// FIXME: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
+// TODO: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // assigns spike rate to group
 void SNN::setSpikeRate(int gGrpId, PoissonRate* ratePtr, int refPeriod) {
@@ -1220,7 +1224,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	//	copyWeightState(&managerRuntimeData, &runtimeData[0], cudaMemcpyDeviceToHost, false);
 	//// +++++ WRITE SYNAPSE INFO +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//// \FIXME: replace with faster version
+	//// \TODO: replace with faster version
 	//if (saveSynapseInfo) {
 	//	for (int i = 0; i < numN; i++) {
 	//		unsigned int offset = managerRuntimeData.cumulativePost[i];
@@ -1341,9 +1345,9 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 //}
 
 
-/// ************************************************************************************************************ ///
-/// PUBLIC METHODS: PLOTTING / LOGGING
-/// ************************************************************************************************************ ///
+// ************************************************************************************************************ //
+// PUBLIC METHODS: PLOTTING / LOGGING
+// ************************************************************************************************************ //
 
 // set new file pointer for all files
 // fp==NULL is code for don't change it
@@ -1375,9 +1379,9 @@ void SNN::setLogsFp(FILE* fpInf, FILE* fpErr, FILE* fpDeb, FILE* fpLog) {
 }
 
 
-/// **************************************************************************************************************** ///
-/// GETTERS / SETTERS
-/// **************************************************************************************************************** ///
+// **************************************************************************************************************** //
+// GETTERS / SETTERS
+// **************************************************************************************************************** //
 
 // loop over linked list entries to find a connection with the right pre-post pair, O(N)
 short int SNN::getConnectId(int grpIdPre, int grpIdPost) {

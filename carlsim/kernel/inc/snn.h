@@ -100,9 +100,9 @@ class ConnectionMonitor;
 class SpikeBuffer;
 
 
-/// **************************************************************************************************************** ///
-/// CPUSNN CORE CLASS
-/// **************************************************************************************************************** ///
+// **************************************************************************************************************** //
+// CPUSNN CORE CLASS
+// **************************************************************************************************************** //
 
 /*!
  * \brief Contains all of CARLsim's core functionality
@@ -111,9 +111,9 @@ class SpikeBuffer;
  */
 class SNN {
 
-	/// **************************************************************************************************************** ///
-	/// PUBLIC METHODS
-	/// **************************************************************************************************************** ///
+	// **************************************************************************************************************** //
+	// PUBLIC METHODS
+	// **************************************************************************************************************** //
 public:
 	//! SNN Constructor
 	/*!
@@ -148,93 +148,135 @@ public:
 	 *
 	 * \param grpIdPre ID of the pre-synaptic group
 	 * \param grpIdPost ID of the post-synaptic group
-	 * \param connType connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post (no self-connections).
+	 * \param _type connection type. "random": random connectivity. "one-to-one": connect the i-th neuron in pre to the i-th neuron in post. "full": connect all neurons in pre to all neurons in post (no self-connections).
 	 * \param initWt initial weight strength (arbitrary units); should be negative for inhibitory connections
 	 * \param maxWt upper bound on weight strength (arbitrary units); should be negative for inhibitory connections
-	 * \param connProb connection probability
+	 * \param prob connection probability
 	 * \param minDelay the minimum delay allowed (ms)
-	 * \param maxdelay: the maximum delay allowed (ms)
-	 * \param synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED.
-	 * \param wtType: (optional) DEPRECATED
+	 * \param maxdelay the maximum delay allowed (ms)
+	 * \param radius A struct of type RadiusRF to specify the receptive field radius in 3 dimensions
+	 * \param mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of excitatory, and GABAa in the case of inhibitory connections)
+	 * \param mulSynSlow a multiplication factor to be applied to the slow synaptic current (NMDA in the case of excitatory, and GABAb in the case of inhibitory connections)
+	 * \param synWtType connection type, either SYN_FIXED or SYN_PLASTIC
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, const std::string& _type, float initWt, float maxWt, float prob,
 		uint8_t minDelay, uint8_t maxDelay, RadiusRF radius,
 		float mulSynFast, float mulSynSlow, bool synWtType);
 
-	/* Creates synaptic projections using a callback mechanism.
+	/** Creates manually defined synaptic projections using a callback mechanism to an instance of class ConnectionGenerator.
 	 *
-	 * \param _grpIdPre:ID of the pre-synaptic group
-	 * \param _grpIdPost ID of the post-synaptic group
-	 * \param _conn: pointer to an instance of class ConnectionGenerator
-	 * \param _synWtType: (optional) connection type, either SYN_FIXED or SYN_PLASTIC, default = SYN_FIXED
+	 * \brief Creates synaptic projections from group gIdPre to group gIdPost using a callback mechanism.
+	 *
+	 * \param gIdPre ID of the pre-synaptic group
+	 * \param gIdPost ID of the post-synaptic group
+	 * \param conn pointer to an instance of class ConnectionGenerator
+	 * \param mulSynFast a multiplication factor to be applied to the fast synaptic current (AMPA in the case of excitatory, and GABAa in the case of inhibitory connections)
+	 * \param mulSynSlow a multiplication factor to be applied to the slow synaptic current (NMDA in the case of excitatory, and GABAb in the case of inhibitory connections)
+	 * \param synWtType connection type, either SYN_FIXED or SYN_PLASTIC
 	 * \return number of created synaptic projections
 	 */
 	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType);
 
-	//! Creates a group of Izhikevich spiking neurons
-	/*!
-	 * \param name the symbolic name of a group
+	/** Creates a group of Izhikevich spiking neurons
+	 *
+	 * \brief Creates a group of Izhikevich spiking neurons and defines preferred runtime implementaion
+	 *
+	 * \param grpName The symbolic name of a group
 	 * \param grid  Grid3D struct to create neurons on a 3D grid (x,y,z)
-	 * \param nType the type of neuron
+	 * \param neurType The type of neuron, such as EXCITATORY_NEURON
+	 * \param preferredPartition The preferred runtime partition for the group
+	 * \param preferredBackend The prefrerred computing device (CPU_CORES or GPU_CORES) for this group
+	 * \return The global group-ID of the neuron group
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
-	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
-	/*!
-	 * \param name the symbolic name of a group
+	/** Creates a spike generator group (dummy-neurons that can generate poisson spike-trains, not Izhikevich spiking neurons)
+	 *
+	 * \brief Creates a group of spike generators and sets preferred runtime implementaion parameters
+	 *
+	 * \param grpName the symbolic name of a group
 	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
-	 * \param nType the type of neuron, currently only support EXCITATORY NEURON
+	 * \param neurType the type of neuron, currently only support EXCITATORY NEURON
+	 * \param preferredPartition The preferred runtime partition for the group
+	 * \param preferredBackend The prefrerred computing device (CPU_CORES or GPU_CORES) for this group
+	 * \return The global group-ID of the spike generator group
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
 
-	/*!
-	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
-	 * These will be applied to all connections in a network
-	 * For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001).
+	/** Sets custom values for conductance decay (\f$tau_{deacy}\f$) or disables conductances alltogether
+	 *  These will be applied to all connections in a network.
+	 *  For details on the ODE that is implemented refer to (Izhikevich et al, 2004), and for suitable values see (Dayan & Abbott, 2001).
 	 *
-	 * \param isSet: enables the use of COBA mode
-	 * \param tAMPA: time _constant of AMPA decay (ms); for example, 5.0
-	 * \param tNMDA: time constant of NMDA decay (ms); for example, 150.0
-	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0
-	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0
+	 * \brief Sets custom values for conduction rise and decay times or disables COBA alltogether
+	 *
+	 * \param isSet enables the use of COBA mode
+	 * \param tdAMPA decay time constant of AMPA (ms)
+	 * \param trNMDA rise time constant of NMDA (ms)
+	 * \param tdNMDA deacy time constant of NMDA (ms)
+	 * \param tdGABAa deacy time constant of GABAa (ms)
+	 * \param trGABAb rise time constant of GABAb (ms)
+	 * \param tdGABAb decay time constant of GABAb (ms)
+	 * \return void
 	 */
 	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
 
 
-	/*!
-	 * \brief Sets the homeostasis parameters. g is the grpID, enable=true(false) enables(disables) homeostasis,
+	/**
+	 * Sets the homeostasis parameters.
 	 * homeostasisScale is strength of
 	 * homeostasis compared to the strength of normal LTP/LTD from STDP (which is 1), and avgTimeScale is the time
 	 * frame over which the average firing rate is averaged (it should be larger in scale than STDP timescales).
+	 *
+	 * \brief Sets custom values for implementation of homeostatic synaptic scaling
+	 *
+	 * \param grpId        the group ID of group to which homeostasis is applied
+	 * \param isSet        a boolean, setting it to true/false enables/disables homeostasis
+	 * \param homeoScale   scaling factor multiplied to weight change due to homeostasis
+	 * \param avgTimeScale time in seconds over which average firing rate for neurons in this group is
+	 *                         averaged
+	 * \return void
 	 */
 	void setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale);
 
-	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+	/** Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling). For more information on this implementation
+	 *  please see: Carlson, et al. (2013). Proc. of IJCNN 2013.
+	 *
+	 * \brief Sets the homeostatic target firing rate (enforced through homeostatic synaptic scaling)
+	 *
+	 * \param grpId        the ID of group to which homeostasis is applied
+	 * \param baseFiring target firing rate of every neuron in this group
+	 * \param baseFiringSD standard deviation of target firing rate of every neuron in this group
+	 * \return void
+	 */
 	void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD);
 
 
-	//! Sets the Izhikevich parameters a, b, c, and d of a neuron group.
-	/*!
-	 * \brief Parameter values for each neuron are given by a normal distribution with mean _a, _b, _c, _d and standard deviation _a_sd, _b_sd, _c_sd, and _d_sd, respectively
-	 * \param _groupId the symbolic name of a group
-	 * \param _a  the mean value of izhikevich parameter a
-	 * \param _a_sd the standard deviation value of izhikevich parameter a
-	 * \param _b  the mean value of izhikevich parameter b
-	 * \param _b_sd the standard deviation value of izhikevich parameter b
-	 * \param _c  the mean value of izhikevich parameter c
-	 * \param _c_sd the standard deviation value of izhikevich parameter c
-	 * \param _d  the mean value of izhikevich parameter d
-	 * \param _d_sd the standard deviation value of izhikevich parameter d
+	/** Sets the Izhikevich parameters a, b, c, and d of a neuron group. Parameter values for each neuron are given by a normal distribution with mean _a, _b, _c, _d and standard deviation _a_sd, _b_sd, _c_sd, and _d_sd, respectively.
+	 *
+	 * \brief Sets the Izhikevich parameters a, b, c, and d of a neuron group with mean +- standard deviation.
+	 *
+	 * \param grpId the ID of the group whose izhikevich neuron parameters are set
+	 * \param izh_a  the mean value of izhikevich parameter a
+	 * \param izh_a_sd the standard deviation value of izhikevich parameter a
+	 * \param izh_b  the mean value of izhikevich parameter b
+	 * \param izh_b_sd the standard deviation value of izhikevich parameter b
+	 * \param izh_c  the mean value of izhikevich parameter c
+	 * \param izh_c_sd the standard deviation value of izhikevich parameter c
+	 * \param izh_d  the mean value of izhikevich parameter d
+	 * \param izh_d_sd the standard deviation value of izhikevich parameter d
+	 * \return void
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
 
-	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
-	/*!
-	 * \param groupId the symbolic name of a group
+	/** Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+	 *
+	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
+	 *
+	 * \param grpId the symbolic name of a group
 	 * \param baseDP  the baseline concentration of Dopamine
 	 * \param tauDP the decay time constant of Dopamine
 	 * \param base5HT  the baseline concentration of Serotonin
@@ -243,45 +285,52 @@ public:
 	 * \param tauACh the decay time constant of Acetylcholine
 	 * \param baseNE  the baseline concentration of Noradrenaline
 	 * \param tauNE the decay time constant of Noradrenaline
+	 * \return void
 	 */
 	void setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT,
 		float baseACh, float tauACh, float baseNE, float tauNE);
 
-	//! Set the spike-timing-dependent plasticity (STDP) for a neuron group.
-	/*
-	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
-	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
-	 * \param[in] grpId ID of the neuron group
-	 * \param[in] isSet_enable set to true to enable STDP for this group
-	 * \param[in] type STDP type (STANDARD, DA_MOD)
-	 * \param[in] alphaPlus max magnitude for LTP change
-	 * \param[in] tauPlus decay time constant for LTP
-	 * \param[in] alphaMinus max magnitude for LTD change (leave positive)
-	 * \param[in] tauMinus decay time constant for LTD
+	/** Set the spike-timing-dependent plasticity (STDP) parameters for a post-synaptic neuron group on excitatory synapses.
+	 * STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
+	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi and Poo, 2001).
+	 *
+	 * \brief Set the spike-timing-dependent plasticity (STDP) parameters for a post-synaptic neuron group.
+	 *
+	 * \param grpId ID of the post-synaptic neuron group
+	 * \param isSet set to true to enable STDP for this group
+	 * \param type STDP type (STANDARD, DA_MOD)
+	 * \param curve A STDPCurve enumeration value defining the curve of ESTDP, such as EXP_CURVE and TIMING_BASED_CURVE
+	 * \param alphaPlus max magnitude for LTP change
+	 * \param tauPlus decay time constant for LTP
+	 * \param alphaMinus max magnitude for LTD change (leave positive)
+	 * \param tauMinus decay time constant for LTD
+	 * \param gamma parameter for timing-based STDP in exciatory synapses to decide between LTP and LTD; STDP parameters KAPPA and OMEGA are derived from this
+	 * \return void
 	 */
 	void setESTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
 
-	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
-	/*
-	 * \brief STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
-	 * call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi & Poo, 2001).
-	 * \param[in] grpId ID of the neuron group
-	 * \param[in] isSet_enable set to true to enable STDP for this group
-	 * \param[in] type STDP type (STANDARD, DA_MOD)
-	 * \param[in] curve STDP curve
-	 * \param[in] ab1 magnitude for LTP change
-	 * \param[in] ab2 magnitude for LTD change (leave positive)
-	 * \param[in] tau1, the interval for LTP
-	 * \param[in] tau2, the interval for LTD
+	/** Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a post-synaptic neuron group on inhibitory synapses.
+	 *  Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a post-synaptic neuron group. STDP must be defined post-synaptically; that is, if STP should be implemented on the connections from group 0 to group 1,
+	 *  call setSTP on group 1. Fore details on the phenomeon, see (for example) (Bi and Poo, 2001).
+	 * 
+	 * \brief Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a post-synaptic neuron group on inhibitory synapses.
+	 *
+	 * \param grpId ID of the post-synaptic neuron group
+	 * \param isSet set to true to enable STDP for this group
+	 * \param type STDP type (STANDARD, DA_MOD)
+	 * \param curve A STDPCurve enumeration value defining the curve of ISTDP, such as EXP_CURVE and PULSE_CURVE
+	 * \param ab1 magnitude for LTP change
+	 * \param ab2 magnitude for LTD change (leave positive)
+	 * \param tau1 the interval for LTP
+	 * \param tau2 the interval for LTD
+	 * \return void
 	 */
 	void setISTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2);
 
-	/*!
-	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
-	 * du/dt = -u/STP_tau_u + STP_U * (1-u-) * \delta(t-t_spk)
-	 * dx/dt = (1-x)/STP_tau_x - u+ * x- * \delta(t-t_spk)
-	 * dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_spk)
+	/** CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008).\n
+	 * \f$du/dt = -u/STP_{tau_u} + STP_U * (1-u-) * \delta(t-t_{spk})\f$\n
+	 * \f$dx/dt = (1-x)/STP_{tau_x} - u+ * x- * \delta(t-t_{spk})\f$\n
+	 * \f$dI/dt = -I/tau_S + A * u+ * x- * \delta(t-t_{spk})\f$\n
 	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
 	 * the spike update, and A is the synaptic weight.
 	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
@@ -289,125 +338,302 @@ public:
 	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
 	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
 	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
-	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
-	 * with time constant STP_tau_x (\tau_D).
-	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
-	 * \param[in] isSet       a flag whether to enable/disable STP
-	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
-	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * current. Between spikes, u decays back to zero with time constant \f$STP_{tau_u} (\tau_F)\f$, and x recovers to value one
+	 * with time constant \f$STP_{tau_x} (\tau_D)\f$.
+	 *
+	 * \brief Sets STP params \f$U\f$, \f$tau_u\f$, and \f$tau_x\f$ of a neuron group (pre-synaptically)
+	 *
+	 * \param grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param isSet       a flag whether to enable/disable STP
+	 * \param STP_U 	  increment of u induced by a spike
+	 * \param STP_tau_u   decay constant of \f$u (\tau_F)\f$
+	 * \param STP_tau_x   decay constant of \f$x (\tau_D)\f$
+	 * \return void
+	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 */
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
-	//! Sets the weight and weight change update parameters
-	/*!
-	 * \param[in] wtANDwtChangeUpdateInterval the interval between two wt (weight) and wtChange (weight change) update.
-	 * \param[in] enableWtChangeDecay enable weight change decay
-	 * \param[in] wtChangeDecay the decay ratio of weight change (wtChange)
+	/** Sets the STDP weight and weight change update interval and scale parameters. Also sets up stdp scale factor according to update interval.
+	 * \brief Sets the STDP weight and weight change update interval and scale parameters.
+	 *
+	 * \param wtANDwtChangeUpdateInterval the interval between two wt (weight) and wtChange (weight change) update.
+	 * \param enableWtChangeDecay enable weight change decay
+	 * \param wtChangeDecay the decay ratio of weight change (wtChange)
 	 */
 	void setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay);
 
 	// +++++ PUBLIC METHODS: RUNNING A SIMULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	/*!
-	 * \brief run the simulation for n sec
+	/** Run the simulation for timesteps = (_nsec*1000 + _nmsec). Each timestep is 1 ms.
+	 * \brief run the simulation for timesteps = (_nsec*1000 + _nmsec)
 	 *
-	 * \param[in] printRunSummary whether to print a basic summary of the run at the end
+	 * \param _nsec 		  number of seconds to run the network
+	 * \param _nmsec 		  number of milliseconds to run the network
+	 * \param printRunSummary whether to print a basic summary of the run at the end
+	 * \return 0 on successfull completion of simulation
 	 */
 	int runNetwork(int _nsec, int _nmsec, bool printRunSummary);
 
-	/*!
-	 * \brief build the network
-	 * \param[in] removeTempMemory 	remove temp memory after building network
+	/** Builds the network. Will make CARLsim state switch from ::CONFIG_STATE to ::SETUP_STATE. reorganize the network and do the necessary allocation
+	 *  of all variable for carrying out the simulation. This code is run only one time during network initialization.
+	 * \brief Builds the network. Will make CARLsim state switch from ::CONFIG_STATE to ::SETUP_STATE.
 	 */
 	void setupNetwork();
 
 	// +++++ PUBLIC METHODS: INTERACTING WITH A SIMULATION ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	// adds a bias to every weight in the connection
+	/** This method adds a constant bias to the weight of every synapse in the connection specified by connId. The bias
+	 * can be positive or negative.
+	 * If a bias is specified that makes any weight+bias lie outside the range [minWt,maxWt] of this connection, the
+	 * range will be updated accordingly if the flag updateWeightRange is set to true.
+	 * If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 * minWt or maxWt).
+	 *
+	 * \brief Adds a constant bias to the weight of every synapse in the connection
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param connId            the connection ID to manipulate
+	 * \param bias              the bias value to add to every synapse
+	 * \param updateWeightRange a flag specifying what to do when the specified weight+bias lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 *
+	 * \see setWeight
+	 * \see scaleWeights
+	 * \note A weight cannot drop below zero, no matter what.
+	 */
 	void biasWeights(short int connId, float bias, bool updateWeightRange = false);
 
-	//! deallocates all dynamical structures and exits
+	/** Deallocates all dynamical structures on both CPU and GPU sides and exits. Deallocates monitors
+	 *  , config data, and runtime data. Closes all file streams other than stderr and stdout.
+	 * 
+	 * \brief Deallocates all dynamical structures on both CPU and GPU sides and exits. 
+	 * \param val Exit status
+	 * \return void
+	 */
 	void exitSimulation(int val = 1);
 
-	//! reads the network state from file
-	//! Reads a CARLsim network file. Such a file can be created using SNN:writeNetwork.
-	/*
-	 * \brief After calling SNN::loadSimulation, you should run SNN::runNetwork before calling fclose(fp).
-	 * \param fid: file pointer
-	 * \sa SNN::saveSimulation()
+	/** Reads a CARLsim network state previously saved in a file. Such a file can be created using SNN::saveSimulation().
+	 *  After calling SNN::loadSimulation, you should run SNN::runNetwork before calling fclose(fp).
+	 *
+	 * \brief Reads a CARLsim network state previously saved in a file
+	 * \param fid: file pointer to handle the file where the network state was previously saved using using SNN::saveSimulation()
+	 * \see SNN::saveSimulation()
 	 */
 	void loadSimulation(FILE* fid);
 
-	// multiplies every weight with a scaling factor
+	/** This method scales the weight of every synapse in the connection specified by connId with a scaling factor.
+	 *  The scaling factor cannot be negative.
+	 *  If a scaling factor is specified that makes any weight*scale lie outside the range [minWt,maxWt] of this
+	 *  connection, the range will be updated accordingly if the flag updateWeightRange is set to true.
+	 *  If the flag is set to false, then the specified weight value will be corrected to lie on the boundary (either
+	 *  minWt or maxWt).
+	 *
+	 * \brief Multiplies the weight of every synapse in the connection with a scaling factor
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param connId            the connection ID to manipulate
+	 * \param scale             the scaling factor to apply to every synapse (cannot be negative)
+	 * \param updateWeightRange a flag specifying what to do when the specified weight*scale lies outside the range
+	 *                              [minWt,maxWt]. Set to true to update the range accordingly. Set to false to adjust
+	 *                              the weight to be either minWt or maxWt. Default: false.
+	 *
+	 * \note A weight cannot drop below zero, no matter what.
+	 * \see setWeight
+	 * \see biasWeights
+	 */
 	void scaleWeights(short int connId, float scale, bool updateWeightRange = false);
 
-	//! sets up a group monitor registered with a callback to process the spikes.
-	/*!
-	 * \param[in] grpId ID of the neuron group
-	 * \param[in] fid file pointer for recording group status (neuromodulators)
+	/** Sets up a group monitor registered with a callback to process the spikes.
+	 *  The method first checks if the group already has a monitor and if it does not, then
+	 *  creates a new GroupMonitorCore object and initialize analysis components. If file pointer exists, it has already been fopened
+	 *  this will also write the header section of the group status file. It also 
+	 *  creates a new GroupMonitor object for the user-interface, which later will be deallocated by
+	 *  SNN::deleteObjects.
+	 *
+	 * \param grpId ID of the neuron group
+	 * \param fid file pointer for recording group status (neuromodulators)
+	 * \return A GroupMonitor object for the group
 	 */
 	GroupMonitor* setGroupMonitor(int grpId, FILE* fid);
 
-	//! sets up a network monitor registered with a callback to process the spikes.
-	/*!
-	 * \param[in] grpIdPre ID of the pre-synaptic neuron group
-	 * \param[in] grpIdPost ID of the post-synaptic neuron group
-	 * \param[in] connectionMon ConnectionMonitorCore class
+	/** To retrieve connection status, a connection-monitoring callback mechanism is used. This mechanism allows the user
+	 *  to monitor connection status between groups. Connection monitors are registered for two groups (i.e., pre- and
+	 *  post- synaptic groups) and are called automatically by the simulator every second.
+	 *
+	 *  CARLsim supports two different recording mechanisms: Recording to a weight file (binary) and recording to a
+	 *  ConnectionMonitor object. The former is useful for off-line analysis of synaptic weights (e.g., using
+	 *  \ref ch9_matlab_oat).
+	 *  The latter is useful to calculate different weight metrics and statistics on-line, such as the percentage of
+	 *  weight values that fall in a certain weight range, or the number of weights that have been changed since the
+	 *  last snapshot.
+	 *
+	 *  The function returns a pointer to a ConnectionMonitor object, which can be used to calculate weight changes
+	 *  and other connection stats.
+	 *  
+	 * \brief Sets a connection monitor for connections between two groups, custom ConnectionMonitor class
+	 *
+	 * \param grpIdPre 		the pre-synaptic group ID
+	 * \param grpIdPost 	the post-synaptic group ID
+	 * \param fname         file pointer of the binary to be created
+	 * \return a new ConnectionMonitor object for the user-interface
 	 */
+
 	ConnectionMonitor* setConnectionMonitor(int grpIdPre, int grpIdPost, FILE* fid);
 
-	//! injects current (mA) into the soma of every neuron in the group
+	/** This method injects current, specified on a per-neuron basis, into the soma of each neuron in the group, at
+	 * each timestep of the simulation. current is a float vector of current amounts (mA), one element per neuron in
+	 * the group.
+	 *
+	 * To input different currents into a neuron over time, the idea is to run short periods of runNetwork and
+	 * subsequently calling setExternalCurrent again with updated current values.
+	 *
+	 * \brief Sets the amount of current (mA) to inject into a group
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId    the group ID
+	 * \param current  a float vector of current amounts (mA), one value per neuron in the group
+	 *
+	 * \note This method cannot be applied to SpikeGenerator groups.
+	 *
+	 * \see setSpikeRate
+	 * \see setSpikeGenerator
+	 */
 	void setExternalCurrent(int grpId, const std::vector<float>& current);
 
-	//! sets up a spike generator
+	/** A custom SpikeGenerator object can be used to allow for more fine-grained control overs spike generation by
+	 * specifying individual spike times for each neuron in a group.
+	 *
+	 * In order to specify spike times, a new class must be defined first that derives from the SpikeGenerator class
+	 * and implements the virtual method SpikeGenerator::nextSpikeTime.
+	 * Then, in order for a custom SpikeGenerator to be associated with a SpikeGenerator group,
+	 *
+	 * \brief Associates a SpikeGenerator object with a group for fine grained specificaion of spike times for individual neurons
+	 *
+	 * \param grpId           the group with which to associate a SpikeGenerator object
+	 * \param spikeGenFunc pointer to a custom SpikeGenerator object
+	 */
 	void setSpikeGenerator(int grpId, SpikeGeneratorCore* spikeGenFunc);
 
-	//! sets up a spike monitor registered with a callback to process the spikes, there can only be one SpikeMonitor per group
-	/*!
-	 * \param grpId ID of the neuron group
-	 * \param spikeMon (optional) spikeMonitor class
-	 * \return SpikeMonitor* pointer to a SpikeMonitor object
+	/** To retrieve outputs, a spike-monitoring callback mechanism is used. This mechanism allows the user to calculate
+	 * basic statistics, store spike trains, or perform more complicated output monitoring. Spike monitors are
+	 * registered for a group and are called automatically by the simulator every second. Similar to an address event
+	 * representation (AER), the spike monitor indicates which neurons spiked by using the neuron ID within a group
+	 * (0-indexed) and the time of the spike. Only one spike monitor is allowed per group.
+	 *
+	 * CARLsim supports two different recording mechanisms: Recording to a spike file (binary) and recording to a
+	 * SpikeMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+	 * The latter is useful to calculate different spike metrics and statistics on-line, such as mean firing rate and
+	 * standard deviation, or the number of neurons whose firing rate lies in a certain interval.
+	 *
+	 * The function returns a pointer to a SpikeMonitor object, which can be used to calculate spike statistics (such
+	 * group firing rate, number of silent neurons, etc.) or retrieve all spikes from a particular time window.
+	 *
+	 * If you call setSpikeMonitor twice on the same group, the same SpikeMonitor pointer will be returned, and the
+	 * name of the spike file will be updated. This is the same as calling SpikeMonitor::setLogFile directly, and
+	 * allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	 *
+	 * \brief Sets a Spike Monitor for a groups, prints spikes to binary file
+	 *
+	 * \param gid 		the group ID
+	 * \param fid 		file pointer to the binary to be created
+	 * \return   SpikeMonitor*	pointer to a SpikeMonitor object, which can be used to calculate spike statistics
+	 *                          (such as group firing rate, number of silent neurons, etc.) or retrieve all spikes in
+	 * 							AER format
+	 *
+	 * \note Only one SpikeMonitor is allowed per group.
 	 */
 	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid);
 
-	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial.
-	/*!Input arguments:
-	 * \param grpId ID of the neuron group
-	 * \param spikeRate pointer to a PoissonRate instance
-	 * \param refPeriod (optional) refractive period,  default = 1
+	/** Sets firing rate and refractory period for a SpikeGenerator group
+	 *
+	 * \brief Sets a spike rate of a SpikeGenerator group
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId      SpikeGenerator group ID
+	 * \param spikeRate  pointer to PoissonRate object
+	 * \param refPeriod  refactory period (ms)
+	 *
+	 * \note If you allocate the PoissonRate object on the heap, you are responsible for correctly deallocating it.
+	 * \see setSpikeGenerator
 	 */
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod);
 
-	//! sets the weight value of a specific synapse
+	/** This method sets the weight value of the synapse that belongs to connection connId and connects pre-synaptic
+	 * neuron neurIdPre to post-synaptic neuron neurIdPost. Neuron IDs should be zero-indexed, so that the first
+	 * neuron in the group has ID 0.
+	 *
+	 * If a weight value is specified that lies outside the range [minWt,maxWt] of this connection, the range will be
+	 * updated accordingly if the flag updateWeightRange is set to true. If the flag is set to false, then the
+	 * specified weight value will be corrected to lie on the boundary (either minWt or maxWt).
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param connId            the connection ID to manipulate
+	 * \param neurIdPre         pre-synaptic neuron ID (zero-indexed)
+	 * \param neurIdPost        post-synaptic neuron ID (zero-indexed)
+	 * \param weight            the weight value to set for this synapse
+	 * \param updateWeightRange a flag specifying what to do when the specified weight lies outside the range
+	 *                              [minWt,maxWt].
+	 */
 	void setWeight(short int connId, int neurIdPre, int neurIdPost, float weight, bool updateWeightRange = false);
 
-	//! enters a testing phase, where all weight updates are disabled
+	/** This function can be used to temporarily disable all weight updates (such as from STDP or homeostasis)
+	 *  in the network. An optional parameter specifies whether the accumulated weight updates so far should be applied to the weights
+	 *  before entering the testing phase.
+	 *
+	 *  \STATE ::SETUP_STATE, ::RUN_STATE
+	 *
+	 * \param shallUpdateWeights   whether to apply the accumulated weight changes before entering the testing phase
+	 * \note Calling this function on a simulation with no plastic synapses will have no effect.
+	 */
 	void startTesting(bool shallUpdateWeights = true);
 
-	//! exits a testing phase, making weight updates possible again
+	/** Exits a testing phase, making weight updates possible again
+	 * \brief Exits a testing phase, making weight updates possible again
+	 */
 	void stopTesting();
 
-	//! polls connection weights
+	/** Polls the specified ConnectionMonitor to record the connection weights it is monitoring
+	 * \brief Polls ConnectionMonitor to record connection weights
+	 * 
+	 * \param connId ConnectionMonitor ID
+	 */
 	void updateConnectionMonitor(short int connId = ALL);
 
-	//! access group status (currently the concentration of neuromodulator)
+	/** Upadates the group status to the groupMonitor object from the runtime buffer since the last
+	 * update time. Usually done in every second, but not mandatory. Currently the concentration of neuromodulator.
+	 *
+	 * \brief Upadates the group status to the groupMonitor object 
+	 * \param grpId Group ID for which status update is sought
+	 *
+	 */
 	void updateGroupMonitor(int grpId = ALL);
 
-	/*!
-	 * \brief copy required spikes from firing buffer to spike buffer
-	 *
-	 * This function is public in SNN, but it should probably not be a public user function in CARLsim.
+	/** This function is public in SNN, but it should probably not be a public user function in CARLsim.
 	 * It is usually called once every 1000ms by the core to update spike binaries and SpikeMonitor objects. In GPU
 	 * mode, it will first copy the firing info to the host. The input argument can either be a specific group ID or
 	 * keyword ALL (for all groups).
 	 * Core and utility functions can call updateSpikeMonitor at any point in time. The function will automatically
 	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
+	 *
+	 * \brief copy required spikes from firing buffer to spike buffer
+	 * \param grpId Group ID for which firing statistic update is sought
 	 */
 	void updateSpikeMonitor(int grpId = ALL);
 
-	//! stores the pre and post synaptic neuron ids with the weight and delay
-	/*
-	 * \param fid file pointer
+	/** The network state consists of all
+	 * the synaptic connections, weights, delays, and whether the connections are plastic or fixed. As an
+	 * option, the user can choose whether or not to save the synaptic weight information (which could be
+	 * a large amount of data) with the saveSynapseInfo argument.
+	 *
+	 * \brief Saves network configuration and simulation information to a file
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param fid          file pointer to use for saving simulation data.
+	 * \param saveSynapseInfo   boolean value that determines if the weight values are written to
+	 *                              the data file or not. The weight values are written if the boolean value is true.
+	 * \see SNN::loadSimulation
 	 */
 	void saveSimulation(FILE* fid, bool saveSynapseInfo = false);
 
@@ -417,75 +643,196 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! returns file pointer to info log
+	/** \brief returns file pointer to info log*/
 	const FILE* getLogFpInf() { return fpInf_; }
-	//! returns file pointer to error log
+	/** returns file pointer to error log \brief returns file pointer to error log*/
 	const FILE* getLogFpErr() { return fpErr_; }
-	//! returns file pointer to debug log
+	/** returns file pointer to debug log \brief returns file pointer to debug log*/
 	const FILE* getLogFpDeb() { return fpDeb_; }
-	//! returns file pointer to log file
+	/** returns file pointer to log file \brief returns file pointer to log file*/
 	const FILE* getLogFpLog() { return fpLog_; }
 
-	/*!
+	/** Sets the file pointers for all log files. File pointer NULL means don't change it.
+	 *
 	 * \brief Sets the file pointers for all log files
-	 * file pointer NULL means don't change it.
+	 * \param fpInf file pointer to info log
+	 * \param fpErr file pointer to error log
+	 * \param fpDeb file pointer to debug log
+	 * \param fpLog file pointer to Log file  
 	 */
 	void setLogsFp(FILE* fpInf = NULL, FILE* fpErr = NULL, FILE* fpDeb = NULL, FILE* fpLog = NULL);
 
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
-	ConnectConfig getConnectConfig(short int connectId); //!< required for homeostasis
+	/** find connection ID based on pre-post group pair, complexity O(N)
+	 *
+	 * \brief find connection ID based on pre-post group pair
+	 * \param grpIdPre pre-synatic group ID
+	 * \param grpIdPost  post-synaptic group ID
+	 * \return connection ID between pre-post groups
+	 */
+	short int getConnectId(int grpIdPre, int grpIdPost);
 
-	//! returns the RangeDelay struct of a connection
+	/** Returns connection configuration data for a specified connection. Required for homeostasis.
+	 *
+	 * \brief Returns connection configuration data for a specified connection
+	 * \param connectId connection ID
+	 * \return ConnectConfigMap entry for the connection
+	 */
+	ConnectConfig getConnectConfig(short int connectId);
+
+	/** Returns the RangeDelay struct of a connection\brief returns the RangeDelay struct of a connection \param connId Connction ID*/
 	RangeDelay getDelayRange(short int connId);
 
-	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
-	/*!
+	/** Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
+	 *
+	 * \brief Returns the delay for all synaptic connections between pre and post
 	 * \param gGrpIdPre ID of pre-synaptic group
 	 * \param gGrpIdPost ID of post-synaptic group
-	 * \param numPreN return the number of pre-synaptic neurons
-	 * \param numPostN retrun the number of post-synaptic neurons
-	 * \param delays (optional) return the delay information for all synapses, default = NULL
-	 * \return delays information for all synapses
+	 * \param numPreN the number of pre-synaptic neurons
+	 * \param numPostN the number of post-synaptic neurons
+	 * 
+	 * \return delay information for all synapses
 	 */
 	uint8_t* getDelays(int gGrpIdPre, int gGrpIdPost, int& numPreN, int& numPostN);
 
+
+	/** This function returns the Grid3D struct of a particular neuron group.
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
+	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
+	 * See createGroup and Grid3D for more information.
+	 *
+	 * \brief returns the 3D grid struct of a group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId the group ID for which to get the Grid3D struct
+	 * \return the 3D grid struct of a group
+	 */
 	Grid3D getGroupGrid3D(int grpId);
+
+	/** Finds the integer ID of the group with name given as a string
+	 *
+	 * \brief finds the ID of the group with name grpName
+	 * \param grpName Name of the group as a string
+	 * \return integer ID of the group
+	 * 
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 */
 	int getGroupId(std::string grpName);
+
+	/** Finds the name of the group given its integer group ID 
+	 * \brief gets group name from ID
+	 * \param integer ID of the group
+	 * \return grpName Name of the group as a string
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 */
 	std::string getGroupName(int grpId);
+
+	/** This function returns the current STDP setting of a group.
+	 *
+	 * \brief Returns the stdp information of a group specified by grpId
+	 * \param integer ID of the group
+	 * \return GroupSTDPInfo struct for the group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \see GroupSTDPInfo
+	 */
 	GroupSTDPInfo getGroupSTDPInfo(int grpId);
+
+	/** This function returns the current setting for neuromodulators.
+	 * \brief returns the neuromodulator information of a group specified by grpId
+	 * \param integer ID of the group
+	 * \return GroupNeuromodulatorInfo struct for the group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupNeuromodulatorInfo
+	 */
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
+
 
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
+	/** Returns the neuron ID of the first neuron in the given group \brief Returns the neuron ID of the first neuron in the given group*/
 	int getGroupStartNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gStartN; }
+	/** Returns the neuron ID of the last neuron in the given group \brief Returns the neuron ID of the last neuron in the given group*/
 	int getGroupEndNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gEndN; }
+	/** Returns number of neurons in the given group \brief Returns number of neurons in the given group*/
 	int getGroupNumNeurons(int grpId) { return groupConfigMap[grpId].numN; }
-
+	/** Returns the name of the CARLsim network \brief Returns the name of the CARLsim network*/
 	std::string getNetworkName() { return networkName_; }
 
+	/** This function returns the (x,y,z) location that a neuron with ID neurID (global) codes for.
+	 * Note that neurID is global; that is, the first neuron in the group does not necessarily have ID 0.
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see SNN::createGroup() and the Grid3D struct.
+	 *
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param neurId the neuron ID for which the 3D location should be returned
+	 * \return the 3D location a neuron codes for as a Point3D struct
+	 * \see SNN::getNeuronLocation3D(int grpId, int relNeurId)
+	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID  relNeurId (relative to the group) codes for.
+	 * Note that neurID is relative to the ID of the first neuron in the group; that is, the first neuron in the group
+	 * has relNeurId 0, the second one has relNeurId 1, etc.
+	 * In other words: relNeurId = neurId - sim.getGroupStartNeuronId();
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see SNN::createGroup() and the Grid3D struct.
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::EXE_STATE
+	 * \param grpId       the group ID
+	 * \param relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
+	 * \return the 3D location a neuron codes for as a Point3D struct
+	 * \see SNN::getNeuronLocation3D(int neurId)
+	 */
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
+	/** Returns total number of connections \brief Returns total number of connections*/
 	int getNumConnections() { return numConnections; }
-	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
+	/** Returns number of connections associated with a connection ID \brief Returns number of connections associated with a connection ID*/
+	int getNumSynapticConnections(short int connectionId);
+	/** Returns total number of groups \brief Returns total number of groups*/
 	int getNumGroups() { return numGroups; }
+	/** Returns total number of neurons in the network \brief Returns total number of neurons in the network*/
 	int getNumNeurons() { return glbNetworkConfig.numN; }
+	/** Returns total number of Izhikevich neurons in the network \brief Returns total number of Izhikevich neurons in the network*/
 	int getNumNeuronsReg() { return glbNetworkConfig.numNReg; }
+	/** Returns total number of excitatory Izhikevich neurons in the network \brief Returns total number of excitatory Izhikevich neurons in the network*/
 	int getNumNeuronsRegExc() { return glbNetworkConfig.numNExcReg; }
+	/** Returns total number of inhibitory Izhikevich neurons in the network \brief Returns total number of inhibitory Izhikevich neurons in the network*/
 	int getNumNeuronsRegInh() { return glbNetworkConfig.numNInhReg; }
+	/** Returns total number of poisson spiking neurons in the network \brief Returns total number of poisson spiking neurons in the network*/
 	int getNumNeuronsGen() { return glbNetworkConfig.numNPois; }
+	/** Returns total number of excitatory poisson spiking neurons in the network \brief Returns total number of excitatory poisson spiking neurons in the network*/
 	int getNumNeuronsGenExc() { return glbNetworkConfig.numNExcPois; }
+	/** Returns total number of inhibitory poisson spiking neurons in the network \brief Returns total number of inhibitory poisson spiking neurons in the network*/
 	int getNumNeuronsGenInh() { return glbNetworkConfig.numNInhPois; }
+	/** Returns total number of synapses in the network \brief Returns total number of synapses in the network*/
 	int getNumSynapses() { return glbNetworkConfig.numSynNet; }
-
+	/** Returns random seed used in the network \brief Returns randon seed used in the network*/
 	int getRandSeed() { return randSeed_; }
-
+	/** Returns current simulation time of the network \brief Returns current simulation time of the network*/
 	int getSimTime() { return simTime; }
+	/** Returns seconds part of the current simulation time of the network \brief Returns seconds part of the current simulation time of the network*/
 	int getSimTimeSec() { return simTimeSec; }
+	/** Returns ms part of the current simulation time of the network \brief Returns ms part of the current simulation time of the network*/
 	int getSimTimeMs() { return simTimeMs; }
 
 	//! Returns pointer to existing SpikeMonitor object, NULL else
