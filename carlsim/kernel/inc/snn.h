@@ -665,29 +665,91 @@ public:
 
 	// +++++ PUBLIC METHODS: GETTERS / SETTERS ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
-	ConnectConfig getConnectConfig(short int connectId); //!< required for homeostasis
+	/** find connection ID based on pre-post group pair, complexity O(N)
+	 *
+	 * \brief find connection ID based on pre-post group pair
+	 * \param grpIdPre pre-synatic group ID
+	 * \param grpIdPost  post-synaptic group ID
+	 * \return connection ID between pre-post groups
+	 */
+	short int getConnectId(int grpIdPre, int grpIdPost);
 
-	//! returns the RangeDelay struct of a connection
+	/** Returns connection configuration data for a specified connection. Required for homeostasis.
+	 *
+	 * \brief Returns connection configuration data for a specified connection
+	 * \param connectId connection ID
+	 * \return ConnectConfigMap entry for the connection
+	 */
+	ConnectConfig getConnectConfig(short int connectId);
+
+	/** Returns the RangeDelay struct of a connection\brief returns the RangeDelay struct of a connection \param connId Connction ID*/
 	RangeDelay getDelayRange(short int connId);
 
-	//! Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
-	/*!
+	/** Returns the delay information for all synaptic connections between a pre-synaptic and a post-synaptic neuron group
+	 *
+	 * \brief Returns the delay for all synaptic connections between pre and post
 	 * \param gGrpIdPre ID of pre-synaptic group
 	 * \param gGrpIdPost ID of post-synaptic group
-	 * \param numPreN return the number of pre-synaptic neurons
-	 * \param numPostN retrun the number of post-synaptic neurons
-	 * \param delays (optional) return the delay information for all synapses, default = NULL
-	 * \return delays information for all synapses
+	 * \param numPreN the number of pre-synaptic neurons
+	 * \param numPostN the number of post-synaptic neurons
+	 * 
+	 * \return delay information for all synapses
 	 */
 	uint8_t* getDelays(int gGrpIdPre, int gGrpIdPost, int& numPreN, int& numPostN);
 
+
+	/** This function returns the Grid3D struct of a particular neuron group.
+	 * Neurons of a group can be arranged topographically, so that they virtually lie on a 3D grid. This simplifies
+	 * the creation of topographic connections in the network. The dimensions of the grid can thus be retrieved by
+	 * calling Grid3D.width, Grid3D.height, and Grid3D.depth. The total number of neurons is given by Grid3D.N.
+	 * See createGroup and Grid3D for more information.
+	 *
+	 * \brief returns the 3D grid struct of a group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId the group ID for which to get the Grid3D struct
+	 * \return the 3D grid struct of a group
+	 */
 	Grid3D getGroupGrid3D(int grpId);
+
+	/** Finds the integer ID of the group with name given as a string
+	 *
+	 * \brief finds the ID of the group with name grpName
+	 * \param grpName Name of the group as a string
+	 * \return integer ID of the group
+	 * 
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 */
 	int getGroupId(std::string grpName);
+
+	/** Finds the name of the group given its integer group ID 
+	 * \brief gets group name from ID
+	 * \param integer ID of the group
+	 * \return grpName Name of the group as a string
+	 *
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 */
 	std::string getGroupName(int grpId);
+
+	/** This function returns the current STDP setting of a group.
+	 *
+	 * \brief Returns the stdp information of a group specified by grpId
+	 * \param integer ID of the group
+	 * \return GroupSTDPInfo struct for the group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \see GroupSTDPInfo
+	 */
 	GroupSTDPInfo getGroupSTDPInfo(int grpId);
+
+	/** This function returns the current setting for neuromodulators.
+	 * \brief returns the neuromodulator information of a group specified by grpId
+	 * \param integer ID of the group
+	 * \return GroupNeuromodulatorInfo struct for the group
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \sa GroupNeuromodulatorInfo
+	 */
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
+	
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo

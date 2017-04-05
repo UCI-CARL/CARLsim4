@@ -1216,7 +1216,7 @@ public:
 	 */
 	uint8_t* getDelays(int gIDpre, int gIDpost, int& Npre, int& Npost);
 
-	// FIXME: This function is called in SNN::connect() at CONFIG_STATE, which violate the restriction
+	// TODO: This function is called in SNN::connect() at CONFIG_STATE, which violate the restriction
 	/*!
 	 * \brief returns the 3D grid struct of a group
 	 *
