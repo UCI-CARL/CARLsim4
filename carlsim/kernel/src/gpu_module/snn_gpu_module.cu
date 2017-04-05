@@ -119,9 +119,9 @@ __device__ int quickSynIdTableGPU[256]; //!< The quick synaptic id lookup table 
 /*!
  * \brief This function initializes the quick synaptic id lookup table
  *
- * This function generates the quick synaptic id lookup table and copies it to the GPU memory space specified by netId
+ * This function generates the quick synaptic id lookup table and copies it to the GPU memory space specified by netId.
  * 
- * \param[in] netId The local network id, which is also used to control GPU context
+ * \param[in] netId The local network id, which is also a device id used to control GPU context
  * \return void
  */
 void initQuickSynIdTable(int netId) {
@@ -142,27 +142,80 @@ void initQuickSynIdTable(int netId) {
 	CUDA_CHECK_ERRORS(cudaMemcpy( devPtr, quickSynIdTable, sizeof(quickSynIdTable), cudaMemcpyHostToDevice));
 }
 
+/*!
+ * \brief This function returns whether a group is a spike generator group given the local group id
+ *
+ * This device function returns whether a group is a spike gnerator group given the local group id.
+ *
+ * \param[in] lGrpId The local group id
+ * \return True if the given group is a spike genertor group
+ */
 __device__ inline bool isPoissonGroup(short int lGrpId) {
 	return (groupConfigsGPU[lGrpId].Type & POISSON_NEURON);
 }
 
+/*!
+ * \brief This function sets up the bit vector indicating a synaptic spike
+ *
+ * This device function sets up the bit vector indicating a synaptic spike. The bit is indexed by the local neuron id and synapse id
+ *
+ * \param[in] lNId The locla neuron id
+ * \param[in] synId The synapse id of the neuron
+ * \return void
+ */
 __device__ inline void setFiringBitSynapses(int lNId, int synId) {
 	unsigned int* tmp_I_set_p = ((unsigned int*)((char*)runtimeDataGPU.I_set + ((synId >> 5) * networkConfigGPU.I_setPitch)) + lNId);
 	atomicOr(tmp_I_set_p, 1 << (synId % 32));
 }
 
+/*!
+ * \brief This function returns the pointer to the unsigned integer (bit vector) which indicates synaptic spikes
+ *
+ * This device function returns the pointer to the unsigned integer (bit vector) which indicate synaptic spikes
+ * given the local neuron id and synapse id
+ *
+ * \param[in] lNId The locla neuron id
+ * \param[in] synId The synapse id of the neuron
+ * \return The pointer to the unsigned integer (bit vector)
+ */
 __device__ inline unsigned int* getFiringBitGroupPtr(int lNId, int synId) {
 	return (((unsigned int*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + lNId);
 }
 
+/*!
+ * \brief This function returns the index to the previous STP gain
+ *
+ * This device function returns the index to the previous STP gain given the local neuron id and ealier simulation time
+ *
+ * \param[in] lNId The local neuron id
+ * \param[in] simTime The past simulation time
+ * \return The index to previous STP gain
+ * \note The max delay in the simulation is 20ms. Invalid STP gain is returned given the past simulation time earlier than 20ms.
+ */
 __device__ inline int getSTPBufPos(int lNId, int simTime) {
 	return (((simTime + 1) % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + lNId);
 }
 
-__device__ inline int2 getStaticThreadLoad(int bufPos) {
-	return (runtimeDataGPU.neuronAllocation[bufPos]);
+/*!
+ * \brief This function returns the pre-allocated workload
+ *
+ * This device function returns the pre-allocated workload.
+ *
+ * \param]in] loadIndex The index to the pre-allocated workload
+ * \return A set of integers represents the pre-allocated workload
+ */
+__device__ inline int2 getStaticThreadLoad(int loadIndex) {
+	return (runtimeDataGPU.neuronAllocation[loadIndex]);
 }
 
+/*!
+ * \brief This function returns whether a spike generator neuron fires
+ *
+ * This device function returns whether a spike generator neuron fires according to its firing rate.
+ *
+ * \param[in] lNId The local neuron id
+ * \return True if the neuron fires at the current time step
+ */
 __device__ inline bool getPoissonSpike(int lNId) {
 	// Random number value is less than the poisson firing probability
 	// if poisson firing probability is say 1.0 then the random poisson ptr
@@ -171,31 +224,40 @@ __device__ inline bool getPoissonSpike(int lNId) {
 			< runtimeDataGPU.poissonFireRate[lNId - networkConfigGPU.numNReg];
 }
 
-__device__ inline bool getSpikeGenBit(unsigned int nidPos) {
-	const int nidBitPos = nidPos % 32;
-	const int nidIndex  = nidPos / 32;
-	return ((runtimeDataGPU.spikeGenBits[nidIndex] >> nidBitPos) & 0x1);
+/*!
+ * \brief This function returns whether a spike generator neuron fires
+ *
+ * This device function returns whether a spike generator neuron filre according to the spike generator bit vector.
+ *
+ * \params[in] nIdPos The index to a spike generator neuron over all spike generator neurons (excluding regular neurons)
+ * \return True if the neuron fires at the current time step
+ */
+__device__ inline bool getSpikeGenBit(unsigned int nIdPos) {
+	const int nIdBitPos = nIdPos % 32;
+	const int nIdIndex  = nIdPos / 32;
+	return ((runtimeDataGPU.spikeGenBits[nIdIndex] >> nIdBitPos) & 0x1);
 }
 
 /*!
- * \brief The device function updates the average firing rate of each neuron
+ * \brief The function updates the average firing rate of each neuron
  *
- * The device function updated the average firing rate of each neuron, which is required for homeostasis
+ * The device function updates the average firing rate of each neuron, which is required for homeostasis.
  *
  * \param[in] lNId The local neuron id to be updated
  * \param[in] lGrpId The local group id of the neuron
+ * \return void
  */
 __device__ inline void updateHomeoStaticState(int lNId, int lGrpId) {
-	// here the homeostasis adjustment
+	// The homeostasis adjustment
 	runtimeDataGPU.avgFiring[lNId] *= (groupConfigsGPU[lGrpId].avgTimeScale_decay);
 }
 
 /*!
- * \brief After every time step, this kernel function updates the time tables.
+ * \brief After every time step, this function updates the time tables.
  *
- * After every time step, this kernel is launched to update time tables.
+ * After every time step, this kernel function is launched to update time tables.
  * The accumulated number of spikes is stored in the array indexed by the current time setp.
- *.The kernel function use onlu one thread to update the time tables.
+ * The kernel function use only one thread to update the time tables.
  *
  * \param[in] simTime The current time step
  * \return void
@@ -209,7 +271,7 @@ __global__ void kernel_updateTimeTable(int simTime) {
 }
 
 /*! 
- * \brief This kernel initilize variables in GPU memory
+ * \brief This function initilizes variables in GPU memory
  *
  * This kernel function initialize/reset timeTableD1(D2) and all spike counters.
  *
@@ -241,23 +303,31 @@ __global__ void kernel_initGPUMemory() {
 	}
 }
 
-// Static Thread Load Allocation...
-// This function is necessary for static allocation of load that each CUDA-SM needs for its computation.
-// We store the static load allocation using the following format
-// Neuron starting position (32 bit): Group identification (16) : Buffer size (16 bit)
-// if we have 3 groups. grp(1) = 400 neurons, grp(2) = 100, grp(3) = 600
-// The allocated static table will look as follows..
-//-------------------------
-// start |  grp   |   size
-//-------------------------
-//    0  :   0    :   256
-//  256  :   0    :   144
-//  400  :   1    :   100
-//  500  :   2    :   256
-//  756  :   2    :   256
-// 1012  :   2    :    88
-//-----------------------
-int SNN::allocateStaticLoad(int netId, int loadSize) {
+/*!
+ * \brief This function allocates static workload
+ *
+ * This function is necessary for static allocation of load that each CUDA-SMProcessor needs for its computation.
+ * We store the static workload allocation using the following format:
+ * Neuron starting position (32 bit): Group identification (16) : Wrokload size (16 bit).
+ * If we have 3 groups, grp(1) = 400 neurons, grp(2) = 100, and grp(3) = 600,
+ * the allocated static table will look as follows:
+ * \n ----------------------
+ * \n start |  grp   |  size
+ * \n ----------------------
+ * \n    0  :   0    :   256
+ * \n  256  :   0    :   144
+ * \n  400  :   1    :   100
+ * \n  500  :   2    :   256
+ * \n  756  :   2    :   256
+ * \n 1012  :   2    :    88
+ * \n -----------------------
+ *
+ * \param[in] netId The local network id, which is also a device id used to control GPU context
+ * \param[in] loadSize The max workload size used for allocation
+ * \return void
+ * \note The simulation currently uses fixed maximum workload size, which is 128.
+ */
+void SNN::allocateStaticLoad(int netId, int loadSize) {
 	checkAndSetGPUDevice(netId);
 
 	// only one thread does the static load table
@@ -271,9 +341,9 @@ int SNN::allocateStaticLoad(int netId, int loadSize) {
 	assert(bufferCnt > 0);
 
 	int2*  tempNeuronAllocation = (int2*)malloc(sizeof(int2) * bufferCnt);
-	KERNEL_DEBUG("STATIC THREAD ALLOCATION");
+	KERNEL_DEBUG("Static Workload Allocation");
 	KERNEL_DEBUG("------------------------");
-	KERNEL_DEBUG("Buffer Size = %d, Buffer Count = %d", loadSize, bufferCnt);
+	KERNEL_DEBUG("Workload Size = %d, Workload Count = %d", loadSize, bufferCnt);
 
 	bufferCnt = 0;
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -310,7 +380,6 @@ int SNN::allocateStaticLoad(int netId, int loadSize) {
 	CUDA_CHECK_ERRORS(cudaMalloc((void**) &runtimeData[netId].neuronAllocation, sizeof(int2) * bufferCnt));
 	CUDA_CHECK_ERRORS(cudaMemcpy(runtimeData[netId].neuronAllocation, tempNeuronAllocation, sizeof(int2) * bufferCnt, cudaMemcpyHostToDevice));
 	free(tempNeuronAllocation);
-	return bufferCnt;
 }
 
 /*!
@@ -322,7 +391,6 @@ int SNN::allocateStaticLoad(int netId, int loadSize) {
  * \param[in] lNId The local neuron id to be updated
  * \param[in] simTime The current time setp
  * \param[in] lGrpId The local group id of the neuron
- *
  * \return void
  */
 __device__ void firingUpdateSTP (int lNId, int simTime, short int lGrpId) {
@@ -355,13 +423,15 @@ __device__ void resetFiredNeuron(int lNId, short int lGrpId, int simTime) {
 }
 
 /*!
- * \brief 1. Copy neuron id from local table to global firing table. 2. Reset all neuron properties of neuron id in local table
+ * \brief This function copies neuron ids from local fring table to global firing table
  *
+ * This device function copies neuron ids from local fring table (shared by a SMP) to global firing table (shared by all SMPs). 
  *
  * \param[in] fireTablePtr the local shared memory firing table with neuron ids of fired neuron
  * \param[in] fireCntD2 the number of neurons in local table that has fired with group's max delay == 1
  * \param[in] fireCntD1 the number of neurons in local table that has fired with group's max delay > 1
  * \param[in] simTime the current time step, stored as neuron firing time  entry
+ * \return void
  */
 __device__ void updateSpikeCount(volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, volatile unsigned int& cntD2, volatile unsigned int& cntD1, volatile int&  blkErrCode) {
 	int fireCntD2 = fireCnt - fireCntD1;
