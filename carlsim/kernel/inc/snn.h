@@ -643,18 +643,22 @@ public:
 
 	// +++++ PUBLIC METHODS: LOGGING / PLOTTING +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
-	//! returns file pointer to info log
+	/** \brief returns file pointer to info log*/
 	const FILE* getLogFpInf() { return fpInf_; }
-	//! returns file pointer to error log
+	/** returns file pointer to error log \brief returns file pointer to error log*/
 	const FILE* getLogFpErr() { return fpErr_; }
-	//! returns file pointer to debug log
+	/** returns file pointer to debug log \brief returns file pointer to debug log*/
 	const FILE* getLogFpDeb() { return fpDeb_; }
-	//! returns file pointer to log file
+	/** returns file pointer to log file \brief returns file pointer to log file*/
 	const FILE* getLogFpLog() { return fpLog_; }
 
-	/*!
+	/** Sets the file pointers for all log files. File pointer NULL means don't change it.
+	 *
 	 * \brief Sets the file pointers for all log files
-	 * file pointer NULL means don't change it.
+	 * \param fpInf file pointer to info log
+	 * \param fpErr file pointer to error log
+	 * \param fpDeb file pointer to debug log
+	 * \param fpLog file pointer to Log file  
 	 */
 	void setLogsFp(FILE* fpInf = NULL, FILE* fpErr = NULL, FILE* fpDeb = NULL, FILE* fpLog = NULL);
 
