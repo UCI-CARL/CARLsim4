@@ -749,35 +749,90 @@ public:
 	 */
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
-	
+
 	LoggerMode getLoggerMode() { return loggerMode_; }
 
 	// get functions for GroupInfo
+	/** Returns the neuron ID of the first neuron in the given group \brief Returns the neuron ID of the first neuron in the given group*/
 	int getGroupStartNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gStartN; }
+	/** Returns the neuron ID of the last neuron in the given group \brief Returns the neuron ID of the last neuron in the given group*/
 	int getGroupEndNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gEndN; }
+	/** Returns number of neurons in the given group \brief Returns number of neurons in the given group*/
 	int getGroupNumNeurons(int grpId) { return groupConfigMap[grpId].numN; }
-
+	/** Returns the name of the CARLsim network \brief Returns the name of the CARLsim network*/
 	std::string getNetworkName() { return networkName_; }
 
+	/** This function returns the (x,y,z) location that a neuron with ID neurID (global) codes for.
+	 * Note that neurID is global; that is, the first neuron in the group does not necessarily have ID 0.
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see SNN::createGroup() and the Grid3D struct.
+	 *
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
+	 * \param neurId the neuron ID for which the 3D location should be returned
+	 * \return the 3D location a neuron codes for as a Point3D struct
+	 * \see SNN::getNeuronLocation3D(int grpId, int relNeurId)
+	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	 * \brief returns the 3D location a neuron codes for
+	 *
+	 * This function returns the (x,y,z) location that a neuron with ID  relNeurId (relative to the group) codes for.
+	 * Note that neurID is relative to the ID of the first neuron in the group; that is, the first neuron in the group
+	 * has relNeurId 0, the second one has relNeurId 1, etc.
+	 * In other words: relNeurId = neurId - sim.getGroupStartNeuronId();
+	 *
+	 * The location is determined by the actual neuron ID (the first neuron in the group coding for the origin (0,0,0),
+	 * and by the dimensions of the 3D grid the group is allocated on (integer coordinates). Neuron numbers are
+	 * assigned to location in order; where the first dimension specifies the width, the second dimension is height,
+	 * and the third dimension is depth.
+	 *
+	 * For more information see SNN::createGroup() and the Grid3D struct.
+	 *
+	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::EXE_STATE
+	 * \param grpId       the group ID
+	 * \param relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
+	 * \return the 3D location a neuron codes for as a Point3D struct
+	 * \see SNN::getNeuronLocation3D(int neurId)
+	 */
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
+	/** Returns total number of connections \brief Returns total number of connections*/
 	int getNumConnections() { return numConnections; }
-	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
+	/** Returns number of connections associated with a connection ID \brief Returns number of connections associated with a connection ID*/
+	int getNumSynapticConnections(short int connectionId);
+	/** Returns total number of groups \brief Returns total number of groups*/
 	int getNumGroups() { return numGroups; }
+	/** Returns total number of neurons in the network \brief Returns total number of neurons in the network*/
 	int getNumNeurons() { return glbNetworkConfig.numN; }
+	/** Returns total number of Izhikevich neurons in the network \brief Returns total number of Izhikevich neurons in the network*/
 	int getNumNeuronsReg() { return glbNetworkConfig.numNReg; }
+	/** Returns total number of excitatory Izhikevich neurons in the network \brief Returns total number of excitatory Izhikevich neurons in the network*/
 	int getNumNeuronsRegExc() { return glbNetworkConfig.numNExcReg; }
+	/** Returns total number of inhibitory Izhikevich neurons in the network \brief Returns total number of inhibitory Izhikevich neurons in the network*/
 	int getNumNeuronsRegInh() { return glbNetworkConfig.numNInhReg; }
+	/** Returns total number of poisson spiking neurons in the network \brief Returns total number of poisson spiking neurons in the network*/
 	int getNumNeuronsGen() { return glbNetworkConfig.numNPois; }
+	/** Returns total number of excitatory poisson spiking neurons in the network \brief Returns total number of excitatory poisson spiking neurons in the network*/
 	int getNumNeuronsGenExc() { return glbNetworkConfig.numNExcPois; }
+	/** Returns total number of inhibitory poisson spiking neurons in the network \brief Returns total number of inhibitory poisson spiking neurons in the network*/
 	int getNumNeuronsGenInh() { return glbNetworkConfig.numNInhPois; }
+	/** Returns total number of synapses in the network \brief Returns total number of synapses in the network*/
 	int getNumSynapses() { return glbNetworkConfig.numSynNet; }
-
+	/** Returns random seed used in the network \brief Returns randon seed used in the network*/
 	int getRandSeed() { return randSeed_; }
-
+	/** Returns current simulation time of the network \brief Returns current simulation time of the network*/
 	int getSimTime() { return simTime; }
+	/** Returns seconds part of the current simulation time of the network \brief Returns seconds part of the current simulation time of the network*/
 	int getSimTimeSec() { return simTimeSec; }
+	/** Returns ms part of the current simulation time of the network \brief Returns ms part of the current simulation time of the network*/
 	int getSimTimeMs() { return simTimeMs; }
 
 	//! Returns pointer to existing SpikeMonitor object, NULL else
