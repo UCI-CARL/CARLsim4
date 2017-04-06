@@ -4555,7 +4555,7 @@ void SNN::verifyHomeostasis() {
 //	assert((numN > 0) && (numN == numNExcReg + numNInhReg + numNPois));
 //}
 
-// \FIXME: not sure where this should go... maybe create some helper file?
+// TODO: not sure where this should go... maybe create some helper file?
 bool SNN::isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post) {
 	// Note: RadiusRF rad is assumed to be the fanning in to the post neuron. So if the radius is 10 pixels, it means
 	// that if you look at the post neuron, it will receive input from neurons that code for locations no more than
@@ -5570,7 +5570,7 @@ void SNN::updateConnectionMonitor(short int connId) {
 	}
 }
 
-// FIXME: modify this for multi-GPUs
+// TODO: modify this for multi-GPUs
 std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 	assert(connId > ALL); // ALL == -1
 	std::vector< std::vector<float> > wtConnId;
