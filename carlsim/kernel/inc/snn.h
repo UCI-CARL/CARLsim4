@@ -115,11 +115,12 @@ class SNN {
 	// PUBLIC METHODS
 	// **************************************************************************************************************** //
 public:
-	//! SNN Constructor
-	/*!
-	 * \brief
+	/** SNN Constructor
+	 * 
+	 * \brief SNN Constructor
 	 * \param name the symbolic name of a spiking neural network
-	 * \param loggerMode log mode
+	 * \param preferredSimMode preferred simulation platform (CPU/GPU/hybrid)
+	 * \param loggerMode log mode to control verbosity
 	 * \param randSeed randomize seed of the random number generator
 	 */
 	SNN(const std::string& name, SimMode preferredSimMode, LoggerMode loggerMode, int randSeed);
@@ -777,7 +778,7 @@ public:
 	 * \STATE ::CONFIG_STATE, ::SETUP_STATE, ::RUN_STATE
 	 * \param neurId the neuron ID for which the 3D location should be returned
 	 * \return the 3D location a neuron codes for as a Point3D struct
-	 * \see SNN::getNeuronLocation3D(int grpId, int relNeurId)
+	 * \see getNeuronLocation3D(int grpId, int relNeurId)
 	 */
 	Point3D getNeuronLocation3D(int neurId);
 
@@ -800,7 +801,7 @@ public:
 	 * \param grpId       the group ID
 	 * \param relNeurId   the neuron ID (relative to the group) for which the 3D location should be returned
 	 * \return the 3D location a neuron codes for as a Point3D struct
-	 * \see SNN::getNeuronLocation3D(int neurId)
+	 * \see getNeuronLocation3D(int neurId)
 	 */
 	Point3D getNeuronLocation3D(int grpId, int relNeurId);
 
@@ -835,55 +836,117 @@ public:
 	/** Returns ms part of the current simulation time of the network \brief Returns ms part of the current simulation time of the network*/
 	int getSimTimeMs() { return simTimeMs; }
 
-	//! Returns pointer to existing SpikeMonitor object, NULL else
+	/** This function returns a pointer to a SpikeMonitor object that has previously been created using the method
+	 * setSpikeMonitor. If the group does not have a SpikeMonitor, NULL is returned.
+	 *
+	 * \brief returns pointer to previously allocated SpikeMonitor object, NULL else
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId the group ID
+	 * \return pointer to SpikeMonitor object if exists, NULL else
+	 */
 	SpikeMonitor* getSpikeMonitor(int grpId);
 
-	//! Returns pointer to existing SpikeMonitorCore object, NULL else.
-	//! Should not be exposed to user interface
+	/** This function returns a pointer to existing SpikeMonitorCore object.
+	 * If the group does not have a SpikeMonitorCore, NULL is returned. Should not be exposed to user interface.
+	 *
+	 * \brief Returns pointer to existing SpikeMonitorCore object, NULL else
+	 * \STATE ::SETUP_STATE, ::RUN_STATE
+	 * \param grpId the group ID
+	 * \return pointer to SpikeMonitorCore object if exists, NULL else
+	 */
 	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
 
-	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
+	/** Temporary getter to return pointer to current[] array.
+	 * \brief Getter to return pointer to current[] array
+	 * TODO: replace with NeuronMonitor
+	 */
 	float* getCurrent() { return managerRuntimeData.current; }
 
+	/** Returns connection weights from pre group neurons to post group neurons in a 2D matrix 
+	 * \brief Returns connection weights from pre to post group neurons
+	 * \param connId connection ID
+	 * \return 2D matrix of weights
+	 */
 	std::vector< std::vector<float> > getWeightMatrix2D(short int connId);
 
+	/** Returns AMPA value for all neurons in the specified group \brief Returns AMPA value for all neurons in the specified group*/
 	std::vector<float> getConductanceAMPA(int grpId);
+	/** Returns NMDA value for all neurons in the specified group \brief Returns NMDA value for all neurons in the specified group*/
 	std::vector<float> getConductanceNMDA(int grpId);
+	/** Returns GABAa value for all neurons in the specified group \brief Returns GABAa value for all neurons in the specified group*/
 	std::vector<float> getConductanceGABAa(int grpId);
+	/** Returns GABAb value for all neurons in the specified group \brief Returns GABAb value for all neurons in the specified group*/
 	std::vector<float> getConductanceGABAb(int grpId);
 
-	//! temporary getter to return pointer to stpu[] \TODO replace with NeuronMonitor or ConnectionMonitor
-	float* getSTPu() { return managerRuntimeData.stpu; }
+	/** temporary getter to return pointer to stpu[] 
+	 * \brief temporary getter to return pointer to stpu[] 
+	 * TODO: replace with NeuronMonitor or ConnectionMonitor
+	 */
+	 float* getSTPu() { return managerRuntimeData.stpu; }
 
-	//! temporary getter to return pointer to stpx[] \TODO replace with NeuronMonitor or ConnectionMonitor
+	/** temporary getter to return pointer to stpx[] 
+	 * \brief temporary getter to return pointer to stpx[] 
+	 * TODO: replace with NeuronMonitor or ConnectionMonitor
+	 */
 	float* getSTPx() { return managerRuntimeData.stpx; }
 
-	//! returns whether synapses in connection are fixed (false) or plastic (true)
+	/** returns whether synapses in the connection are fixed (false) or plastic (true) \brief returns whether synapses in the connection are plastic*/
 	bool isConnectionPlastic(short int connId);
 
-	//! returns RangeWeight struct of a connection
+	/** returns RangeWeight struct of a connection \brief returns RangeWeight struct of a connection*/
 	RangeWeight getWeightRange(short int connId);
 
+	/** Returns if a given group is excitatory \brief Returns if a given group is excitatory*/
 	bool isExcitatoryGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_AMPA) || (groupConfigMap[gGrpId].type & TARGET_NMDA); }
+	/** Returns if a given group is inhibitory \brief Returns if a given group is inhibitory*/
 	bool isInhibitoryGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_GABAa) || (groupConfigMap[gGrpId].type & TARGET_GABAb); }
+	/** Returns if a given group is a poisson spike generator group \brief Returns if a given group is a poisson spike generator group*/
 	bool isPoissonGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & POISSON_NEURON); }
+	/** Returns if a given group is a dopaminergic group \brief Returns if a given group is a dopaminergic group*/
 	bool isDopaminergicGroup(int gGrpId) { return (groupConfigMap[gGrpId].type & TARGET_DA); }
 
-	//! returns whether group has homeostasis enabled (true) or not (false)
+	/** Returns whether group has homeostasis enabled (true) or not (false) \brief Returns whether group has homeostasis enabled*/
 	bool isGroupWithHomeostasis(int grpId);
 
-	//! checks whether a point pre lies in the receptive field for point post
+	/** Returns 3D distance from pre to post neuron with repect to the given radius. 
+	 *  For given, \f$x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z\f$
+	 *  The method returns \f$x^2/rad_x^2 + y^2/rad_y^2 + z^2/rad_z^2\f$
+	 *  \brief Returns 3D distance from pre to post neuron with repect to the given radius
+	 *  \param radius a RadiusRF struct, the referrence radius in 3D
+	 *  \param pre Grid3D struct for the pre neuron
+	 *  \param post Grid3D struct for the post neuron
+	 *  \return real valued 3D distance between pre and post with respect to the given radius
+	 */
 	double getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
+	/** Checks whether a point pre lies in the receptive field for point post.
+	 *  For given, \f$x = pre.x-post.x, y = pre.y-post.y, z = pre.z-post.z.\f$
+	 *  The method returns: \f$0.0 <= x^2/rad_x^2 + y^2/rad_y^2 + z^2/rad_z^2 <= 1.0\f$
+	 *  Calls SNN::getRFDist3D(...).
+	 *  \brief Checks whether a point pre lies in the receptive field for point post
+	 *  \param radius a RadiusRF struct, the referrence radius in 3D
+	 *  \param pre Grid3D struct for the pre neuron
+	 *  \param post Grid3D struct for the post neuron
+	 *  \return boolean whether \f$0.0 <= x^2/rad_x^2 + y^2/rad_y^2 + z^2/rad_z^2 <= 1.0\f$ (true)
+	 */
 	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
 
+	/** Returns true if the network synapses are conductance based \brief Returns if the network synapses are conductance based*/
 	bool isSimulationWithCOBA() { return sim_with_conductances; }
+	/** Returns true if the network synapses are current based \brief Returns if the network synapses are current based*/
 	bool isSimulationWithCUBA() { return !sim_with_conductances; }
+	/** Returns true if simulation with rise time for NMDA \brief Returns if simulation with rise time for NMDA*/
 	bool isSimulationWithNMDARise() { return sim_with_NMDA_rise; }
+	/** Returns true if simulation with rise time for GABAb \brief Returns if simulation with rise time for GABAb*/
 	bool isSimulationWithGABAbRise() { return sim_with_GABAb_rise; }
+	/** Returns true if synapses are fixed during simulation \brief Returns if synapses are fixed during simulation*/
 	bool isSimulationWithFixedWeightsOnly() { return sim_with_fixedwts; }
+	/** Returns true if simulation with Homeostasis\brief Returns true if simulation with Homeostasis*/
 	bool isSimulationWithHomeostasis() { return sim_with_homeostasis; }
+	/** Returns true if synapses are plastic during simulation \brief Returns if synapses are plastic during simulation*/
 	bool isSimulationWithPlasticWeights() { return !sim_with_fixedwts; }
+	/** Returns true if synapse weights are updated using STDP learning rule \brief Returns if synapse weights are updated using STDP learning rule*/
 	bool isSimulationWithSTDP() { return sim_with_stdp; }
+	/** Returns true if synapse weights are updated using STP learning rule \brief Returns if synapse weights are updated using STP learning rule*/
 	bool isSimulationWithSTP() { return sim_with_stp; }
 
 	// **************************************************************************************************************** //
@@ -891,7 +954,9 @@ public:
 	// **************************************************************************************************************** //
 
 private:
-	//! all unsafe operations of constructor
+	/*!
+	 * all unsafe operations of constructor
+	 */
 	void SNNinit();
 
 	//! advance time step in a simulation
