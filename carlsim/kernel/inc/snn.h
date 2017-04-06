@@ -954,15 +954,50 @@ public:
 	// **************************************************************************************************************** //
 
 private:
-	/*!
-	 * all unsafe operations of constructor
+	/** Performs all unsafe operations of constructor. The method does the following:
+	 * 1. initializes snnState to CONFIG_STATE
+	 * 2. Sets logger mode to define where to print all status, error, and debug messages
+	 * 3. Creates log file in results folder, if that does not exist
+	 * 4. Prints CARLsim simulation welcome messeage
+	 * 5. Initializes random seed
+	 * 6. Initializes network properties with default values
+	 * 7. Resets all monitors, GroupConfigs, ConnectionConfigs
+	 * 8. Resets all runtime data (CPU/GPU)
+	 * 9. Sets default weight update parameters
+	 *
+	 * \brief All unsafe operations of the SNN constructor
 	 */
 	void SNNinit();
 
-	//! advance time step in a simulation
+	/** Basically performs all simulation operations of one time step, i.e. 1 ms. The method does this using a series of helper methods, in the order listed below.
+	 * 1. Calls SNN::doSTPUpdateAndDecayCond()
+	 * 2. Calls SNN::spikeGeneratorUpdate()
+	 * 3. Calls SNN::findFiring()
+	 * 4. Calls SNN::updateTimingTable()
+	 * 5. Calls SNN::routeSpikes()
+	 * 6. Calls SNN::doCurrentUpdate()
+	 * 7. Calls SNN::globalStateUpdate()
+	 * 8. Calls SNN::clearExtFiringTable()
+	 *
+	 * \brief Advances time step in a simulation
+	 */
 	void advSimStep();
 
-	//! allocates and initializes all core datastructures
+	/** Allocates and initializes all core datastructures. The method does the following.
+	 * 1. Resets managerRuntimeData variables related to spike count
+	 * 2. Allocates managerRuntimeData variables for all regular neuron states
+	 * 3. Allocates managerRuntimeData variables for all regular neuron conductances
+	 * 4. Allocate neuromodulators and their assistive buffers for all groups
+	 * 5. Allocates homeostasis variables for all neurons
+	 * 6. Allocates STP variables for all neurons * delays
+	 * 7. Allocates arrays to store these informations for each neuron: \#pre, \#post, \#pre_plastic, \#cumulative_pre, \#cumulative_post
+	 * 8. Allocates arrays to store pre-synaptic and post-synaptic neuron IDs for all synapses
+	 * 9. Allocates arrays to store weights, weight-changes, maximum weights, and spike time for all synapses
+	 * 10. Allocates array to store group ID of all neurons
+	 * 11. Confirms allocation of SNN runtime data in main memory
+	 *
+	 * \brief Allocates and initializes all core datastructures
+	 */
 	void allocateManagerRuntimeData();
 
 	int assignGroup(int gGrpId, int availableNeuronId);

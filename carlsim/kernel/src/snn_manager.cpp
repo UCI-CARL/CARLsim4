@@ -1671,11 +1671,7 @@ RangeWeight SNN::getWeightRange(short int connId) {
 // PRIVATE METHODS
 // **************************************************************************************************************** //
 
-/*!
- * all unsafe operations of SNN constructor
- *
- * \return void
- */
+// all unsafe operations of SNN constructor
 void SNN::SNNinit() {
 	// initialize snnState
 	snnState = CONFIG_SNN;
@@ -1837,12 +1833,12 @@ void SNN::SNNinit() {
 	// reset all runtime data
 	// GPU/CPU runtime data
 	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
-	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // TODO: redundant??
 		runtimeData[netId].allocated = false;
 
 	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
-	managerRuntimeData.allocated = false; // FIXME: redundant??
+	managerRuntimeData.allocated = false; // TODO: redundant??
 
 
 
@@ -1852,7 +1848,7 @@ void SNN::SNNinit() {
 	stdpScaleFactor_ = 1.0f;
 	wtChangeDecay_ = 0.0f;
 
-	// FIXME: use it when necessary
+	// TODO: use it when necessary
 #ifndef __NO_CUDA__
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
@@ -2486,14 +2482,14 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.glbNumN];
 	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN); // sufficient to hold all neurons in the global network
 
-	//! homeostasis variables
+	// homeostasis variables
 	managerRuntimeData.avgFiring  = new float[managerRTDSize.maxNumN];
 	managerRuntimeData.baseFiring = new float[managerRTDSize.maxNumN];
 	memset(managerRuntimeData.avgFiring, 0, sizeof(float) * managerRTDSize.maxNumN);
 	memset(managerRuntimeData.baseFiring, 0, sizeof(float) * managerRTDSize.maxNumN);
 
 	// STP can be applied to spike generators, too -> numN
-	// \TODO: The size of these data structures could be reduced to the max synaptic delay of all
+	// TODO: The size of these data structures could be reduced to the max synaptic delay of all
 	// connections with STP. That number might not be the same as maxDelay_.
 	managerRuntimeData.stpu = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
 	managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
@@ -2512,7 +2508,7 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.cumulativePre, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
 
 	managerRuntimeData.postSynapticIds = new SynInfo[managerRTDSize.maxNumPostSynNet];
-	managerRuntimeData.postDelayInfo   = new DelayInfo[managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
+	managerRuntimeData.postDelayInfo   = new DelayInfo[managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1)];	// Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
 	memset(managerRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPostSynNet);
 	memset(managerRuntimeData.postDelayInfo, 0, sizeof(DelayInfo) * managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1));
 
