@@ -954,7 +954,9 @@ public:
 	// **************************************************************************************************************** //
 
 private:
-	//! all unsafe operations of constructor
+	/*!
+	 * all unsafe operations of constructor
+	 */
 	void SNNinit();
 
 	//! advance time step in a simulation
