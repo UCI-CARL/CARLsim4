@@ -1043,7 +1043,7 @@ __device__ void updateNeuronState(int lNId) {
  * \n net access: numN, numNReg, numNPois, sim_with_conductances, sim_with_NMDA_rise, sim_with_GABAb_rise
  * \n grp access: WithHomeostasis, avgTimeScale_decay
  * \n rtd access: avgFiring, voltage, recovery, gNMDA, gNMDA_r, gNMDA_d, gGABAb, gGABAb_r, gGABAb_d, gAMPA, gGABAa,
- * \n             current, extCurrent, Izh_a, Izh_b
+ *                current, extCurrent, Izh_a, Izh_b
  * \n glb access:
  *
  * \return void
@@ -1054,9 +1054,9 @@ __global__ void kernel_neuronStateUpdate() {
 
 	// update neuron state
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
-		// KILLME !!! This can be further optimized ....
-		// instead of reading each neuron group separately .....
-		// read a whole buffer and use the result ......
+		// This can be further optimized.
+		// instead of reading each neuron group separately.
+		// read a whole buffer and use the result.
 		int2 threadLoad  = getStaticThreadLoad(bufPos);
 		int nid = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int lastId = STATIC_LOAD_SIZE(threadLoad);
@@ -1106,9 +1106,9 @@ __global__ void kernel_groupStateUpdate(int simTime) {
 }
 
 /*!
- * \brief This function is called for updat STP and decay coductance every time step 
+ * \brief This function is called for updat STP and coductance decay every time step 
  *
- * This kernel function is called for updating STP and decay coductance every time step
+ * This kernel function is called for updating STP and coductance decay  every time step
  *
  * \n net access sim_with_conductance, sim_with_NMDA_rise, sim_with_GABAb_rise, numNReg, numNPois, numN, STP_Pitch, maxDelay
  * \n grp access WithSTP 
@@ -1122,9 +1122,9 @@ __global__ void kernel_STPUpdateAndDecayConductances(int simTime) {
 	const int totBuffers = loadCount;
 
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
-		// KILLME !!! This can be further optimized ....
-		// instead of reading each neuron group separately .....
-		// read a whole buffer and use the result ......
+		// This can be further optimized.
+		// instead of reading each neuron group separately.
+		// read a whole buffer and use the result.
 		int2 threadLoad = getStaticThreadLoad(bufPos);
 		int nid         = (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int lastId      = STATIC_LOAD_SIZE(threadLoad);
@@ -1166,9 +1166,16 @@ __global__ void kernel_STPUpdateAndDecayConductances(int simTime) {
  * We read each the value of wtChange and update the value of wt (synaptic weight).
  * We also clip the value of wt to lie within the required range.
  *
- * \sa setWeightAndWeightChangeUpdate()
+ * \param[in] synId The synaptic id
+ * \param[in] lGrpId The local group id, which is also post-synaptic group
+ * \param[in] diff_firing The difference between the target firing rate and average firing rate of the neuron
+ * \param[in] homeostasisScale The scale factor of homeostasis
+ * \param[in] baseFiring The base firing rate
+ * \param[in] avgTimeScaleInv The inverter of average time scale, for quick computation
+ * \return void
+ * \sa setWeightAndWeightChangeUpdate(), setHomeoBaseFiringRate(), setHomeostasis()
  */
-__device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, float diff_firing, float homeostasisScale, float baseFiring, float avgTimeScaleInv) {
+__device__ void updateSynapticWeights(unsigned int synId, int lGrpId, float diff_firing, float homeostasisScale, float baseFiring, float avgTimeScaleInv) {
 	// This function does not get called if the neuron group has all fixed weights.
 	// t_twChange is adjusted by stdpScaleFactor based on frequency of weight updates (e.g., 10ms, 100ms, 1s)	
 	float t_wt = runtimeDataGPU.wt[synId];
@@ -1176,9 +1183,9 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 	float t_effectiveWtChange = networkConfigGPU.stdpScaleFactor * t_wtChange;
 	float t_maxWt = runtimeDataGPU.maxSynWt[synId];
 
-	switch (groupConfigsGPU[grpId].WithESTDPtype) {
+	switch (groupConfigsGPU[lGrpId].WithESTDPtype) {
 	case STANDARD:
-		if (groupConfigsGPU[grpId].WithHomeostasis) {
+		if (groupConfigsGPU[lGrpId].WithHomeostasis) {
 			// this factor is slow
 			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
@@ -1186,11 +1193,11 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 		}
 		break;
 	case DA_MOD:
-		if (groupConfigsGPU[grpId].WithHomeostasis) {
-			t_effectiveWtChange = runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
+		if (groupConfigsGPU[lGrpId].WithHomeostasis) {
+			t_effectiveWtChange = runtimeDataGPU.grpDA[lGrpId] * t_effectiveWtChange;
 			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
-			t_wt += runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
+			t_wt += runtimeDataGPU.grpDA[lGrpId] * t_effectiveWtChange;
 		}
 		break;
 	case UNKNOWN_STDP:
@@ -1199,9 +1206,9 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 		break;
 	}
 
-	switch (groupConfigsGPU[grpId].WithISTDPtype) {
+	switch (groupConfigsGPU[lGrpId].WithISTDPtype) {
 	case STANDARD:
-		if (groupConfigsGPU[grpId].WithHomeostasis) {
+		if (groupConfigsGPU[lGrpId].WithHomeostasis) {
 			// this factor is slow
 			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
@@ -1209,11 +1216,11 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 		}
 		break;
 	case DA_MOD:
-		if (groupConfigsGPU[grpId].WithHomeostasis) {
-			t_effectiveWtChange = runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
+		if (groupConfigsGPU[lGrpId].WithHomeostasis) {
+			t_effectiveWtChange = runtimeDataGPU.grpDA[lGrpId] * t_effectiveWtChange;
 			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
-			t_wt += runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
+			t_wt += runtimeDataGPU.grpDA[lGrpId] * t_effectiveWtChange;
 		}
 		break;
 	case UNKNOWN_STDP:
@@ -1239,15 +1246,19 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 	runtimeDataGPU.wtChange[synId] = t_wtChange;
 }
 
-
-#define UPWTS_CLUSTERING_SZ	32
+#define UPWTS_CLUSTERING_SZ	32 //!< The default grouping size for processing weight update
 /*!
- * \brief this kernel updates all synaptic weights
+ * \brief This function updates all synaptic weights
+ *
+ * This kernel function updates all synaptic weights. This function is called every second by default.
  *
  * \n net access: stdpScaleFactor, wtChangeDecay
  * \n grp access: homeostasisScale, avgTimeScaleInv, FixedInputWts, WithESTDPtype, WithISTDOtype, WithHomeostasis
  * \n rtd access: Npre_plastic, cumulativePre, avgFiring, baseFiringInv, baseFiring, wt, wtChange, maxSynWt
  * \n glb access:
+ *
+ * \return void
+ * \sa setWeightAndWeightChangeUpdate()
  */
 __global__ void kernel_updateWeights() {
 	__shared__ volatile int errCode;
@@ -1264,11 +1275,9 @@ __global__ void kernel_updateWeights() {
 	__syncthreads();
 
 	for (int bufPos = blockIdx.x; bufPos < totBuffers; bufPos += gridDim.x) {
-		// KILLME !!! This can be further optimized ....
-		// instead of reading each neuron group separately .....
-		// read a whole buffer and use the result ......
-		// if ( threadIdx.x) { // TSC: this could be a performance bug, 127 threads other than the first thread try to read
-		                       // threadLoad and wirte homeostatsisScale and avgTimeScaleInv at the same time
+		// This can be further optimized.
+		// instead of reading each neuron group separately.
+		// read a whole buffer and use the result.
 		if (threadIdx.x == 0) {
 			threadLoad  = getStaticThreadLoad(bufPos);
 			startId 	= STATIC_LOAD_START(threadLoad);
@@ -1311,7 +1320,7 @@ __global__ void kernel_updateWeights() {
 				//excitatory connection change the synaptic weights
 				unsigned int synId = synIdOffset + threadIdGrp;
 				if(synId < cumulativePre + Npre_plastic) {
-					updateSynapticWeights(nid, synId, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
+					updateSynapticWeights(synId, grpId, diff_firing, homeostasisScale, baseFiring, avgTimeScaleInv);
 				}
 			}
 		}
@@ -1320,13 +1329,16 @@ __global__ void kernel_updateWeights() {
 
 
 /*!
- * \brief This kernel shift the un-processed firing information in firingTableD2 to the beginning of
+ * \brief This function shifts the un-processed fired neuron ids to the very beginning of the firing table
+ * This kernel function shifts the un-processed fired neuron ids in firingTableD2 to the beginning of
  * firingTableD2 for the next second of simulation.
  *
- * net access: maxDelay
- * grp access: N/A
- * rtd access: firingTableD2
- * glb access: timeTableD2GPU
+ * \n net access: maxDelay
+ * \n grp access: N/A
+ * \n rtd access: firingTableD2
+ * \n glb access: timeTableD2GPU
+ * \return void
+ * \note There won't be any un-precessed neuron ids in firingTableD1, because the delay is 1ms 
  */
 __global__ void kernel_shiftFiringTable() {
 	int gnthreads= blockDim.x * gridDim.x;
@@ -1338,14 +1350,17 @@ __global__ void kernel_shiftFiringTable() {
 }
 
 /*!
- * \brief This kernel shift the un-processed firing information in timeTableD1(D2)GPU to the beginning of
- * timeTableD1(D2)GPU for the next second of simulation.
+ * \brief This function adjust the accumulated number of spikes in timeTableD1(D2)GPU.
  *
+ * This kernel function adjust the accumulated number of spikes in timeTableD1(D2)GPU and copy them into the beginning of
+ * timeTableD1(D2)GPU for the next second of simulation.
  * After all the threads/blocks had adjusted the firingTableD1(D2)GPU, we update the timeTableD1(D2)GPU
  * so that the firing information that happended in the last maxDelay_ time step would become
  * the first maxDelay_ time step firing information for the next second of simulation.
  * We also reset/update all spike counters to appropriate values as indicated in the second part 
  * of this kernel.
+ *
+ * \return void
  */
 __global__ void kernel_shiftTimeTable() {
 	int maxDelay = networkConfigGPU.maxDelay;
@@ -1392,6 +1407,18 @@ __global__ void kernel_shiftTimeTable() {
 * P8. Update homeostasis
 * P9. Decay and log DA,5HT,ACh,NE
 */
+/*!
+ * \brief Thsi function generates post-synaptic spikes
+ *
+ * This device function generates post-synaptic spikes. It also updates runtime data relevent to
+ * post-synaptic spike, including synSpikeTime, LTD calculation, and neuromodulator adjustment.
+ *
+ * \param[in] simTime The current time step
+ * \param[in] preNId The pre-synaptic neuron id
+ * \param[in] postNId The post-synaptic neuron id
+ * \param[in] synId The synaptic id
+ * \return void
+ */
 __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, int synId) {
 	// get the actual position of the synapses and other variables...
 	unsigned int pos = runtimeDataGPU.cumulativePre[postNId] + synId;
@@ -1450,19 +1477,25 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 	}
 }
 
-#define READ_CHUNK_SZ 64
+#define READ_CHUNK_SZ 64 //<! The default grouping size for the firing table readout
 /*!
- * \brief This kernel updates and generates spikes for delays greater than 1 from the fired neuron. 
+ * \brief This kernel function generates post-synaptic spikes based on delay information
  *
- * The LTD computation is also executed by this kernel.
+ * This kernel function searches fired neuron id in the firing table with connection delay > 1ms and 
+ * generates post-synaptic spikes based on delay information. 
+ * The LTD calculation is also triggered by this kernel function.
  *
- * net access: maxDelay, I_setPitch, sim_in_testing
- * grp access: Type, WithSTDP, WithESTDP, WithESTDPcurve, WithISDP, WithISTDPcurve, all STDP parameters
- * rtd access: firingTableD2, cumulativePost, postDelayInfo, postSynapticIds, cumulativePre, grpIds,
- *             grpDA, I_set, (W)synSpikeTime, (R)lastSpikeTime, wtChange
- * glb access: spikeCountD2SecGPU, timeTableD2GPU_tex, timeTableD2GPU_tex_offset
+ * \n net access: maxDelay, I_setPitch, sim_in_testing
+ * \n grp access: Type, WithSTDP, WithESTDP, WithESTDPcurve, WithISDP, WithISTDPcurve, all STDP parameters
+ * \n rtd access: firingTableD2, cumulativePost, postDelayInfo, postSynapticIds, cumulativePre, grpIds,
+ *                grpDA, I_set, (W)synSpikeTime, (R)lastSpikeTime, wtChange
+ * \n glb access: spikeCountD2SecGPU, timeTableD2GPU_tex, timeTableD2GPU_tex_offset
+ *
+ * \param[in] simTimeMs The current time step, millisecond part
+ * \param[in] simTime The current time step
+ * \return void
  */
-__global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simTime) {
+__global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTime) {
 	__shared__	volatile int sh_neuronOffsetTable[READ_CHUNK_SZ + 2];
 	__shared__	int sh_delayLength[READ_CHUNK_SZ + 2];
 	__shared__	int sh_delayIndexStart[READ_CHUNK_SZ + 2];
@@ -1572,18 +1605,22 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 }
 
 /*!
- * \brief This kernel updating and generating spikes on connections with a delay of 1ms from the fired neuron.
+ * \brief This kernel function generates post-synaptic spikes based on delay information
  *
- * This function looks mostly like kernel_doCurrentUpdateD2() but has been optimized for a fixed delay of 1ms. 
- * Ultimately we may merge this kernel with the kernel_doCurrentUpdateD2().
- * The LTD computation is also executed by this kernel.
+ * This kernel function looks mostly like kernel_doCurrentUpdateD2() but has been optimized for a fixed delay of 1ms. 
+ * The LTD calculation is also triggered by this kernel.
  *
  * \n net access: maxDelay, I_setPitch, sim_in_testing
  * \n grp access: Type, grpDA, WithSTDP, WithESTDP, WithISTDP, WithESTDPcurve, WithISTDPcurve, all STDP parameters
  * \n rtd access: postSynapticIds, cumulativePre, grpIds, I_set, wtChange, (R)lastSpikeTime, (W)synSpikeTime
  * \n glb access: timeTableD1GPU, spikeCountD1SecGPU, firingTableD1
+ *
+ * \param[in] simTimeMs The current time step, millisecond part
+ * \param[in] simTime The current time step
+ * \return void
+ * \sa kernel_doCurrentUpdateD2()
  */
-__global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simTime) {
+__global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTime) {
 	__shared__ volatile	int sh_NeuronCnt;
 	__shared__ volatile int sh_neuronOffsetTable[NUM_THREADS / WARP_SIZE + 2];
 	__shared__ int sh_delayLength[NUM_THREADS / WARP_SIZE + 2];
@@ -1632,7 +1669,7 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 
 		__syncthreads();
 
-		// no more fired neuron from table... we just break from loop
+		// no more fired neuron from table. we just break from loop
 		if (sh_NeuronCnt == 0) {
 			break;
 		}
@@ -2730,7 +2767,7 @@ void SNN::doCurrentUpdateD2_GPU(int netId) {
 	checkAndSetGPUDevice(netId);
 
 	if (networkConfigs[netId].maxDelay > 1) {
-		kernel_doCurrentUpdateD2 << <NUM_BLOCKS, NUM_THREADS >> > (simTimeMs, simTimeSec, simTime);
+		kernel_doCurrentUpdateD2<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTime);
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 	}
 }
@@ -2740,7 +2777,7 @@ void SNN::doCurrentUpdateD1_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 
-	kernel_doCurrentUpdateD1<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs,simTimeSec,simTime);
+	kernel_doCurrentUpdateD1<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTime);
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
