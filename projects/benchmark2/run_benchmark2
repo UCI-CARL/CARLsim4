@@ -1,21 +1,25 @@
 #!/bin/bash
 
-numNeurons='200'
+numNeuronsGroup1='500'
+numNeuronsGroup2='200'
 numSynapses='100'
 
 
-for numN in $numNeurons # number of neurons, which defines the workload
+for numN1 in $numNeuronsGroup1 # number of neurons in group1, which defines the workload
 do
-	for numS in $numSynapses # number of synapse per neuron
+	for numN2 in $numNeuronsGroup2 #number of neurons in group2
 	do
-		echo $numN $numS
-		./benchmark2 $numN $numN $numN $numN $numS 100  42  "record.csv" 10 1 30 6 0
+		for numS in $numSynapses # number of synapse per neuron in group1
+		do
+			echo $numN $numS
+			./benchmark2 $numN1 $numN2  100 10 1 10 6 "record.csv" 42 $numS  "GPU" "CPU" 0 0 "Homeostasis"
 		#13 parameters in total.
 		#1,number of neurons in group1 | 2, number of neurons in group2
 		#3,number of neurons in group3 | 4, number of neurons in group4
 		#5,number of synapse per neuron | 5, numebr of input neurons
 		#7, randSeed | 8, recordFile | 9, simulateTime | 10, inputFireRate
 		#11, inputWeight | 12, excWeight | 13, need weight tuning or not
+		done	
 	done
 done
 

@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <stdio.h> 
 #include <iostream>
+#include <string>
 #include <simple_weight_tuner.h>
 using namespace std;
 
@@ -65,65 +66,106 @@ using namespace std;
 
 int main(int argc, char* argv[] ) {
 
-        int N_EXC1, N_EXC2, N_EXC3, N_EXC4, N_INPUT;
-	float pConn1, pConn2, pConn3, pConn4;
+        int N_EXC1, N_EXC2, N_INPUT;
+	float pConn1;
 	int randSeed;
 	int simulateTime;
 	float inputFireRate;
 	float inputWeight, excWeight;
 	FILE* recordFile;
 	int weightTuning;	
-	
+	int id4core1, id4core2;	
+	string connectionType;
 
-	if (argc!=14) return 1; // 13 parameters are required
+	if (argc!=16) return 1; // 15 parameters are required
 
 
         // read parameters and create a network on GPU
 	N_EXC1 = atoi(argv[1]);
 	N_EXC2 = atoi(argv[2]);
-	N_EXC3 = atoi(argv[3]);
-	N_EXC4 = atoi(argv[4]);
-	N_INPUT = atoi(argv[6]);
-	simulateTime = atoi(argv[9]);
-	inputFireRate = atof(argv[10]);
-	inputWeight = atof(argv[11]);
-	excWeight = atof(argv[12]);
+	N_INPUT = atoi(argv[3]);
+	simulateTime = atoi(argv[4]);
+	inputFireRate = atof(argv[5]);
+	inputWeight = atof(argv[6]);
+	excWeight = atof(argv[7]);
 	
 	recordFile = fopen(argv[8],"a");
 	// create a network on GPU
         Stopwatch watch;
-	int numGPUs = 2;
-	randSeed = atoi(argv[7]);
+	randSeed = atoi(argv[9]);
 
-        pConn1 = atof(argv[5])/N_EXC1; // connection probability
-        pConn2 = atof(argv[5])/N_EXC2; // connection probability
-        pConn3 = atof(argv[5])/N_EXC3; // connection probability
-        pConn4 = atof(argv[5])/N_EXC4; // connection probability
+        pConn1 = atof(argv[10])/N_EXC1; // connection probability
 
 	CARLsim sim("benchmark", GPU_MODE, USER, 0, randSeed);
 	CARLsim *simulator = &sim;
 	// configure the network
-	int gExc1 = sim.createGroup("exc", N_EXC1, EXCITATORY_NEURON, 0, GPU_CORES);
-	sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gExc2 = sim.createGroup("exc", N_EXC2, EXCITATORY_NEURON, 1, GPU_CORES);		
- 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS             		
+	string core1, core2;
+	core1 = argv[11];
+	core2 = argv[12];
 
-	int gExc3 = sim.createGroup("exc", N_EXC3, EXCITATORY_NEURON, 1, GPU_CORES);
-	sim.setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	int gExc1;
+	int gExc2;
+	int gInput;
 
-	int gExc4 = sim.createGroup("exc", N_EXC4, EXCITATORY_NEURON ,0, GPU_CORES);
-	sim.setNeuronParameters(gExc4, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	if(core1 == "GPU"){
+		gExc1 = sim.createGroup("exc", N_EXC1, EXCITATORY_NEURON, 0, GPU_CORES);
+		sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, GPU_CORES);
+	}
+	else if(core1 == "CPU"){
+		gExc1 = sim.createGroup("exc", N_EXC1, EXCITATORY_NEURON, 0, CPU_CORES);
+		sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, CPU_CORES);
+	}
+	else{
+		cout<<"wrong parameter"<<endl;
+		return 1;
+	}
 
-	int gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, GPU_CORES);
+
+	if(core2 == "GPU"){
+		gExc2 = sim.createGroup("exc", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), GPU_CORES);
+		sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS	
+	}
+	else if(core2 == "CPU"){
+		gExc2 = sim.createGroup("exc", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), CPU_CORES);
+		sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS	
+	}
+	else{
+		cout<<"wrong parameter"<<endl;
+		return 1;
+	}
 
 
+	connectionType = argv[15];
+	int c0, c1;
 
+	if(connectionType == "Fixed"){
+		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
 
-	int c0 = sim.connect(gInput, gExc1, "random", RangeWeight(inputWeight), pConn1, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-	int c1 = sim.connect(gExc1, gExc2, "random", RangeWeight(excWeight), pConn2, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
-	int c2 = sim.connect(gExc2, gExc3, "random", RangeWeight(excWeight), pConn3, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
-	int c3 = sim.connect(gExc3, gExc4, "random", RangeWeight(excWeight), pConn4, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
+	}
+	else if(connectionType == "STP"){
+		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		sim.setSTP(gExc1, true);
+	}
+	else if(connectionType == "STDP"){
+		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+		sim.setESTDP(gExc1, true, STANDARD, ExpCurve(2e-4f, 20.0f, -6.6e-5f, 60.0f));
+	}
+	else if(connectionType == "Homeostasis"){
+		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+		sim.setESTDP(gExc1, true, STANDARD, ExpCurve(2e-4f, 20.0f, -6.6e-5f, 60.0f));
+		sim.setHomeostasis(gExc1, true, 1.0f, 10.0f);
+		sim.setHomeoBaseFiringRate(gExc1, 35.0f, 0.0f);	
+	}
+	else{
+		return 1;
+	}
 
 	sim.setConductances(false);
 
@@ -135,8 +177,6 @@ int main(int argc, char* argv[] ) {
 	//setup monitors
 //	SpikeMonitor* spkMon1 = sim.setSpikeMonitor(gExc1, "NULL");
 //	SpikeMonitor* spkMon2 = sim.setSpikeMonitor(gExc2, "NULL");
-//	SpikeMonitor* spkMon3 = sim.setSpikeMonitor(gExc3, "NULL");
-//	SpikeMonitor* spkMon4 = sim.setSpikeMonitor(gExc4, "NULL");
 
 	//setup some baseline input                           
         PoissonRate in(N_INPUT);
@@ -145,18 +185,23 @@ int main(int argc, char* argv[] ) {
 
 
 	// weight tuning
+	FILE* fireTargetFile = fopen("fireTarget","r");
+	fseek(fireTargetFile, 76, SEEK_SET);
 	watch.lap("Weight Tuning");
-	if(atoi(argv[13])==1){
+	if(atoi(argv[14])==1){
 		
 		//fetch tuning parameters
-		double targetFiringExc1, targetFiringExc2, targetFiringExc3, targetFiringExc4;
+		double targetFiringExc1, targetFiringExc2;
 		double errorMarginHz;
 		int maxIter; 
 		double stepSize;
-		cout<<endl<<"please input traget firing rate for group1, group2, group3, group4, errorMarginHz, maximum iteration, stepSize"<<endl;
-		cin>>targetFiringExc1>>targetFiringExc2>>targetFiringExc3>>targetFiringExc4>>errorMarginHz>>maxIter>>stepSize;
-		cout<<endl;
-		
+
+		fscanf(fireTargetFile, "%lf",&targetFiringExc1);
+		fscanf(fireTargetFile, "%lf",&targetFiringExc2);
+ 		fscanf(fireTargetFile, "%lf",&errorMarginHz);
+ 		fscanf(fireTargetFile, "%d",&maxIter);
+ 		fscanf(fireTargetFile, "%lf",&stepSize);
+	
 		//tuning weights
 		
 		SimpleWeightTuner SWTin2exc1(simulator, errorMarginHz, maxIter, stepSize);
@@ -167,13 +212,6 @@ int main(int argc, char* argv[] ) {
 		SWTexc12exc2.setConnectionToTune(c1, 0.0);
 		SWTexc12exc2.setTargetFiringRate(gExc2, targetFiringExc2);	
 	
-		SimpleWeightTuner SWTexc22exc3(simulator, errorMarginHz, maxIter, stepSize);
-		SWTexc22exc3.setConnectionToTune(c2, 0.0);
-		SWTexc22exc3.setTargetFiringRate(gExc3, targetFiringExc3);	
-	
-		SimpleWeightTuner SWTexc32exc4(simulator, errorMarginHz, maxIter, stepSize);
-		SWTexc32exc4.setConnectionToTune(c3, 0.0);
-		SWTexc32exc4.setTargetFiringRate(gExc4, targetFiringExc4);	
 
 		while(!SWTin2exc1.done()){
 			SWTin2exc1.iterate();
@@ -183,33 +221,20 @@ int main(int argc, char* argv[] ) {
 			SWTexc12exc2.iterate();
 		}
 
-		while(!SWTexc22exc3.done()){
-			SWTexc22exc3.iterate();
-		}
-
-		while(!SWTexc32exc4.done()){
-			SWTexc32exc4.iterate();
-		}
 		
 		
-		printf("Verify result (gExc1=%.4fHz, gExc2=%.4fHz, gExc3=%.4fHz, gExc4=%.4fHz, +/- %.4fHz)\n", targetFiringExc1, targetFiringExc2, targetFiringExc3, targetFiringExc4, errorMarginHz); 
+		printf("Verify result (gExc1=%.4fHz, gExc2=%.4fHz,  +/- %.4fHz)\n", targetFiringExc1, targetFiringExc2, errorMarginHz); 
 		
 		//spkMon1->startRecording();
 		//spkMon2->startRecording();
-		//spkMon3->startRecording();
-		//spkMon4->startRecording();
 	
 		//sim.runNetwork(1,0);
 		
 		//spkMon1->stopRecording();
 		//spkMon2->stopRecording();
-		//spkMon3->stopRecording();
-		//spkMon4->stopRecording();
 		
 		//spkMon1->print(false);
 		//spkMon2->print(false);
-		//spkMon3->print(false);
-		//spkMon4->print(false);
 		
 		
 	}
@@ -224,8 +249,8 @@ int main(int argc, char* argv[] ) {
 
  	watch.stop();
 
-//	fprintf(recordFile, "%ld,%ld,%ld\n", watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(3));     	
-//	fclose(recordFile);
+	fprintf(recordFile, "%ld,%ld,%ld\n", watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(3));     	
+	fclose(recordFile);
 	
 
 	return 0;	
