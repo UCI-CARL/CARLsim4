@@ -2819,8 +2819,8 @@ void SNN::generateConnectionRuntime(int netId) {
 		GLoffset[grpIt->gGrpId] = grpIt->GtoLOffset;
 		GLgrpId[grpIt->gGrpId] = grpIt->lGrpId;
 	}
-	// FIXME: connId is global connId, use connectConfigs[netId][local connId] instead,
-	// FIXME; but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
+	// TODO: connId is global connId, use connectConfigs[netId][local connId] instead,
+	// TODO: but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
 	// generate mulSynFast, mulSynSlow in connection-centric array
 	for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 		// store scaling factors for synaptic currents in connection-centric array

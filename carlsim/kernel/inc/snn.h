@@ -1000,10 +1000,49 @@ private:
 	 */
 	void allocateManagerRuntimeData();
 
+	/** Assigns the first and the last neuron IDs to a group. availableNeuronId parameter is then
+	 *  updated to the first of the neurons currently not asigned to any group.
+	 *  
+	 * \brief Assigns the first and the last neuron IDs to a group
+	 * \param grpId The ID of the group to which first and last neurons to be assigned
+	 * \param availableNeuronId The current first available neuron in the 1D array not assigned to any group
+	 * \return Updated value of availableNeuronId after this assignment 
+	 * \see SNN::assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId)
+	 */
 	int assignGroup(int gGrpId, int availableNeuronId);
+
+	/** Assigns the first and the last local neuron IDs to a group. availableNeuronId parameter is then
+	 *  updated to the first of the neurons currently not asigned to any group in the same runtime. It also sets the
+	 *  offset values from local to global neuron IDs for the group and vice-versa.
+	 *  
+	 * \brief Assigns the first and the last local neuron IDs and offsets to a group
+	 * \param grpIt iterator for the list GroupConfigMD
+	 * \param localGroupId local group ID
+	 * \param availableNeuronId The current first available local neuron in the array not assigned to any group
+	 * \return Updated value of availableNeuronId after this assignment 
+	 * \see SNN::assignGroup(int gGrpId, int availableNeuronId)
+	 */
 	int assignGroup(std::list<GroupConfigMD>::iterator grpIt, int localGroupId, int availableNeuronId);
+
+	/** Resets neuromodulator and neuron states of a group to initial values.
+	 * \brief Resets neuromodulator and neuron states to initial values
+	 * \param netId runtime partition ID
+	 * \param lGrpId local group ID
+	 */
 	void generateGroupRuntime(int netId, int lGrpId);
+
+	/** Resets the neuron states of a poisson group to initial values.
+	 * \brief Resets neuron states of a poisson group to initial values
+	 * \param netId runtime partition ID
+	 * \param lGrpId local poisson group ID
+	 */
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
+
+	/** This method does the following operations for a given runtime partition.
+	 * 1. Load offsets (Global to Local and vice-versa) between global neuron ids and local neuron ids for each group in the partition
+	 * 2. 
+	 *
+	 */
 	void generateConnectionRuntime(int netId);
 
 	/*!
