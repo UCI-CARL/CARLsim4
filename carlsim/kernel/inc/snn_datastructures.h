@@ -166,8 +166,21 @@ typedef struct ConnectConfigRT_s {
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
 	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
-							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f)
+							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
+							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
+							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f)
 	{}
+	float 		Izh_C;
+	float 		Izh_C_sd;
+	float 		Izh_k;
+	float 		Izh_k_sd;
+	float 		Izh_vr;
+	float 		Izh_vr_sd;
+	float 		Izh_vt;
+	float 		Izh_vt_sd;
+	float 		Izh_vpeak;
+	float 		Izh_vpeak_sd;
 	float 		Izh_a;
 	float 		Izh_a_sd;
 	float 		Izh_b;
@@ -176,6 +189,7 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
+
 } NeuralDynamicsConfig;
 
 //!< long-term plasiticity configurations
@@ -406,6 +420,11 @@ typedef struct RuntimeData_s {
 
 	float* voltage;
 	float* recovery;
+	float* Izh_C;
+	float* Izh_k;
+	float* Izh_vr;
+	float* Izh_vt;
+	float* Izh_vpeak;
 	float* Izh_a;
 	float* Izh_b;
 	float* Izh_c;
