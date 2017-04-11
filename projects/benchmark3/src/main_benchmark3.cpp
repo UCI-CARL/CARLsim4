@@ -104,13 +104,13 @@ int main(int argc, char* argv[] ) {
 		groupId[0] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0, GPU_CORES);
 		sim.setNeuronParameters(groupId[0], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-		groupId[1] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/8.0), GPU_CORES);
+		groupId[1] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/4.0), GPU_CORES);
 		sim.setNeuronParameters(groupId[1], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 	
-		groupId[2] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/8.0*2), GPU_CORES);
+		groupId[2] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/4.0*2), GPU_CORES);
 		sim.setNeuronParameters(groupId[2], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-		groupId[3] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/8.0*3), GPU_CORES);
+		groupId[3] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/4.0*3), GPU_CORES);
 		sim.setNeuronParameters(groupId[3], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 		groupId[4] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/8.0*4), GPU_CORES);
@@ -124,9 +124,8 @@ int main(int argc, char* argv[] ) {
 
 		groupId[7] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0+int(N_CORES/8.0*7), GPU_CORES);
 		sim.setNeuronParameters(groupId[7], 0.02f, 0.2f, -65.0f, 8.0f); // RS
-	
-		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, GPU_CORES);	
 
+		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, GPU_CORES);	
 /*	}
 	else if(core == "CPU"){
 		groupId[0] = sim.createGroup("exc", N_NEURONS, EXCITATORY_NEURON, 0, CPU_CORES);
@@ -164,10 +163,10 @@ int main(int argc, char* argv[] ) {
 	cout<<"start to connect"<<endl;
 	sim.connect(gInput, groupId[0], "full", RangeWeight(inputWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-	for(int i=0; i<8; i++){
+	for(int i=0; i<3; i++){
 		for(int j=0; j<8; j++){
 			cout<<i<<"+"<<j<<endl;
-			sim.connect(groupId[i], groupId[j], "random", RangeWeight(excWeight), 1.0f, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
+			sim.connect(groupId[i], groupId[j], "random", RangeWeight(excWeight), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
 		}
 	}		
 
