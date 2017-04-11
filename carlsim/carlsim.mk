@@ -88,6 +88,14 @@ stp_cpp_obj      := $(patsubst %.cpp, %.o, $(stp_cpp_files))
 tools_cpp_obj    += $(stp_cpp_obj)
 SIMINCFL         += -I$(stp_dir)
 
+# visual stimulus
+vs_dir          := $(tools_dir)/visual_stimulus
+vs_inc_files    := $(wildcard $(vs_dir)/*h)
+vs_cpp_files    := $(wildcard $(vs_dir)/*.cpp)
+vs_cpp_obj      := $(patsubst %.cpp, %.o, $(vs_cpp_files))
+tools_cpp_obj    += $(vs_cpp_obj)
+SIMINCFL         += -I$(vs_dir)
+
 # prepare clean-up
 output += *.gcda *.gcno *.gcov coverage.info
 output += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
@@ -176,6 +184,9 @@ $(spkgen_dir)/%.o: $(spkgen_dir)/%.cpp $(spkgen_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+$(vs_dir)/%.o: $(vs_dir)/%.cpp $(vs_inc_files)
+	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+
 
 # archive
 archive: prep_cuda $(objects_cpp) $(objects_cu)

@@ -106,7 +106,7 @@ TEST(STP, firingRateSTDvsSTF) {
 	//int isRunLong = 1;
 		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int isGPUmode=0; isGPUmode<=1; isGPUmode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 			//int isGPUmode = 1;
 				// compare
 				float rateG2noSTP = -1.0f;
@@ -114,7 +114,7 @@ TEST(STP, firingRateSTDvsSTF) {
 
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
 				//int hasSTP = 1;
-					sim = new CARLsim("STP.firingRateSTDvsSTF",isGPUmode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
+					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
 					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
@@ -198,6 +198,7 @@ TEST(STP, firingRateSTDvsSTF) {
 	}
 }
 
+#ifndef __NO_CUDA__
 TEST(STP, spikeTimesCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
@@ -280,3 +281,4 @@ TEST(STP, spikeTimesCPUvsGPU) {
 		}
 	}
 }
+#endif // i__NO_CUDA__

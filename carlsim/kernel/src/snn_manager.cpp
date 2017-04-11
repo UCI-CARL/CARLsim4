@@ -1904,6 +1904,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoSTPUpdateAndDecayCond_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -1950,6 +1951,7 @@ void SNN::spikeGeneratorUpdate() {
 						argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 						pthread_create(&threads[threadCount], &attr, &SNN::helperAssignPoissonFiringRate_CPU, (void*)&argsThreadRoutine[threadCount]);
+						pthread_attr_destroy(&attr);
 						threadCount++;
 					#endif
 				}
@@ -1998,6 +2000,7 @@ void SNN::spikeGeneratorUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperSpikeGeneratorUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2045,6 +2048,7 @@ void SNN::findFiring() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperFindFiring_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2089,6 +2093,7 @@ void SNN::doCurrentUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2125,6 +2130,7 @@ void SNN::doCurrentUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDoCurrentUpdateD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2169,6 +2175,7 @@ void SNN::updateTimingTable() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateTimingTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2212,6 +2219,7 @@ void SNN::globalStateUpdate() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperGlobalStateUpdate_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2270,6 +2278,7 @@ void SNN::clearExtFiringTable() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperClearExtFiringTable_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2314,6 +2323,7 @@ void SNN::updateWeights() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperUpdateWeights_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -2328,6 +2338,15 @@ void SNN::updateWeights() {
 
 }
 
+void SNN::updateNetworkConfig(int netId) {
+	assert(netId < MAX_NET_PER_SNN);
+
+	if (netId < CPU_RUNTIME_BASE) // GPU runtime
+		copyNetworkConfig(netId, cudaMemcpyHostToDevice);
+	else
+		copyNetworkConfig(netId); // CPU runtime
+}
+
 void SNN::shiftSpikeTables() {
 	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
@@ -2340,7 +2359,7 @@ void SNN::shiftSpikeTables() {
 		if (!groupPartitionLists[netId].empty()) {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				shiftSpikeTables_F_GPU(netId);
-			else{ // CPU runtime
+			else { // CPU runtime
 				#if defined(WIN32) || defined(WIN64)
 					shiftSpikeTables_CPU(netId);
 				#else // Linux or MAC
@@ -2358,6 +2377,7 @@ void SNN::shiftSpikeTables() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperShiftSpikeTables_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -3776,6 +3796,7 @@ void SNN::deleteRuntimeData() {
 					argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 					pthread_create(&threads[threadCount], &attr, &SNN::helperDeleteRuntimeData_CPU, (void*)&argsThreadRoutine[threadCount]);
+					pthread_attr_destroy(&attr);
 					threadCount++;
 				#endif
 			}
@@ -4285,6 +4306,7 @@ void SNN::routeSpikes() {
 								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
 
 								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD2_CPU, (void*)&argsThreadRoutine[threadCount]);
+								pthread_attr_destroy(&attr);
 								threadCount++;
 							#endif
 					}
@@ -4333,6 +4355,7 @@ void SNN::routeSpikes() {
 								argsThreadRoutine[threadCount].GtoLOffset = GtoLOffset;
 
 								pthread_create(&threads[threadCount], &attr, &SNN::helperConvertExtSpikesD1_CPU, (void*)&argsThreadRoutine[threadCount]);
+								pthread_attr_destroy(&attr);
 								threadCount++;
 							#endif
 					}
@@ -5390,6 +5413,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 						argsThreadRoutine[threadCount].GtoLOffset = 0;
 
 						pthread_create(&threads[threadCount], &attr, &SNN::helperResetSpikeCnt_CPU, (void*)&argsThreadRoutine[threadCount]);
+						pthread_attr_destroy(&attr);
 						threadCount++;
 					#endif
 				}
@@ -5493,7 +5517,6 @@ void SNN::stopTiming() {
 	prevExecutionTime = cumExecutionTime;
 }
 
-// FIXME: update the correct network config
 // enters testing phase
 // in testing, no weight changes can be made, allowing you to evaluate learned weights, etc.
 void SNN::startTesting(bool shallUpdateWeights) {
@@ -5513,24 +5536,25 @@ void SNN::startTesting(bool shallUpdateWeights) {
 	}
 
 	sim_in_testing = true;
-	networkConfigs[0].sim_in_testing = true;
 
-	//if (netId < CPU_RUNTIME_BASE) {
-		// copy new network info struct to GPU (|TODO copy only a single boolean)
-	//	copyNetworkConfig(0);
-	//}
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			networkConfigs[netId].sim_in_testing = true;
+			updateNetworkConfig(netId); // update networkConfigRT struct (|TODO copy only a single boolean)
+		}
+	}
 }
 
-// FIXME: update the correct network config
 // exits testing phase
 void SNN::stopTesting() {
 	sim_in_testing = false;
-	networkConfigs[0].sim_in_testing = false;
 
-	//if (netId < CPU_RUNTIME_BASE) {
-		// copy new network_info struct to GPU (|TODO copy only a single boolean)
-	//	copyNetworkConfig(0);
-	//}
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			networkConfigs[netId].sim_in_testing = false;
+			updateNetworkConfig(netId); // update networkConfigRT struct (|TODO copy only a single boolean)
+		}
+	}
 }
 
 void SNN::updateConnectionMonitor(short int connId) {
