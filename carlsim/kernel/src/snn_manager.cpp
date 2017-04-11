@@ -408,6 +408,7 @@ void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c_sd = izh_c_sd;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d = izh_d;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd = izh_d_sd;
+		groupConfigMap[gGrpId].withParamModel_9 = 0;
 	}
 }
 
@@ -449,6 +450,8 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd = izh_vt_sd;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
+		groupConfigMap[gGrpId].withParamModel_9 = 1;
+		KERNEL_INFO("Set a nine parameter group!");
 	}
 }
 
@@ -2724,6 +2727,8 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
+			groupConfigs[netId][lGrpId].withParamModel_9 = groupConfigMap[gGrpId].withParamModel_9;
+
 		}
 
 		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!

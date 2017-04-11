@@ -1557,6 +1557,22 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh
 	_impl->setNeuronParameters(grpId, izh_a, izh_b, izh_c, izh_d);
 }
 
+void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_k, float izh_vr, float izh_vt,
+	float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d)
+{
+	_impl->setNeuronParameters(grpId, izh_C, izh_k, izh_vr, izh_vt, izh_a, izh_b, izh_vpeak, izh_c, izh_d);
+}
+
+void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+	float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+	float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+	float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+	float izh_d, float izh_d_sd)
+{
+	_impl->setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
+		izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
+}
+
 void CARLsim::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, 
 	float tauACh, float baseNE, float tauNE)
 {

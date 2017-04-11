@@ -689,6 +689,17 @@ void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
 		// with homeostasis flag can be used here.
 		runtimeData[netId].avgFiring[lNId] += 1000 / (groupConfigs[netId][lGrpId].avgTimeScale * 1000);
 	}
+
+	// DEBUG CODE -- REMOVE (BEGIN)
+
+	//if (groupConfigs[netId][lGrpId].withParamModel_9)
+	//{
+	//	KERNEL_INFO("This is a nine parameter group!");
+	//}
+	//else
+	//	KERNEL_INFO("This is a four parameter group!");
+
+	// DEBUG CODE -- REMOVE (END)
 }
 
 bool SNN::getPoissonSpike(int lNId, int netId) {

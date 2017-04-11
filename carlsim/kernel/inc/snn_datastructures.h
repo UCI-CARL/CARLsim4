@@ -283,6 +283,7 @@ typedef struct GroupConfig_s {
 	unsigned int type;
 	int          numN;
 	bool isSpikeGenerator;
+	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
@@ -402,6 +403,8 @@ typedef struct GroupConfigRT_s {
 	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
 	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
+
+	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
