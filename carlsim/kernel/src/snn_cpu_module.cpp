@@ -680,7 +680,8 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
-	runtimeData[netId].voltage[lNId] = runtimeData[netId].Izh_c[lNId];
+	float vreset = groupConfigs[netId][lGrpId].withParamModel_9 ? runtimeData[netId].Izh_vr[lNId] : runtimeData[netId].Izh_c[lNId];
+	runtimeData[netId].voltage[lNId] = vreset;
 	runtimeData[netId].recovery[lNId] += runtimeData[netId].Izh_d[lNId];
 	if (groupConfigs[netId][lGrpId].WithSTDP)
 		runtimeData[netId].lastSpikeTime[lNId] = simTime;
@@ -853,6 +854,33 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	}
 }
 
+// single integration step for voltage equation of 4-param Izhikevich
+inline
+float dvdtIzhikevich4(float volt, float recov, float totalCurrent, float timeStep = 1.0f) {
+	return (((0.04f * volt + 5.0f) * volt + 140.0f - recov + totalCurrent) * timeStep);
+}
+
+// single integration step for recovery equation of 4-param Izhikevich
+inline
+float dudtIzhikevich4(float volt, float recov, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * volt - recov) * timeStep);
+}
+
+// single integration step for voltage equation of 9-param Izhikevich
+inline
+float dvdtIzhikevich9(float volt, float recov, float invCapac, float izhK, float voltRest,
+	float voltInst, float totalCurrent, float timeStep = 1.0f)
+{
+	return ((izhK * (volt - voltRest) * (volt - voltInst) - recov + totalCurrent) * invCapac * timeStep);
+}
+
+// single integration step for recovery equation of 9-param Izhikevich
+inline
+float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
+}
+
+
 #if defined(WIN32) || defined(WIN64)
 	void  SNN::globalStateUpdate_CPU(int netId) {
 #else // POSIX
@@ -879,6 +907,15 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 			float I_sum, NMDAtmp;
 			float gNMDA, gGABAb;
 
+			// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
+			float k = runtimeData[netId].Izh_k[lNId];
+			float vr = runtimeData[netId].Izh_vr[lNId];
+			float vt = runtimeData[netId].Izh_vt[lNId];
+			float inverse_C = 1.0f / runtimeData[netId].Izh_C[lNId];
+			float vpeak = runtimeData[netId].Izh_vpeak[lNId];
+			float a = runtimeData[netId].Izh_a[lNId];
+			float b = runtimeData[netId].Izh_b[lNId];
+
 			// loop that allows smaller integration time step for v's and u's
 			for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
 				I_sum = 0.0f;
@@ -894,16 +931,34 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 					I_sum = runtimeData[netId].current[lNId];
 				}
 
-				// update vpos and upos for the current neuron
-				v += ((0.04f * v + 5.0f) * v + 140.0f - u + I_sum + runtimeData[netId].extCurrent[lNId]) / COND_INTEGRATION_SCALE;
-				if (v > 30.0f) {
-					v = 30.0f; // break the loop but evaluate u[i]
-					c = COND_INTEGRATION_SCALE;
+				float totalCurrent = I_sum + runtimeData[netId].extCurrent[lNId];
+
+				if(!groupConfigs[netId][lGrpId].withParamModel_9)
+				{	// 4-param Izhikevich
+					// update vpos and upos for the current neuron
+					v += dvdtIzhikevich4(v, u, totalCurrent, 0.5);
+					if (v > 30.0f) {
+						v = 30.0f; // break the loop but evaluate u[i]
+						c = COND_INTEGRATION_SCALE;
+					}
+					u += dudtIzhikevich4(v, u, a, b, 0.5);
+				}
+				else
+				{	// 9-param Izhikevich
+					// update vpos and upos for the current neuron
+					//KERNEL_INFO("Voltage is: %f", v);
+					//KERNEL_INFO("vr is: %f", vr);
+					v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, 0.5);
+					//KERNEL_INFO("Voltage is: %f", v);
+					if (v > vpeak) {
+						v = vpeak; // break the loop but evaluate u[i]
+						c = COND_INTEGRATION_SCALE;
+					}
+					u += dudtIzhikevich9(v, u, vr, a, b, 0.5);
+					//KERNEL_INFO("Recovery is: %f", u);
 				}
 
 				if (v < -90.0f) v = -90.0f;
-
-				u += (runtimeData[netId].Izh_a[lNId] * (runtimeData[netId].Izh_b[lNId] * v - u) / COND_INTEGRATION_SCALE);
 			}
 
 			if (networkConfigs[netId].sim_with_conductances) {
@@ -1704,6 +1759,11 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		assert(dest->Izh_b == NULL);
 		assert(dest->Izh_c == NULL);
 		assert(dest->Izh_d == NULL);
+		assert(dest->Izh_C == NULL);
+		assert(dest->Izh_k == NULL);
+		assert(dest->Izh_vr == NULL);
+		assert(dest->Izh_vt == NULL);
+		assert(dest->Izh_vpeak == NULL);
 	}
 
 	if(lGrpId == ALL) {
@@ -1730,6 +1790,26 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 	if(allocateMem)
 		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
+
+	if (allocateMem)
+		dest->Izh_C = new float[length];
+	memcpy(&dest->Izh_C[ptrPos], &(managerRuntimeData.Izh_C[ptrPos]), sizeof(float) * length);
+
+	if (allocateMem)
+		dest->Izh_k = new float[length];
+	memcpy(&dest->Izh_k[ptrPos], &(managerRuntimeData.Izh_k[ptrPos]), sizeof(float) * length);
+
+	if (allocateMem)
+		dest->Izh_vr = new float[length];
+	memcpy(&dest->Izh_vr[ptrPos], &(managerRuntimeData.Izh_vr[ptrPos]), sizeof(float) * length);
+
+	if (allocateMem)
+		dest->Izh_vt = new float[length];
+	memcpy(&dest->Izh_vt[ptrPos], &(managerRuntimeData.Izh_vt[ptrPos]), sizeof(float) * length);
+
+	if (allocateMem)
+		dest->Izh_vpeak = new float[length];
+	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
 
 	// pre-compute baseFiringInv for fast computation on CPU cores
 	if (sim_with_homeostasis) {
@@ -2201,6 +2281,11 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].Izh_b;
 	delete [] runtimeData[netId].Izh_c;
 	delete [] runtimeData[netId].Izh_d;
+	delete [] runtimeData[netId].Izh_C;
+	delete [] runtimeData[netId].Izh_k;
+	delete [] runtimeData[netId].Izh_vr;
+	delete [] runtimeData[netId].Izh_vt;
+	delete [] runtimeData[netId].Izh_vpeak;
 	delete [] runtimeData[netId].gAMPA;
 	if (sim_with_NMDA_rise) {
 		delete [] runtimeData[netId].gNMDA_r;
