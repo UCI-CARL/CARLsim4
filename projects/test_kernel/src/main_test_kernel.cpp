@@ -93,7 +93,7 @@ int main() {
 	smExc->stopRecording();
 
 	smExc->print(true);
-	//Expected Spike Times (4 param; extCurrent = 5): 108 196 293 390 487 584 681 778 875 972
+	//Expected Spike Times (4 param; extCurrent = 5; Euler; 2 steps / ms): 108 196 293 390 487 584 681 778 875 972
 	//Expected Spike Times (9 param; extCurrent = 70): 
 	//smInput->print(false);
 

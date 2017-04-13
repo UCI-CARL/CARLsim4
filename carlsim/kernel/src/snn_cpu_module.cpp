@@ -890,36 +890,38 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
-			if (groupConfigs[netId][lGrpId].WithHomeostasis) {
-				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
-					runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+	// loop that allows smaller integration time step for v's and u's
+	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
+
+		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
+				if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
+						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+				}
+				continue;
 			}
-			continue;
-		}
 
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
-			assert(lNId < networkConfigs[netId].numNReg);
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+				assert(lNId < networkConfigs[netId].numNReg);
 
-			// P7
-			// update conductances
-			float v = runtimeData[netId].voltage[lNId];
-			float u = runtimeData[netId].recovery[lNId];
-			float I_sum, NMDAtmp;
-			float gNMDA, gGABAb;
+				// P7
+				// update conductances
+				float v = runtimeData[netId].voltage[lNId];
+				float u = runtimeData[netId].recovery[lNId];
+				float I_sum, NMDAtmp;
+				float gNMDA, gGABAb;
 
-			// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
-			float k = runtimeData[netId].Izh_k[lNId];
-			float vr = runtimeData[netId].Izh_vr[lNId];
-			float vt = runtimeData[netId].Izh_vt[lNId];
-			float inverse_C = 1.0f / runtimeData[netId].Izh_C[lNId];
-			float vpeak = runtimeData[netId].Izh_vpeak[lNId];
-			float a = runtimeData[netId].Izh_a[lNId];
-			float b = runtimeData[netId].Izh_b[lNId];
+				// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
+				float k = runtimeData[netId].Izh_k[lNId];
+				float vr = runtimeData[netId].Izh_vr[lNId];
+				float vt = runtimeData[netId].Izh_vt[lNId];
+				float inverse_C = 1.0f / runtimeData[netId].Izh_C[lNId];
+				float vpeak = runtimeData[netId].Izh_vpeak[lNId];
+				float a = runtimeData[netId].Izh_a[lNId];
+				float b = runtimeData[netId].Izh_b[lNId];
 
-			// loop that allows smaller integration time step for v's and u's
-			for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
+
 				I_sum = 0.0f;
 				if (networkConfigs[netId].sim_with_conductances) {
 					NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
@@ -929,32 +931,32 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
 						+ runtimeData[netId].gGABAa[lNId] * (v + 70.0f)
 						+ gGABAb * (v + 90.0f));
-				} else {
+				}
+				else {
 					I_sum = runtimeData[netId].current[lNId];
 				}
 
 				float totalCurrent = I_sum + runtimeData[netId].extCurrent[lNId];
 
-				if(!groupConfigs[netId][lGrpId].withParamModel_9)
+				if (!groupConfigs[netId][lGrpId].withParamModel_9)
 				{	// 4-param Izhikevich
 					// update vpos and upos for the current neuron
-					v += dvdtIzhikevich4(v, u, totalCurrent, 0.5);
+					v += dvdtIzhikevich4(v, u, totalCurrent, networkConfigs[netId].timeStep);
 					if (v > 30.0f) {
 						v = 30.0f; // break the loop but evaluate u[i]
-						c = COND_INTEGRATION_SCALE;
+						j = networkConfigs[netId].simNumStepsPerMs;
 					}
-					
 				}
 				else
 				{	// 9-param Izhikevich
 					// update vpos and upos for the current neuron
 					//KERNEL_INFO("Voltage is: %f", v);
 					//KERNEL_INFO("vr is: %f", vr);
-					v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, 0.5);
+					v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, networkConfigs[netId].timeStep);
 					//KERNEL_INFO("Voltage is: %f", v);
 					if (v > vpeak) {
 						v = vpeak; // break the loop but evaluate u[i]
-						c = COND_INTEGRATION_SCALE;
+						j = networkConfigs[netId].simNumStepsPerMs;
 					}
 				}
 
@@ -963,35 +965,36 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				//KERNEL_INFO("Recovery is: %f", u);
 				if (!groupConfigs[netId][lGrpId].withParamModel_9)
 				{
-					u += dudtIzhikevich4(v, u, a, b, 0.5);
+					u += dudtIzhikevich4(v, u, a, b, networkConfigs[netId].timeStep);
 				}
 				else
 				{
-					u += dudtIzhikevich9(v, u, vr, a, b, 0.5);
+					u += dudtIzhikevich9(v, u, vr, a, b, networkConfigs[netId].timeStep);
 				}
-			}
 
-			if (networkConfigs[netId].sim_with_conductances) {
-				runtimeData[netId].current[lNId] = I_sum;
-			} else {
-				// current must be reset here for CUBA and not STPUpdateAndDecayConductances
-				runtimeData[netId].current[lNId] = 0.0f;
-			}
-			runtimeData[netId].voltage[lNId] = v;
-			runtimeData[netId].recovery[lNId] = u;
-			// P8
-			// update average firing rate for homeostasis
-			if (groupConfigs[netId][lGrpId].WithHomeostasis)
-				runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
-		} // end StartN...EndN
+				if (networkConfigs[netId].sim_with_conductances) {
+					runtimeData[netId].current[lNId] = I_sum;
+				}
+				else {
+					// current must be reset here for CUBA and not STPUpdateAndDecayConductances
+					runtimeData[netId].current[lNId] = 0.0f;
+				}
+				runtimeData[netId].voltage[lNId] = v;
+				runtimeData[netId].recovery[lNId] = u;
+				// P8
+				// update average firing rate for homeostasis
+				if (groupConfigs[netId][lGrpId].WithHomeostasis)
+					runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+			} // end StartN...EndN
 
-		// P9
-		// decay dopamine concentration
-		if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
-			runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
-		}
-		runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
-	} // end numGroups
+			// P9
+			// decay dopamine concentration
+			if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
+				runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
+			}
+			runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
+		} // end numGroups
+	} // end simNumStepsPerMs loop
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
