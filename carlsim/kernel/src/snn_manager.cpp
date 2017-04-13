@@ -2617,7 +2617,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
 			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
+			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // NOTE: Noffset is not valid at this time
 			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
@@ -2639,7 +2639,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
-			//!< homeostatic plasticity variables
+			// homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
 			groupConfigs[netId][lGrpId].avgTimeScale_decay = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleDecay;
 			groupConfigs[netId][lGrpId].avgTimeScaleInv = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleInv;
@@ -2675,12 +2675,12 @@ void SNN::generateRuntimeGroupConfigs() {
 			}
 		}
 
-		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
+		// TODO: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
 		//int numNSpikeGen = 0;
 		//for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		//	if (netId == groupConfigs[netId][lGrpId].netId && groupConfigs[netId][lGrpId].isSpikeGenerator && groupConfigs[netId][lGrpId].isSpikeGenFunc) {
 		//	// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
-		//		groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // FIXME, Noffset is updated after publish group configs
+		//		groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // TODO: Noffset is updated after publish group configs
 		//		numNSpikeGen += groupConfigs[netId][lGrpId].numN;
 		//	}
 		//}
@@ -3139,7 +3139,7 @@ void SNN::compileGroupConfig() {
 
 	// assigned global neruon ids to each group in the order...
 	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
+	//     <-----Excitatory----->| <----------Inhibitory REGION------------> | <---Excitatory--->
 	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
 	int assignedGroup = 0;
 	int availableNeuronId = 0;
@@ -3224,7 +3224,7 @@ void SNN::connectNetwork() {
 	}
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
+// set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
@@ -3258,7 +3258,7 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 		connectionLists[externalNetId].push_back(connInfo);
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
+// set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
@@ -3517,7 +3517,7 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 	}
 }
 
-// FIXME: rewrite user-define call-back function
+// TODO: rewrite user-define call-back function
 // user-defined functions called here...
 // This is where we define our user-defined call-back function.  -- KDC
 void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {

@@ -1040,37 +1040,176 @@ private:
 
 	/** This method does the following operations for a given runtime partition.
 	 * 1. Load offsets (Global to Local and vice-versa) between global neuron ids and local neuron ids for each group in the partition
-	 * 2. 
+	 * 2. Generate mulSynFast, mulSynSlow arrays for connections
+	 * 3. Parse ConnectionInfo stored in connectionLists[0] and generate Npost, Npre, Npre_plastic
+	 * 4. Generate cumulativePost and cumulativePre
+	 * 5. generate preSynapticIds, first for plastic connections and then for fixed connections
+	 * 6. generate postSynapticIds
 	 *
+	 * \brief generate preSynapticIds and postSynapticIds for all connections
+	 * \param netId runtime partition ID
 	 */
 	void generateConnectionRuntime(int netId);
 
-	/*!
-	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
+	/** Scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network.
+	 *  The method does the following in order:
+	 * 1. copy the global network config to local network configs for each runtime
+	 * 2. Find the maximum number of pre- and post-connections among neurons by calling SNN::findMaxNumSynapsesNeurons(...)
+	 * 3. find the maximum number of spikes in D1 (i.e., maxDelay == 1) and D2 (i.e., maxDelay >= 2) sets by calling SNN::findMaxSpikesD1D2(...)
+	 * 4. find the total number of synapses in the network by calling SNN::findNumSynapsesNetwork(...)
+	 * 5. find out number of user-defined spike gen and update Noffset of each group config by calling SNN::findNumNSpikeGenAndOffset(...)
+	 * 6. find manager runtime data size for each runtime, which is sufficient to hold the data of any gpu runtime
+	 *
+	 * \brief Scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
 	 */
 	void generateRuntimeNetworkConfigs();
+
+	/** Generates (copies) group configs from groupPartitionLists[]. It does following operations in order:
+	 * 1. publishes the group configs in an array (groupConfigs[][]) for quick access and accessible on GPUs (cuda doesn't support std::list)
+	 * 2. sync groupConfigs[][] and groupConfigMDMap[]
+	 *
+	 * \brief Copies group configs from groupPartitionLists[]
+	 */
 	void generateRuntimeGroupConfigs();
+
+	/** Sync localConnectLists and connectConfigMap for each runtime
+	 *
+	 * \brief Sync localConnectLists and connectConfigMap
+	 */
 	void generateRuntimeConnectConfigs();
 
-	/*!
-	 * \brief scan all group configs and connection configs for generating the configuration of a global network
+	/** Scans all group configs and connection configs for generating the configuration of a global network. It does the following:
+	 * 1. Scans all connect configs to find the maximum delay in the global network, updates glbNetworkConfig.maxDelay
+	 * 2. Scans all group configs to find the number of (reg, pois, exc, inh) neuron in the global network
+	 *
+	 * \brief Scans all group configs and connection configs for generating the configuration of a global network
 	 */
 	void collectGlobalNetworkConfigC();
-	void compileConnectConfig(); //!< for future use
+
+	/** For future use 
+	 * \brief For future use
+	 */
+	void compileConnectConfig(); 
+
+	/** Compile (update) group configs according to their mutual information. It does the following:
+	 * 1. find the maximum delay for each group according to incoming connection
+	 * 2. given group has plastic connection, set the STDP flag in groupConfigMDMap
+	 * 3. assign global neruon ids to each group in the following order:\n
+	 * 		<--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->\n
+	 * 		Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
+	 *
+	 * \brief compile (update) group and connection configs according to their mutual information
+	 */
 	void compileGroupConfig();
 
+	/** Calculates global number of connections across runtimes
+	 *
+	 * \brief Calculates global number of connections
+	 */
 	void collectGlobalNetworkConfigP();
 
-	/*!
-	 * \brief generate connections among groups according to connect configuration
+	/** Generate connections among groups according to connect configuration. Parse separately for local and external connections.
+	 *
+	 * \brief Generate connections among groups according to connect configuration
 	 */
 	void connectNetwork();
+
+	/** Set one connection from neuron id 'src' to neuron id 'dest'. It does the following:
+	 * 1. Set the delay vaule
+	 * 2. Set the max weight and initial weight
+	 * 3. adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	 * 4. If the connection is external, copy the connection info to the external network
+	 *
+	 * \param netId Runtime ID
+	 * \param srcGrp Source neuron group ID
+	 * \param destGrp Destination neuron group ID
+	 * \param srcN source neuron ID
+	 * \param destN destination neuron ID
+	 * \param connId connection ID between the src and dest groups
+	 * \param externalNetId external runtime ID
+	 * \brief Set one specific connection from neuron id 'src' to neuron id 'dest'
+	 * \see SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId)
+	 */
 	inline void connectNeurons(int netId, int srcGrp, int destGrp, int srcN, int destN, short int connId, int externalNetId);
+
+	/** Set one specific connection from neuron id 'src' to neuron id 'dest' with more complete properties. It does the following:
+	 * 1. Set the delay vaule
+	 * 2. Set the max weight and initial weight
+	 * 3. adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	 * 4. If the connection is external, copy the connection info to the external network
+	 *
+	 * \param netId Runtime ID
+	 * \param _grpSrc Source neuron group ID
+	 * \param _grpDest Destination neuron group ID
+	 * \param _nSrc source neuron ID
+	 * \param _nDest destination neuron ID
+	 * \param _connId connection ID between the src and dest groups
+	 * \param initWt initial weight of the synapse
+	 * \param maxWt maximum weight of the synapse
+	 * \param delay delay in spike propagation of the synapse
+	 * \param externalNetId external runtime ID
+	 * \brief Set one specific connection from neuron id 'src' to neuron id 'dest'
+	 * \see SNN::connectNeurons(int netId, int srcGrp, int destGrp, int srcN, int destN, short int connId, int externalNetId)
+	 */
 	inline void connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId);
+
+	/** Connects all neurons from the pre group to all neurons of the post group within 3D connection radius. 
+	 *  For all pre-post neuron pairs, checks whether they fall within radius and if they do, form a connection by calling SNN::connectNeurons(...).
+	 *  For full no direct skip the connection between i-th neuron in the pre and the i-th neuron in the post even though they are within radius.
+	 *  Also update numPostSynapses and numPreSynapses of groups in the local network and in the external network if the connection is external.
+	 * 
+	 * \param netId Runtime Id
+	 * \param connIt Iterator for list ConnectConfig
+	 * \param isExternal if the connection is external
+	 * \brief Connects all neurons from the pre group to all neurons of the post group within 3D connection radius
+	 */
 	void connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+
+	/** Connects neuron i of the pre group to neuron i of the post group, irrespective of 3D connection radius. 
+	 *  For all pre-post neuron pairs, check whether their Id within the groups are same, if it is form a connection by calling SNN::connectNeurons(...).
+	 *  Also update numPostSynapses and numPreSynapses of groups in the local network and in the external network if the connection is external.
+	 * 
+	 * \param netId Runtime Id
+	 * \param connIt Iterator for list ConnectConfig
+	 * \param isExternal if the connection is external
+	 * \brief Connects neuron i of the pre group to neuron i of the post group, irrespective of 3D connection radius. 
+	 */
 	void connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+
+	/** Connects neurons from the pre group to random neurons of the post group based on connection probability parameter, within 3D connection radius. 
+	 *  For all pre-post neuron pairs, checks whether they fall within radius and if they do, form a connection with some probability by calling SNN::connectNeurons(...).
+	 *  Also update numPostSynapses and numPreSynapses of groups in the local network and in the external network if the connection is external.
+	 * 
+	 * \param netId Runtime Id
+	 * \param connIt Iterator for list ConnectConfig
+	 * \param isExternal if the connection is external
+	 * \brief Connects neurons from the pre group to random neurons of the post group based on connection probability parameter, within 3D connection radius. 
+	 */
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+
+	/** Connects neurons from the pre group those neurons of the post group, that fall within a gaussian RF.
+	 *  For all pre-post neuron pairs, calulate rfDist using getRFDist3D(...) and if exp(-2.3026*rfDist) < 0.1, form a connection with some probability by calling SNN::connectNeurons(...).
+	 *  Also update numPostSynapses and numPreSynapses of groups in the local network and in the external network if the connection is external.
+	 * 
+	 * \param netId Runtime Id
+	 * \param connIt Iterator for list ConnectConfig
+	 * \param isExternal if the connection is external
+	 * \brief Connects neurons from the pre group those neurons of the post group, that fall within a gaussian RF
+	 */
 	void connectGaussian(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
+	
+	/** Make connections with custom connectivity profile. Uses a custom connectivity class object, which is part of the ConnectConfig
+	 *  iteartor make a connection between pre-post neuron pairs. The connectivity criteria is user defined in the callback connect(...) method
+	 *  of the custom connectivity class, which is subclass of the ConnectionGenerator class.
+	 *  Also update numPostSynapses and numPreSynapses of groups in the local network and in the external network if the connection is external.
+	 *  See \ref ch4s3_user_defined
+	 *
+	 * \param netId Runtime Id
+	 * \param connIt Iterator for list ConnectConfig
+	 * \param isExternal if the connection is external
+	 * \brief make connections with custom connectivity profile
+	 * 
+	 */
 	void connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 
 	void deleteObjects();			//!< deallocates all used data structures in snn_cpu.cpp
