@@ -534,7 +534,8 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  numSynNet(0), maxDelay(-1)
+							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
+							  simNumStepsPerMs(2), timeStep(0.5)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -546,6 +547,10 @@ typedef struct GlobalNetworkConfig_s {
 	int numNPois;     //!< number of poisson neurons in the global network
 	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
+
+	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
+	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond
+	float timeStep;						      //!< inverse of simNumStepsPerMs
 } GlobalNetworkConfig;
 
 //! runtime network configuration
@@ -612,6 +617,10 @@ typedef struct NetworkConfigRT_s  {
 	double rGABAb;            //!< multiplication factor for rise time of GABAb
 	double dGABAb;            //!< multiplication factor for decay time of GABAb
 	double sGABAb;            //!< scaling factor for GABAb amplitude
+
+	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
+	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond
+	float timeStep;						      //!< inverse of simNumStepsPerMs
 } NetworkConfigRT;
 
 

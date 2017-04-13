@@ -215,6 +215,8 @@ public:
 	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 	void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD);
 
+	//! Sets the integration method and the number of integration steps per 1ms simulation time step
+	void setIntegrationMethod(integrationMethod_t method, int numStepsPerMs);
 
 	//! Sets the Izhikevich parameters a, b, c, and d of a neuron group.
 	/*!

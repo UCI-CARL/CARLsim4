@@ -388,6 +388,13 @@ void SNN::setHomeoBaseFiringRate(int gGrpId, float baseFiring, float baseFiringS
 }
 
 
+void SNN::setIntegrationMethod(integrationMethod_t method, int numStepsPerMs) {
+	assert(numStepsPerMs >= 1 && numStepsPerMs <= 100);
+	glbNetworkConfig.simIntegrationMethod = method;
+	glbNetworkConfig.simNumStepsPerMs = numStepsPerMs;
+	glbNetworkConfig.timeStep = 1.0f / numStepsPerMs;
+}
+
 // set Izhikevich parameters for group
 void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd)
@@ -2787,6 +2794,10 @@ void SNN::generateRuntimeNetworkConfigs() {
 			networkConfigs[netId].rGABAb = rGABAb;
 			networkConfigs[netId].dGABAb = dGABAb;
 			networkConfigs[netId].sGABAb = sGABAb;
+
+			networkConfigs[netId].simIntegrationMethod = glbNetworkConfig.simIntegrationMethod;
+			networkConfigs[netId].simNumStepsPerMs = glbNetworkConfig.simNumStepsPerMs;
+			networkConfigs[netId].timeStep = glbNetworkConfig.timeStep;
 
 			// configurations for boundries of neural types
 			findNumN(netId, networkConfigs[netId].numN, networkConfigs[netId].numNExternal, networkConfigs[netId].numNAssigned,

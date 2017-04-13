@@ -441,6 +441,33 @@ public:
 	 */
 	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0.0f);
 
+	/*
+	* \brief Sets the integration method for the simulation
+	*
+	* This function specifies the integration method for the simulation. Currently, the chosen integration method
+	* will apply to all neurons in the network.
+	*
+	* The basic simulation time step is 1ms, meaning that spike times cannot be retrieved with sub-millisecond
+	* precision. However, the integration time step can be lower than 1ms, which is specified by numStepsPerMs.
+	* A numStepsPerMs set to 10 would take 10 integration steps per 1ms simulation time step.
+	*
+	* By default, the simulation will use Forward-Euler with an integration step of 0.5ms (i.e.,
+	* <tt>numStepsPerMs</tt>=2).
+	*
+	* Currently CARLsim supports the following integration methods:
+	* - FORWARD_EULER: The most basic, forward-Euler method. Suggested value for <tt>numStepsPerMs</tt>: >= 2.
+	* - RUNGE_KUTTA4:  Fourth-order Runge-Kutta (aka classical Runge-Kutta, aka RK4).
+	*                  Suggested value for <tt>numStepsPerMs</tt>: >= 10.
+	*
+	* \STATE ::CONFIG_STATE
+	* \param[in] method the integration method to use
+	* \param[in] numStepsPerMs the number of integration steps per 1ms simulation time step
+	*
+	* \note Note that the higher numStepsPerMs the slower the simulation may be, due to increased computational load.
+	* \since v3.1
+	*/
+	void setIntegrationMethod(integrationMethod_t method, int numStepsPerMs);
+
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
 	 *

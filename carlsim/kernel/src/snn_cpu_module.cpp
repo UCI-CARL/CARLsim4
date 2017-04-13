@@ -693,6 +693,8 @@ void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
 
 	// DEBUG CODE -- REMOVE (BEGIN)
 
+	// KERNEL_INFO("This simulation has %i number of steps per millisecond;", networkConfigs[netId].simNumStepsPerMs);
+
 	//if (groupConfigs[netId][lGrpId].withParamModel_9)
 	//{
 	//	KERNEL_INFO("This is a nine parameter group!");
