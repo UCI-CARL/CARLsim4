@@ -941,7 +941,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						v = 30.0f; // break the loop but evaluate u[i]
 						c = COND_INTEGRATION_SCALE;
 					}
-					u += dudtIzhikevich4(v, u, a, b, 0.5);
+					
 				}
 				else
 				{	// 9-param Izhikevich
@@ -954,11 +954,19 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						v = vpeak; // break the loop but evaluate u[i]
 						c = COND_INTEGRATION_SCALE;
 					}
-					u += dudtIzhikevich9(v, u, vr, a, b, 0.5);
-					//KERNEL_INFO("Recovery is: %f", u);
 				}
 
 				if (v < -90.0f) v = -90.0f;
+
+				//KERNEL_INFO("Recovery is: %f", u);
+				if (!groupConfigs[netId][lGrpId].withParamModel_9)
+				{
+					u += dudtIzhikevich4(v, u, a, b, 0.5);
+				}
+				else
+				{
+					u += dudtIzhikevich9(v, u, vr, a, b, 0.5);
+				}
 			}
 
 			if (networkConfigs[netId].sim_with_conductances) {
