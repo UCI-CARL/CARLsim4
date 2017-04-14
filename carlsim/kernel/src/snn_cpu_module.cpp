@@ -1199,7 +1199,7 @@ void SNN::allocateSNN_CPU(int netId) {
 }
 
 /*!
- * \brief this function allocates memory sapce and copies information of pre-connections to it
+ * \brief this function allocates memory space and copies information of pre-connections to it
  *
  * This function:
  * initialize Npre_plasticInv
@@ -1207,11 +1207,11 @@ void SNN::allocateSNN_CPU(int netId) {
  * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
  *
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU
  * \since v4.0
@@ -1276,17 +1276,17 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 }
 
 /*!
- * \brief this function allocates memory sapce and copies information of post-connections to it
+ * \brief this function allocates memory space and copies information of post-connections to it
  *
  * This function:
  * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
  *
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU
  * \since v4.0
@@ -1337,16 +1337,16 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 }
 
 /*!
- * \brief this function allocates memory sapce and copies variables related to syanpses to it
+ * \brief this function allocates memory space and copies variables related to syanpses to it
  *
  * This function:
  * (allocate and) copy wt, wtChange, maxSynWt
  *
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU
  * \since v4.0
@@ -1376,17 +1376,17 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 }
 
 /*!
- * \brief this function allocates memory sapce and copies variables related to nueron state to it
+ * \brief this function allocates memory space and copies variables related to nueron state to it
  *
  * This function:
  * (allocate and) copy voltage, recovery, current, avgFiring 
  *
- * This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
+ * This function is called by allocateSNN_CPU(). Only copying from host to device is required
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU fetchNeuronState
  * \since v3.0
@@ -1448,18 +1448,18 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 }
 
 /*!
- * \brief this function allocates memory sapce and copies AMPA conductance to it
+ * \brief this function allocates memory space and copies AMPA conductance to it
  *
  * This function:
  * (allocate and) copy gAMPA
  *
- * This funcion is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copying
+ * This function is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyNeuronState fetchConductanceAMPA
@@ -1488,18 +1488,18 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 }
 
 /*!
- * \brief this function allocates memory sapce and copies NMDA conductance to it
+ * \brief this function allocates memory space and copies NMDA conductance to it
  *
  * This function:
  * (allocate and) copy gNMDA, gNMDA_r, gNMDA_d
  *
- * This funcion is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
+ * This function is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyNeuronState fetchConductanceNMDA
@@ -1539,18 +1539,18 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 }
 
 /*!
- * \brief this function allocates memory sapce and copies GABAa conductance to it
+ * \brief this function allocates memory space and copies GABAa conductance to it
  *
  * This function:
  * (allocate and) copy gGABAa
  *
- * This funcion is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
+ * This function is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyNeuronState fetchConductanceGABAa
@@ -1578,18 +1578,18 @@ void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, Runtime
 }
 
 /*!
- * \brief this function allocates memory sapce and copies GABAb conductance to it
+ * \brief this function allocates memory space and copies GABAb conductance to it
  *
  * This function:
  * (allocate and) copy gGABAb, gGABAb_r, gGABAb_d
  *
- * This funcion is called by copyNeuronState() and fetchConductanceGABAb(). It supports bi-directional copying
+ * This function is called by copyNeuronState() and fetchConductanceGABAb(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyNeuronState fetchConductanceGABAb
@@ -1629,18 +1629,18 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 }
 
 /*!
- * \brief this function allocates memory sapce and copies external current to it
+ * \brief this function allocates memory space and copies external current to it
  *
  * This function:
 
  * (allocate and) copy extCurrent
  *
- * This funcion is called by copyNeuronState() and setExternalCurrent. Only host-to-divice copy is required
+ * This function is called by copyNeuronState() and setExternalCurrent. Only host-to-divice copy is required
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU fetchSTPState
  * \since v3.0
@@ -1666,19 +1666,19 @@ void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool all
 }
 
 /*!
- * \brief this function allocates memory sapce and copies neural parameters to it
+ * \brief this function allocates memory space and copies neural parameters to it
  *
  * This function:
  * (allocate and) copy Izh_a, Izh_b, Izh_c, Izh_d
  * initialize baseFiringInv
  * (allocate and) copy baseFiring, baseFiringInv
  *
- * This funcion is only called by copyNeuronState(). Only copying direction from host to device is required.
+ * This function is only called by copyNeuronState(). Only copying direction from host to device is required.
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa copyNeuronState
  * \since v3.0
@@ -1743,19 +1743,19 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 }
 
 /*!
- * \brief this function allocates memory sapce and copies short-term plasticity (STP) state to it
+ * \brief this function allocates memory space and copies short-term plasticity (STP) state to it
  *
  * This function:
  * initialize STP_Pitch
  * (allocate and) copy stpu, stpx
  *
- * This funcion is called by allocateSNN_CPU() and fetchSTPState(). It supports bi-directional copying
+ * This function is called by allocateSNN_CPU() and fetchSTPState(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU fetchSTPState
  * \since v3.0
@@ -1782,18 +1782,18 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 
 // ToDo: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData
 /*!
- * \brief this function allocates memory sapce and copies variables related to group state to it
+ * \brief this function allocates memory space and copies variables related to group state to it
  *
  * This function:
  * (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
  *
- * This funcion is called by allocateSNN_CPU() and fetchGroupState(). It supports bi-directional copying
+ * This function is called by allocateSNN_CPU() and fetchGroupState(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU fetchGroupState
  * \since v3.0
@@ -1833,7 +1833,7 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 }
 
 /*!
- * \brief this function allocates memory sapce and copies auxiliary runtime data to it
+ * \brief this function allocates memory space and copies auxiliary runtime data to it
  *
  * This function:
  * (allocate and) reset spikeGenBits, poissonFireRate
@@ -1843,11 +1843,11 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
  * (allocate and) copy grpIds, connIdsPreIdx
  * (allocate and) copy timeTableD1, timeTableD2
  * (allocate and) copy firingTableD1, firingTableD2
- * This funcion is only called by allocateSNN_CPU. Therefore, only copying direction from host to device is required
+ * This function is only called by allocateSNN_CPU. Therefore, only copying direction from host to device is required
  *
- * \param[in] netId the id of local network, which is the same as Core (CPU) id
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ * \param[in] netId The id of local network, which is the same as Core (CPU) id
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copying
  *
  * \sa allocateSNN_CPU
  * \since v4.0
@@ -1983,18 +1983,18 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 }
 
 /*!
- * \brief this function allocates memory sapce and copies the spike count of each neuron to it
+ * \brief this function allocates memory space and copies the spike count of each neuron to it
  *
  * This function:
  * (allocate and) copy nSpikeCnt
  *
- * This funcion is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copying
+ * This function is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copying
  *
- * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
- * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
- * \param[in] dest pointer to runtime data desitnation
- * \param[in] src pointer to runtime data source
- * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] netId The id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest The pointer to runtime data desitnation
+ * \param[in] src The pointer to runtime data source
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyAuxiliaryData fetchNeuronSpikeCount
@@ -2057,15 +2057,15 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 #endif
 
 /*!
-* \brief this function copy weight state in core (CPU) memory sapce to manager (CPU) memory space
+* \brief this function copy weight state in core (CPU) memory space to manager (CPU) memory space
 *
 * This function:
 * copy wt, wtChange synSpikeTime
 *
-* This funcion is only called by fetchWeightState(). Only copying direction from device to host is required.
+* This function is only called by fetchWeightState(). Only copying direction from device to host is required.
 *
-* \param[in] netId the id of a local network, which is the same as the device (GPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+* \param[in] netId The id of a local network, which is the same as the device (GPU) id
+* \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
 *
 * \sa fetchWeightState
 * \since v4.0
@@ -2134,7 +2134,7 @@ void SNN::copyNetworkSpikeCount(int netId,
 /*!
 * \brief This function fetch spikeTables in the local network specified by netId
 *
-* \param[in] netId the id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
+* \param[in] netId The id of local network of which timeTableD1(D2) and firingTableD1(D2) are copied to manager runtime data
 */
 void SNN::copySpikeTables(int netId) {
 	unsigned int spikeCountD1Sec, spikeCountD2Sec, spikeCountLastSecLeftD2;

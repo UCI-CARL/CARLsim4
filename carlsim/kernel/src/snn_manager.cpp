@@ -5735,7 +5735,7 @@ void SNN::userDefinedSpikeGenerator(int gGrpId) {
 			// - it is within the scheduling time slice (nextSchedTime < endOfTimeWindow)
 			// - it is not in the past (nextSchedTime >= currTime)
 			if ((nextSchedTime==0 || nextSchedTime>nextTime) && nextSchedTime<endOfTimeWindow && nextSchedTime>=currTime) {
-//				fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfigs[0][grpId].StartN,nextSchedTime);
+				// fprintf(stderr,"%u: spike scheduled for %d at %u\n",currTime, i-groupConfigs[0][grpId].StartN,nextSchedTime);
 				// scheduled spike...
 				// \TODO CPU mode does not check whether the same AER event has been scheduled before (bug #212)
 				// check how GPU mode does it, then do the same here.
@@ -5774,7 +5774,7 @@ void SNN::generateUserDefinedSpikes() {
 }
 
 /*!
- * \brief Allocate and reset SNN::maxSpikesD1, SNN::maxSpikesD2 and allocate sapce for SNN::firingTableD1 and SNN::firingTableD2
+ * \brief Allocate and reset SNN::maxSpikesD1, SNN::maxSpikesD2 and allocate space for SNN::firingTableD1 and SNN::firingTableD2
  *
  * \note SpikeTables include firingTableD1(D2) and timeTableD1(D2)
  */
