@@ -1671,11 +1671,7 @@ RangeWeight SNN::getWeightRange(short int connId) {
 // PRIVATE METHODS
 // **************************************************************************************************************** //
 
-/*!
- * all unsafe operations of SNN constructor
- *
- * \return void
- */
+// all unsafe operations of SNN constructor
 void SNN::SNNinit() {
 	// initialize snnState
 	snnState = CONFIG_SNN;
@@ -1837,12 +1833,12 @@ void SNN::SNNinit() {
 	// reset all runtime data
 	// GPU/CPU runtime data
 	memset(runtimeData, 0, sizeof(RuntimeData) * MAX_NET_PER_SNN);
-	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // FIXME: redundant??
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) // TODO: redundant??
 		runtimeData[netId].allocated = false;
 
 	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
-	managerRuntimeData.allocated = false; // FIXME: redundant??
+	managerRuntimeData.allocated = false; // TODO: redundant??
 
 
 
@@ -1852,7 +1848,7 @@ void SNN::SNNinit() {
 	stdpScaleFactor_ = 1.0f;
 	wtChangeDecay_ = 0.0f;
 
-	// FIXME: use it when necessary
+	// TODO: use it when necessary
 #ifndef __NO_CUDA__
 	CUDA_CREATE_TIMER(timer);
 	CUDA_RESET_TIMER(timer);
@@ -2486,14 +2482,14 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.nSpikeCnt = new int[managerRTDSize.glbNumN];
 	memset(managerRuntimeData.nSpikeCnt, 0, sizeof(int) * managerRTDSize.glbNumN); // sufficient to hold all neurons in the global network
 
-	//! homeostasis variables
+	// homeostasis variables
 	managerRuntimeData.avgFiring  = new float[managerRTDSize.maxNumN];
 	managerRuntimeData.baseFiring = new float[managerRTDSize.maxNumN];
 	memset(managerRuntimeData.avgFiring, 0, sizeof(float) * managerRTDSize.maxNumN);
 	memset(managerRuntimeData.baseFiring, 0, sizeof(float) * managerRTDSize.maxNumN);
 
 	// STP can be applied to spike generators, too -> numN
-	// \TODO: The size of these data structures could be reduced to the max synaptic delay of all
+	// TODO: The size of these data structures could be reduced to the max synaptic delay of all
 	// connections with STP. That number might not be the same as maxDelay_.
 	managerRuntimeData.stpu = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
 	managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
@@ -2512,7 +2508,7 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.cumulativePre, 0, sizeof(int) * managerRTDSize.maxNumNAssigned);
 
 	managerRuntimeData.postSynapticIds = new SynInfo[managerRTDSize.maxNumPostSynNet];
-	managerRuntimeData.postDelayInfo   = new DelayInfo[managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1)];	//!< Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
+	managerRuntimeData.postDelayInfo   = new DelayInfo[managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1)];	// Possible delay values are 0....maxDelay_ (inclusive of maxDelay_)
 	memset(managerRuntimeData.postSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPostSynNet);
 	memset(managerRuntimeData.postDelayInfo, 0, sizeof(DelayInfo) * managerRTDSize.maxNumNAssigned * (glbNetworkConfig.maxDelay + 1));
 
@@ -2621,7 +2617,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
 			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
-			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
+			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // NOTE: Noffset is not valid at this time
 			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
@@ -2643,7 +2639,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
-			//!< homeostatic plasticity variables
+			// homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
 			groupConfigs[netId][lGrpId].avgTimeScale_decay = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleDecay;
 			groupConfigs[netId][lGrpId].avgTimeScaleInv = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleInv;
@@ -2679,12 +2675,12 @@ void SNN::generateRuntimeGroupConfigs() {
 			}
 		}
 
-		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
+		// TODO: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
 		//int numNSpikeGen = 0;
 		//for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		//	if (netId == groupConfigs[netId][lGrpId].netId && groupConfigs[netId][lGrpId].isSpikeGenerator && groupConfigs[netId][lGrpId].isSpikeGenFunc) {
 		//	// we only need numNSpikeGen for spike generator callbacks that need to transfer their spikes to the GPU
-		//		groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // FIXME, Noffset is updated after publish group configs
+		//		groupConfigs[netId][lGrpId].Noffset = numNSpikeGen; // TODO: Noffset is updated after publish group configs
 		//		numNSpikeGen += groupConfigs[netId][lGrpId].numN;
 		//	}
 		//}
@@ -2823,8 +2819,8 @@ void SNN::generateConnectionRuntime(int netId) {
 		GLoffset[grpIt->gGrpId] = grpIt->GtoLOffset;
 		GLgrpId[grpIt->gGrpId] = grpIt->lGrpId;
 	}
-	// FIXME: connId is global connId, use connectConfigs[netId][local connId] instead,
-	// FIXME; but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
+	// TODO: connId is global connId, use connectConfigs[netId][local connId] instead,
+	// TODO: but note connectConfigs[netId][] are NOT complete, lack of exeternal incoming connections
 	// generate mulSynFast, mulSynSlow in connection-centric array
 	for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 		// store scaling factors for synaptic currents in connection-centric array
@@ -3143,7 +3139,7 @@ void SNN::compileGroupConfig() {
 
 	// assigned global neruon ids to each group in the order...
 	//    !!!!!!! IMPORTANT : NEURON ORGANIZATION/ARRANGEMENT MAP !!!!!!!!!!
-	//     <--- Excitatory --> | <-------- Inhibitory REGION ----------> | <-- Excitatory -->
+	//     <-----Excitatory----->| <----------Inhibitory REGION------------> | <---Excitatory--->
 	//     Excitatory-Regular  | Inhibitory-Regular | Inhibitory-Poisson | Excitatory-Poisson
 	int assignedGroup = 0;
 	int availableNeuronId = 0;
@@ -3228,7 +3224,7 @@ void SNN::connectNetwork() {
 	}
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
+// set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
@@ -3262,7 +3258,7 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 		connectionLists[externalNetId].push_back(connInfo);
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
+// set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
@@ -3521,7 +3517,7 @@ void SNN::connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bo
 	}
 }
 
-// FIXME: rewrite user-define call-back function
+// TODO: rewrite user-define call-back function
 // user-defined functions called here...
 // This is where we define our user-defined call-back function.  -- KDC
 void SNN::connectUserDefined(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal) {
