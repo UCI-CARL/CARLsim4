@@ -890,9 +890,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
+
+	float timeStep = networkConfigs[netId].timeStep;
 	// loop that allows smaller integration time step for v's and u's
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 
+		//KERNEL_INFO("Number of groups is %i", networkConfigs[netId].numGroups);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
 				if (groupConfigs[netId][lGrpId].WithHomeostasis) {
@@ -902,6 +905,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				continue;
 			}
 
+			//KERNEL_INFO("Number of neurons in this group is %i", groupConfigs[netId][lGrpId].lEndN - groupConfigs[netId][lGrpId].lStartN + 1);
 			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 				assert(lNId < networkConfigs[netId].numNReg);
 
@@ -938,38 +942,104 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 				float totalCurrent = I_sum + runtimeData[netId].extCurrent[lNId];
 
-				if (!groupConfigs[netId][lGrpId].withParamModel_9)
-				{	// 4-param Izhikevich
-					// update vpos and upos for the current neuron
-					v += dvdtIzhikevich4(v, u, totalCurrent, networkConfigs[netId].timeStep);
-					if (v > 30.0f) {
-						v = 30.0f; // break the loop but evaluate u[i]
-						j = networkConfigs[netId].simNumStepsPerMs;
+				switch (networkConfigs[netId].simIntegrationMethod) {
+				case FORWARD_EULER:
+					if (!groupConfigs[netId][lGrpId].withParamModel_9)
+					{	// 4-param Izhikevich
+						// update vpos and upos for the current neuron
+						v += dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						if (v > 30.0f) {
+							v = 30.0f; // break the loop but evaluate u[i]
+							j = networkConfigs[netId].simNumStepsPerMs;
+						}
 					}
-				}
-				else
-				{	// 9-param Izhikevich
-					// update vpos and upos for the current neuron
-					//KERNEL_INFO("Voltage is: %f", v);
-					//KERNEL_INFO("vr is: %f", vr);
-					v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, networkConfigs[netId].timeStep);
-					//KERNEL_INFO("Voltage is: %f", v);
-					if (v > vpeak) {
-						v = vpeak; // break the loop but evaluate u[i]
-						j = networkConfigs[netId].simNumStepsPerMs;
+					else
+					{	// 9-param Izhikevich
+						// update vpos and upos for the current neuron
+						//KERNEL_INFO("Voltage is: %f", v);
+						//KERNEL_INFO("vr is: %f", vr);
+						v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+						//KERNEL_INFO("Voltage is: %f", v);
+						if (v > vpeak) {
+							v = vpeak; // break the loop but evaluate u[i]
+							j = networkConfigs[netId].simNumStepsPerMs;
+						}
 					}
-				}
 
-				if (v < -90.0f) v = -90.0f;
+					if (v < -90.0f) v = -90.0f;
 
-				//KERNEL_INFO("Recovery is: %f", u);
-				if (!groupConfigs[netId][lGrpId].withParamModel_9)
-				{
-					u += dudtIzhikevich4(v, u, a, b, networkConfigs[netId].timeStep);
-				}
-				else
-				{
-					u += dudtIzhikevich9(v, u, vr, a, b, networkConfigs[netId].timeStep);
+					//KERNEL_INFO("Recovery is: %f", u);
+					if (!groupConfigs[netId][lGrpId].withParamModel_9)
+					{
+						u += dudtIzhikevich4(v, u, a, b, timeStep);
+					}
+					else
+					{
+						u += dudtIzhikevich9(v, u, vr, a, b, timeStep);
+					}
+					break;
+				case RUNGE_KUTTA4:
+					if (!groupConfigs[netId][lGrpId].withParamModel_9) {
+						// 4-param Izhikevich
+						float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
+
+						float k2 = dvdtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, totalCurrent,
+							timeStep);
+						float l2 = dudtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, a, b, timeStep);
+
+						float k3 = dvdtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, totalCurrent,
+							timeStep);
+						float l3 = dudtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, a, b, timeStep);
+
+						float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
+						float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
+						//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
+						v = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+						if (v > 30.0f) {
+							v = 30.0f; // break the loop but evaluate u[i]
+							j = networkConfigs[netId].simNumStepsPerMs;
+						}
+						if (v < -90.0f) v = -90.0f;
+
+						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+						//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
+					}
+					else {
+						// 9-param Izhikevich
+						float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
+							timeStep);
+						float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+
+						float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+
+						float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+						float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+						v = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+						if (v > vpeak) {
+							v = vpeak; // break the loop but evaluate u[i]
+							j = networkConfigs[netId].simNumStepsPerMs;
+						}
+
+						if (v < -90.0f) v = -90.0f;
+
+						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+
+					}
+					break;
+				case UNKNOWN_INTEGRATION:
+				default:
+					KERNEL_ERROR("Unknown integration method.");
+					exitSimulation(1);
 				}
 
 				if (networkConfigs[netId].sim_with_conductances) {
@@ -981,18 +1051,31 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				}
 				runtimeData[netId].voltage[lNId] = v;
 				runtimeData[netId].recovery[lNId] = u;
-				// P8
-				// update average firing rate for homeostasis
-				if (groupConfigs[netId][lGrpId].WithHomeostasis)
-					runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+
+				// update average firing rate for homeostasis once per globalStateUpdate_CPU call
+				if (j == networkConfigs[netId].simNumStepsPerMs)
+				{
+					// P8
+					// update average firing rate for homeostasis
+					//KERNEL_INFO("Updated the firing homeostasis rate!");
+					//KERNEL_INFO("Local neuron id %i; Timestep %i!", lNId, j);
+					if (groupConfigs[netId][lGrpId].WithHomeostasis)
+						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+				}
 			} // end StartN...EndN
 
-			// P9
-			// decay dopamine concentration
-			if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
-				runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
+			// decay dopamine concentration once per globalStateUpdate_CPU call
+			if (j == networkConfigs[netId].simNumStepsPerMs)
+			{
+				// P9
+				// decay dopamine concentration
+				//KERNEL_INFO("Decayed Dopamine concentration!");
+				//KERNEL_INFO("Local group id %i; Timestep %i!", lGrpId, j);
+				if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
+					runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
+				}
+				runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
 			}
-			runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
 		} // end numGroups
 	} // end simNumStepsPerMs loop
 }

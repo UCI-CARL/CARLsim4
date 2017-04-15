@@ -65,6 +65,8 @@ int main() {
 
 	sim.setConductances(false);
 
+	//FORWARD_EULER
+	//RUNGE_KUTTA4
 	sim.setIntegrationMethod(FORWARD_EULER, 2.0f);
 
 	// build the network
