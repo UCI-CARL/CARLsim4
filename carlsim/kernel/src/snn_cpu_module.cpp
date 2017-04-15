@@ -890,6 +890,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
+	//KERNEL_INFO("Crash Site 1");
+	//KERNEL_INFO("INITIAL VOLTAGE IS: %f; INITIAL NEXT VOLTAGE IS: %f", runtimeData[netId].voltage[0], runtimeData[netId].nextVoltage[0]);
 
 	float timeStep = networkConfigs[netId].timeStep;
 	// loop that allows smaller integration time step for v's and u's
@@ -909,12 +911,17 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 				assert(lNId < networkConfigs[netId].numNReg);
 
+				//KERNEL_INFO("Crash Site 2. Next voltage is: %f", runtimeData[netId].nextVoltage[lNId]);
+
 				// P7
 				// update conductances
 				float v = runtimeData[netId].voltage[lNId];
+				float v_next = runtimeData[netId].nextVoltage[lNId];
 				float u = runtimeData[netId].recovery[lNId];
 				float I_sum, NMDAtmp;
 				float gNMDA, gGABAb;
+
+				//KERNEL_INFO("Crash Site 2.5");
 
 				// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
 				float k = runtimeData[netId].Izh_k[lNId];
@@ -940,6 +947,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					I_sum = runtimeData[netId].current[lNId];
 				}
 
+				//KERNEL_INFO("Crash Site 3");
+
 				float totalCurrent = I_sum + runtimeData[netId].extCurrent[lNId];
 
 				switch (networkConfigs[netId].simIntegrationMethod) {
@@ -947,9 +956,9 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					if (!groupConfigs[netId][lGrpId].withParamModel_9)
 					{	// 4-param Izhikevich
 						// update vpos and upos for the current neuron
-						v += dvdtIzhikevich4(v, u, totalCurrent, timeStep);
-						if (v > 30.0f) {
-							v = 30.0f; // break the loop but evaluate u[i]
+						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						if (v_next > 30.0f) {
+							v_next = 30.0f; // break the loop but evaluate u[i]
 							j = networkConfigs[netId].simNumStepsPerMs;
 						}
 					}
@@ -958,24 +967,24 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						// update vpos and upos for the current neuron
 						//KERNEL_INFO("Voltage is: %f", v);
 						//KERNEL_INFO("vr is: %f", vr);
-						v += dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+						v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 						//KERNEL_INFO("Voltage is: %f", v);
-						if (v > vpeak) {
-							v = vpeak; // break the loop but evaluate u[i]
+						if (v_next > vpeak) {
+							v_next = vpeak; // break the loop but evaluate u[i]
 							j = networkConfigs[netId].simNumStepsPerMs;
 						}
 					}
 
-					if (v < -90.0f) v = -90.0f;
+					if (v_next < -90.0f) v_next = -90.0f;
 
 					//KERNEL_INFO("Recovery is: %f", u);
 					if (!groupConfigs[netId][lGrpId].withParamModel_9)
 					{
-						u += dudtIzhikevich4(v, u, a, b, timeStep);
+						u += dudtIzhikevich4(v_next, u, a, b, timeStep);
 					}
 					else
 					{
-						u += dudtIzhikevich9(v, u, vr, a, b, timeStep);
+						u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
 					}
 					break;
 				case RUNGE_KUTTA4:
@@ -995,12 +1004,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
 						float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
 						//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
-						v = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
-						if (v > 30.0f) {
-							v = 30.0f; // break the loop but evaluate u[i]
+						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+						if (v_next > 30.0f) {
+							v_next = 30.0f; // break the loop but evaluate u[i]
 							j = networkConfigs[netId].simNumStepsPerMs;
 						}
-						if (v < -90.0f) v = -90.0f;
+						if (v_next < -90.0f) v_next = -90.0f;
 
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 						//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
@@ -1023,14 +1032,14 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 							totalCurrent, timeStep);
 						float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
 
-						v = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
-						if (v > vpeak) {
-							v = vpeak; // break the loop but evaluate u[i]
+						if (v_next > vpeak) {
+							v_next = vpeak; // break the loop but evaluate u[i]
 							j = networkConfigs[netId].simNumStepsPerMs;
 						}
 
-						if (v < -90.0f) v = -90.0f;
+						if (v_next < -90.0f) v_next = -90.0f;
 
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 
@@ -1049,7 +1058,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					// current must be reset here for CUBA and not STPUpdateAndDecayConductances
 					runtimeData[netId].current[lNId] = 0.0f;
 				}
-				runtimeData[netId].voltage[lNId] = v;
+				runtimeData[netId].nextVoltage[lNId] = v_next;
 				runtimeData[netId].recovery[lNId] = u;
 
 				// update average firing rate for homeostasis once per globalStateUpdate_CPU call
@@ -1077,6 +1086,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
 			}
 		} // end numGroups
+
+		// Only after we are done computing nextVoltage for all neurons do we copy the new values to the voltage array.
+		// This is crucial for GPU (asynchronous kernel launch) and in the future for a multi-threaded CARLsim version.
+		
+		memcpy(runtimeData[netId].voltage, runtimeData[netId].nextVoltage, sizeof(float)*networkConfigs[netId].numNReg);
+
 	} // end simNumStepsPerMs loop
 }
 
@@ -1580,6 +1595,10 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	if(allocateMem)
 		dest->voltage = new float[length];
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
+
+	if (allocateMem)
+		dest->nextVoltage = new float[length];
+	memcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length);
 
 	//neuron input current...
 	if(allocateMem)
@@ -2343,6 +2362,7 @@ void SNN::copySpikeTables(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// free all pointers
 	delete [] runtimeData[netId].voltage;
+	delete [] runtimeData[netId].nextVoltage;
 	delete [] runtimeData[netId].recovery;
 	delete [] runtimeData[netId].current;
 	delete [] runtimeData[netId].extCurrent;

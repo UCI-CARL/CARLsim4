@@ -421,7 +421,8 @@ typedef struct RuntimeData_s {
 	unsigned int spikeCountExtRxD2; //!< the number of external spikes with axonal delay > 1 in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountExtRxD1; //!< the number of external spikes with axonal delay == 1 in a simulation, used in CPU_MODE currently
 
-	float* voltage;
+	float* voltage; //!< membrane potential for each regular neuron
+	float* nextVoltage; //!< membrane potential buffer (next/future time step) for each regular neuron
 	float* recovery;
 	float* Izh_C;
 	float* Izh_k;
