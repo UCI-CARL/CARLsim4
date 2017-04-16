@@ -436,6 +436,11 @@ typedef struct RuntimeData_s {
 	float* current;
 	float* extCurrent;
 
+	//! Keeps track of all neurons that spiked at current time.
+	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
+	//! so that we don't produce more than 1 spike per ms.
+	bool* curSpike;
+
 	// conductances and stp values
 	float* gNMDA;   //!< conductance of gNMDA
 	float* gNMDA_r;

@@ -2486,6 +2486,7 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
 	memset(managerRuntimeData.voltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.nextVoltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.recovery, 0, sizeof(float) * managerRTDSize.maxNumNReg);
@@ -2500,6 +2501,7 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -5325,8 +5327,9 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
 	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
-	managerRuntimeData.nextVoltage = NULL;
+	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.curSpike = NULL;
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;

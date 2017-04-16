@@ -536,7 +536,8 @@ void SNN::copyExtFiringTable(int netId) {
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeData[netId].lastSpikeTime[lNId] = simTime;
-			} else if (runtimeData[netId].voltage[lNId] >= 30.0f) {
+			} else if (runtimeData[netId].curSpike[lNId]) {
+				runtimeData[netId].curSpike[lNId] = false;
 				needToWrite = true;
 			}
 
@@ -680,9 +681,9 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
-	float vreset = groupConfigs[netId][lGrpId].withParamModel_9 ? runtimeData[netId].Izh_vr[lNId] : runtimeData[netId].Izh_c[lNId];
-	runtimeData[netId].voltage[lNId] = vreset;
-	runtimeData[netId].recovery[lNId] += runtimeData[netId].Izh_d[lNId];
+	//float vreset = runtimeData[netId].Izh_c[lNId];
+	//runtimeData[netId].voltage[lNId] = vreset;
+	//runtimeData[netId].recovery[lNId] += runtimeData[netId].Izh_d[lNId];
 	if (groupConfigs[netId][lGrpId].WithSTDP)
 		runtimeData[netId].lastSpikeTime[lNId] = simTime;
 	
@@ -959,7 +960,9 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 						if (v_next > 30.0f) {
 							v_next = 30.0f; // break the loop but evaluate u[i]
-							j = networkConfigs[netId].simNumStepsPerMs;
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
 						}
 					}
 					else
@@ -971,7 +974,9 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						//KERNEL_INFO("Voltage is: %f", v);
 						if (v_next > vpeak) {
 							v_next = vpeak; // break the loop but evaluate u[i]
-							j = networkConfigs[netId].simNumStepsPerMs;
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
 						}
 					}
 
@@ -1006,8 +1011,10 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 						//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
 						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 						if (v_next > 30.0f) {
-							v_next = 30.0f; // break the loop but evaluate u[i]
-							j = networkConfigs[netId].simNumStepsPerMs;
+							v_next = 30.0f;
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
 						}
 						if (v_next < -90.0f) v_next = -90.0f;
 
@@ -1036,7 +1043,9 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 						if (v_next > vpeak) {
 							v_next = vpeak; // break the loop but evaluate u[i]
-							j = networkConfigs[netId].simNumStepsPerMs;
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
 						}
 
 						if (v_next < -90.0f) v_next = -90.0f;
@@ -1616,6 +1625,10 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
 	// do it only from host to device
 	copyExternalCurrent(netId, lGrpId, dest, allocateMem);
+
+	if (allocateMem)
+		dest->curSpike = new bool[length];
+	memcpy(&dest->curSpike[ptrPos], &managerRuntimeData.curSpike[ptrPos], sizeof(bool) * length);
 	
 	copyNeuronParameters(netId, lGrpId, dest, allocateMem);
 
@@ -2366,6 +2379,7 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].recovery;
 	delete [] runtimeData[netId].current;
 	delete [] runtimeData[netId].extCurrent;
+	delete [] runtimeData[netId].curSpike;
 	delete [] runtimeData[netId].Npre;
 	delete [] runtimeData[netId].Npre_plastic;
 	delete [] runtimeData[netId].Npre_plasticInv;
