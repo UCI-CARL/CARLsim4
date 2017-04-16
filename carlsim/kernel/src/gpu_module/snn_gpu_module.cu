@@ -921,9 +921,10 @@ __device__ void updateNeuronState(int nid, int grpId) {
 		if (!groupConfigsGPU[grpId].withParamModel_9)
 		{	// 4-param Izhikevich
 			// update vpos and upos for the current neuron
-			//printf("Voltage is: %f\n", v);
+
+			//printf("Voltage is: %f\n", v_next);
+			//printf("Recovery is: %f\n", u);
 			v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
-			//printf("Voltage is: %f\n", v);
 			if (v_next > 30.0f) {
 				// record spike but keep integrating
 				runtimeDataGPU.curSpike[nid] = true;
@@ -946,12 +947,13 @@ __device__ void updateNeuronState(int nid, int grpId) {
 
 		if (!groupConfigsGPU[grpId].withParamModel_9)
 		{
-			u += dudtIzhikevich4(v, u, a, b, timeStep);
+			u += dudtIzhikevich4(v_next, u, a, b, timeStep);
 		}
 		else
 		{
-			u += dudtIzhikevich9(v, u, vr, a, b, timeStep);
+			u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
 		}
+		break;
 	case RUNGE_KUTTA4:
 		if (!groupConfigsGPU[grpId].withParamModel_9) {
 			// 4-param Izhikevich
@@ -1002,7 +1004,7 @@ __device__ void updateNeuronState(int nid, int grpId) {
 			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
-			if (v_next > v_next > vpeak) {
+			if (v_next > vpeak) {
 				// record spike but keep integrating
 				runtimeDataGPU.curSpike[nid] = true;
 				v_next = runtimeDataGPU.Izh_c[nid];

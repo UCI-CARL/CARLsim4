@@ -956,7 +956,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					if (!groupConfigs[netId][lGrpId].withParamModel_9)
 					{	// 4-param Izhikevich
 						// update vpos and upos for the current neuron
-						KERNEL_INFO("Voltage is: %f", v);
+						KERNEL_INFO("Voltage is: %f", v_next);
+						KERNEL_INFO("Recovery is: %f", u);
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 						//KERNEL_INFO("Voltage is: %f", v);
 						if (v_next > 30.0f) {
@@ -994,6 +995,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					}
 					break;
 				case RUNGE_KUTTA4:
+					KERNEL_INFO("RUNGE_KUTTA4!");
 					if (!groupConfigs[netId][lGrpId].withParamModel_9) {
 						// 4-param Izhikevich
 						float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
@@ -1057,7 +1059,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					break;
 				case UNKNOWN_INTEGRATION:
 				default:
-					KERNEL_ERROR("Unknown integration method.");
 					exitSimulation(1);
 				}
 
