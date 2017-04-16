@@ -48,26 +48,25 @@
 int main() {
 	// create a network on GPU
 	int randSeed = 42;
-	CARLsim sim("test kernel", CPU_MODE, USER, 0, randSeed);
+	CARLsim sim("test kernel", GPU_MODE, USER, 0, randSeed);
 
 	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 
 	// 4 parameter version
-	//sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	// 9 parameter version
-	sim.setNeuronParameters(gExc, 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f); //RS
-	
-															  // set up a dummy (connection probability of 0) connection
-	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
+	//sim.setNeuronParameters(gExc, 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f); //RS
+														  // set up a dummy (connection probability of 0) connection
+	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 0.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	sim.setConductances(false);
 
 	//FORWARD_EULER
 	//RUNGE_KUTTA4
-	sim.setIntegrationMethod(FORWARD_EULER, 2.0f);
+	sim.setIntegrationMethod(RUNGE_KUTTA4, 2.0f);
 
 	// build the network
 	sim.setupNetwork();
@@ -87,7 +86,7 @@ int main() {
 
 	for (int t = 0; t < 1; t++) {
 		sim.runNetwork(0, 100, true);
-		sim.setExternalCurrent(gExc, 70);
+		sim.setExternalCurrent(gExc, 5);
 		sim.runNetwork(0, 900, true);
 	}
 

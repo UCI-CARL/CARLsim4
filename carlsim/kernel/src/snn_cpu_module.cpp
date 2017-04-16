@@ -919,7 +919,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				float v = runtimeData[netId].voltage[lNId];
 				float v_next = runtimeData[netId].nextVoltage[lNId];
 				float u = runtimeData[netId].recovery[lNId];
-				float I_sum, NMDAtmp;
+				float NMDAtmp;
 				float gNMDA, gGABAb;
 
 				//KERNEL_INFO("Crash Site 2.5");
@@ -934,30 +934,31 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				float b = runtimeData[netId].Izh_b[lNId];
 
 
-				I_sum = 0.0f;
+				float totalCurrent = runtimeData[netId].extCurrent[lNId];
+
 				if (networkConfigs[netId].sim_with_conductances) {
 					NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
 					gNMDA = (networkConfigs[netId].sim_with_NMDA_rise) ? (runtimeData[netId].gNMDA_d[lNId] - runtimeData[netId].gNMDA_r[lNId]) : runtimeData[netId].gNMDA[lNId];
 					gGABAb = (networkConfigs[netId].sim_with_GABAb_rise) ? (runtimeData[netId].gGABAb_d[lNId] - runtimeData[netId].gGABAb_r[lNId]) : runtimeData[netId].gGABAb[lNId];
-					I_sum = -(runtimeData[netId].gAMPA[lNId] * (v - 0.0f)
+					totalCurrent += -(runtimeData[netId].gAMPA[lNId] * (v - 0.0f)
 						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
 						+ runtimeData[netId].gGABAa[lNId] * (v + 70.0f)
 						+ gGABAb * (v + 90.0f));
 				}
 				else {
-					I_sum = runtimeData[netId].current[lNId];
+					totalCurrent += runtimeData[netId].current[lNId];
 				}
 
 				//KERNEL_INFO("Crash Site 3");
-
-				float totalCurrent = I_sum + runtimeData[netId].extCurrent[lNId];
 
 				switch (networkConfigs[netId].simIntegrationMethod) {
 				case FORWARD_EULER:
 					if (!groupConfigs[netId][lGrpId].withParamModel_9)
 					{	// 4-param Izhikevich
 						// update vpos and upos for the current neuron
+						KERNEL_INFO("Voltage is: %f", v);
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						//KERNEL_INFO("Voltage is: %f", v);
 						if (v_next > 30.0f) {
 							v_next = 30.0f; // break the loop but evaluate u[i]
 							runtimeData[netId].curSpike[lNId] = true;
@@ -1060,13 +1061,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					exitSimulation(1);
 				}
 
-				if (networkConfigs[netId].sim_with_conductances) {
-					runtimeData[netId].current[lNId] = I_sum;
-				}
-				else {
-					// current must be reset here for CUBA and not STPUpdateAndDecayConductances
-					runtimeData[netId].current[lNId] = 0.0f;
-				}
 				runtimeData[netId].nextVoltage[lNId] = v_next;
 				runtimeData[netId].recovery[lNId] = u;
 
