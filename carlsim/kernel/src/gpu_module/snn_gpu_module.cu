@@ -889,7 +889,7 @@ __device__ void updateNeuronState(int nid, int grpId) {
 	float v = runtimeDataGPU.voltage[nid];
 	float v_next = runtimeDataGPU.nextVoltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
-	float NMDAtmp;
+	float I_sum, NMDAtmp;
 	float gNMDA, gGABAb;
 
 	float k = runtimeDataGPU.Izh_k[nid];
@@ -908,10 +908,13 @@ __device__ void updateNeuronState(int nid, int grpId) {
 		NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
 		gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid] - runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
 		gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid] - runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
-		totalCurrent += -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
+		
+		I_sum = -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
 					+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
 					+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
 					+ gGABAb * (v + 90.0f));
+
+		totalCurrent += I_sum;
 	} else {
 		totalCurrent += runtimeDataGPU.current[nid];
 	}
@@ -1020,6 +1023,13 @@ __device__ void updateNeuronState(int nid, int grpId) {
 	default:
 		// unknown integration method
 		assert(false);
+	}
+	if (networkConfigGPU.sim_with_conductances) {
+		runtimeDataGPU.current[nid] = I_sum;
+	}
+	else {
+		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
+		runtimeDataGPU.current[nid] = 0.0f;
 	}
 	runtimeDataGPU.nextVoltage[nid] = v_next;
 	runtimeDataGPU.recovery[nid] = u;

@@ -919,7 +919,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				float v = runtimeData[netId].voltage[lNId];
 				float v_next = runtimeData[netId].nextVoltage[lNId];
 				float u = runtimeData[netId].recovery[lNId];
-				float NMDAtmp;
+				float I_sum, NMDAtmp;
 				float gNMDA, gGABAb;
 
 				//KERNEL_INFO("Crash Site 2.5");
@@ -940,10 +940,13 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
 					gNMDA = (networkConfigs[netId].sim_with_NMDA_rise) ? (runtimeData[netId].gNMDA_d[lNId] - runtimeData[netId].gNMDA_r[lNId]) : runtimeData[netId].gNMDA[lNId];
 					gGABAb = (networkConfigs[netId].sim_with_GABAb_rise) ? (runtimeData[netId].gGABAb_d[lNId] - runtimeData[netId].gGABAb_r[lNId]) : runtimeData[netId].gGABAb[lNId];
-					totalCurrent += -(runtimeData[netId].gAMPA[lNId] * (v - 0.0f)
+					
+					I_sum = -(runtimeData[netId].gAMPA[lNId] * (v - 0.0f)
 						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
 						+ runtimeData[netId].gGABAa[lNId] * (v + 70.0f)
 						+ gGABAb * (v + 90.0f));
+					
+					totalCurrent += I_sum;
 				}
 				else {
 					totalCurrent += runtimeData[netId].current[lNId];
@@ -1065,7 +1068,15 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				runtimeData[netId].nextVoltage[lNId] = v_next;
 				runtimeData[netId].recovery[lNId] = u;
 
-				// update average firing rate for homeostasis once per globalStateUpdate_CPU call
+				if (networkConfigs[netId].sim_with_conductances) {
+					runtimeData[netId].current[lNId] = I_sum;
+				}
+				else {
+					// current must be reset here for CUBA and not STPUpdateAndDecayConductances
+					runtimeData[netId].current[lNId] = 0.0f;
+				}
+
+				// update current & average firing rate for homeostasis once per globalStateUpdate_CPU call
 				if (j == networkConfigs[netId].simNumStepsPerMs)
 				{
 					// P8
