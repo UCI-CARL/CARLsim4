@@ -901,7 +901,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 		//KERNEL_INFO("Number of groups is %i", networkConfigs[netId].numGroups);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
-				if (groupConfigs[netId][lGrpId].WithHomeostasis) {
+				if (groupConfigs[netId][lGrpId].WithHomeostasis & (j == networkConfigs[netId].simNumStepsPerMs)) {
 					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
 						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 				}
