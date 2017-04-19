@@ -1024,10 +1024,8 @@ __device__ void updateNeuronState(int nid, int grpId) {
 		// unknown integration method
 		assert(false);
 	}
-	if (networkConfigGPU.sim_with_conductances) {
-		runtimeDataGPU.current[nid] = I_sum;
-	}
-	else {
+	if (!networkConfigGPU.sim_with_conductances)
+	{
 		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
 		runtimeDataGPU.current[nid] = 0.0f;
 	}
