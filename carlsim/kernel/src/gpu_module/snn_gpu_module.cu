@@ -356,6 +356,8 @@ __device__ void resetFiredNeuron(int lNId, short int lGrpId, int simTime) {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
 	// single 16 byte access. This might improve bandwidth performance
 	// This is fully uncoalsced access...need to convert to coalsced access..
+	runtimeDataGPU.voltage[lNId] = runtimeDataGPU.Izh_c[lNId];
+	runtimeDataGPU.recovery[lNId] += runtimeDataGPU.Izh_d[lNId];
 	if (groupConfigsGPU[lGrpId].WithSTDP)
 		runtimeDataGPU.lastSpikeTime[lNId] = simTime;
 	
@@ -635,8 +637,11 @@ __global__ 	void kernel_findFiring (int simTime) {
 				if (needToWrite)
 					runtimeDataGPU.lastSpikeTime[lNId] = simTime;
 			} else {
-				if (runtimeDataGPU.curSpike[lNId]) {
-					runtimeDataGPU.curSpike[lNId] = false;
+				if (runtimeDataGPU.voltage[lNId] >= 30.0f  && !groupConfigsGPU[lGrpId].withParamModel_9) {
+					needToWrite = true;
+				}
+				else if (runtimeDataGPU.voltage[lNId] >= runtimeDataGPU.Izh_vpeak[lNId] && groupConfigsGPU[lGrpId].withParamModel_9)
+				{
 					needToWrite = true;
 				}
 			}
@@ -902,135 +907,135 @@ __device__ void updateNeuronState(int nid, int grpId) {
 
 	float timeStep = networkConfigGPU.timeStep;
 
-	float totalCurrent = runtimeDataGPU.extCurrent[nid];
+	for (int j = 1; j <= networkConfigGPU.simNumStepsPerMs; j++) {
 
-	if (networkConfigGPU.sim_with_conductances) {
-		NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
-		gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid] - runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
-		gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid] - runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
-		
-		I_sum = -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
-					+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
-					+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
-					+ gGABAb * (v + 90.0f));
+		float totalCurrent = runtimeDataGPU.extCurrent[nid];
 
-		totalCurrent += I_sum;
-	} else {
-		totalCurrent += runtimeDataGPU.current[nid];
-	}
-		
-	switch (networkConfigGPU.simIntegrationMethod) {
-	case FORWARD_EULER:
-		if (!groupConfigsGPU[grpId].withParamModel_9)
-		{	// 4-param Izhikevich
-			// update vpos and upos for the current neuron
+		if (networkConfigGPU.sim_with_conductances) {
+			NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
+			gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid] - runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
+			gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid] - runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
 
-			//printf("Voltage is: %f\n", v_next);
-			//printf("Recovery is: %f\n", u);
-			v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
-			if (v_next > 30.0f) {
-				// record spike but keep integrating
-				runtimeDataGPU.curSpike[nid] = true;
-				v_next = runtimeDataGPU.Izh_c[nid];
-				u += runtimeDataGPU.Izh_d[nid];
-			}
-		}
-		else
-		{	// 9-param Izhikevich
-			// update vpos and upos for the current neuron
-			v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			if (v_next > vpeak) {
-				runtimeDataGPU.curSpike[nid] = true;
-				v_next = runtimeDataGPU.Izh_c[nid];
-				u += runtimeDataGPU.Izh_d[nid];
-			}
-		}
+			I_sum = -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
+				+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
+				+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
+				+ gGABAb * (v + 90.0f));
 
-		if (v_next < -90.0f) v_next = -90.0f;
-
-		if (!groupConfigsGPU[grpId].withParamModel_9)
-		{
-			u += dudtIzhikevich4(v_next, u, a, b, timeStep);
-		}
-		else
-		{
-			u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
-		}
-		break;
-	case RUNGE_KUTTA4:
-		if (!groupConfigsGPU[grpId].withParamModel_9) {
-			// 4-param Izhikevich
-			float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
-			float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
-
-			float k2 = dvdtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, totalCurrent, timeStep);
-			float l2 = dudtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, a, b, timeStep);
-
-			float k3 = dvdtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, totalCurrent, timeStep);
-			float l3 = dudtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, a, b, timeStep);
-
-			float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
-			float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
-
-			const float one_sixth = 1.0f / 6.0f;
-			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
-
-			if (v_next > 30.0f) {
-				// record spike but keep integrating
-				runtimeDataGPU.curSpike[nid] = true;
-				v_next = runtimeDataGPU.Izh_c[nid];
-				u += runtimeDataGPU.Izh_d[nid];
-			}
-
-			if (v_next < -90.0f) v_next = -90.0f;
-
-			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			totalCurrent += I_sum;
 		}
 		else {
-			// 9-param Izhikevich
-			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
-			//printf("k1: %f; l1: %f\n", k1, l1);
+			totalCurrent += runtimeDataGPU.current[nid];
+		}
 
-			float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
-			//printf("k2: %f; l2: %f\n", k2, l2);
+		switch (networkConfigGPU.simIntegrationMethod) {
+		case FORWARD_EULER:
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{	// 4-param Izhikevich
+				// update vpos and upos for the current neuron
 
-			float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
-			//printf("k3: %f; l3: %f\n", k3, l3);
-
-			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
-			//printf("k4: %f; l4: %f\n", k4, l4);
-
-			const float one_sixth = 1.0f / 6.0f;
-			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
-
-			if (v_next > vpeak) {
-				// record spike but keep integrating
-				runtimeDataGPU.curSpike[nid] = true;
-				v_next = runtimeDataGPU.Izh_c[nid];
-				u += runtimeDataGPU.Izh_d[nid];
+				//printf("Voltage is: %f\n", v);
+				//printf("Recovery is: %f\n", u);
+				v = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+				if (v > 30.0f) {
+					// record spike but keep integrating
+					v = 30.0f;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+			}
+			else
+			{	// 9-param Izhikevich
+				// update vpos and upos for the current neuron
+				v = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				if (v > vpeak) {
+					v = vpeak;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
 			}
 
-			if (v_next < -90.0f) v_next = -90.0f;
+			if (v < -90.0f) v = -90.0f;
 
-			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{
+				u += dudtIzhikevich4(v, u, a, b, timeStep);
+			}
+			else
+			{
+				u += dudtIzhikevich9(v, u, vr, a, b, timeStep);
+			}
+			break;
+		case RUNGE_KUTTA4:
+			if (!groupConfigsGPU[grpId].withParamModel_9) {
+				// 4-param Izhikevich
+				float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+				float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
+
+				float k2 = dvdtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, totalCurrent, timeStep);
+				float l2 = dudtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, a, b, timeStep);
+
+				float k3 = dvdtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, totalCurrent, timeStep);
+				float l3 = dudtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, a, b, timeStep);
+
+				float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
+				float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
+
+				const float one_sixth = 1.0f / 6.0f;
+				v = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+				if (v > 30.0f) {
+					// record spike but keep integrating
+					v = 30.0f;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+
+				if (v < -90.0f) v = -90.0f;
+
+				u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			}
+			else {
+				// 9-param Izhikevich
+				float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+				//printf("k1: %f; l1: %f\n", k1, l1);
+
+				float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+				//printf("k2: %f; l2: %f\n", k2, l2);
+
+				float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+				//printf("k3: %f; l3: %f\n", k3, l3);
+
+				float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+				//printf("k4: %f; l4: %f\n", k4, l4);
+
+				const float one_sixth = 1.0f / 6.0f;
+				v = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+				if (v > vpeak) {
+					// record spike but keep integrating
+					v = vpeak;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+
+				if (v < -90.0f) v = -90.0f;
+
+				u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			}
+			break;
+		case UNKNOWN_INTEGRATION:
+		default:
+			// unknown integration method
+			assert(false);
 		}
-		break;
-	case UNKNOWN_INTEGRATION:
-	default:
-		// unknown integration method
-		assert(false);
 	}
+	runtimeDataGPU.voltage[nid] = v;
+	runtimeDataGPU.recovery[nid] = u;
 	if (!networkConfigGPU.sim_with_conductances)
 	{
 		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
 		runtimeDataGPU.current[nid] = 0.0f;
 	}
-	runtimeDataGPU.nextVoltage[nid] = v_next;
-	runtimeDataGPU.recovery[nid] = u;
 }
 
 /*!
@@ -2907,15 +2912,15 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 	
-	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
+	//for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 		// update all neuron state (i.e., voltage and recovery), including homeostasis
 		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > ();
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 		// the above kernel should end with a syncthread statement to be on the safe side
-		CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].voltage[0], &runtimeData[netId].nextVoltage[0],
-			sizeof(float) * networkConfigs[netId].numNReg, cudaMemcpyDeviceToDevice));
-	}
+		//CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].voltage[0], &runtimeData[netId].nextVoltage[0],
+		//	sizeof(float) * networkConfigs[netId].numNReg, cudaMemcpyDeviceToDevice));
+	//}
 
 }
 
