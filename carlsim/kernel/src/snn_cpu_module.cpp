@@ -2102,6 +2102,10 @@ void SNN::copyWeightState(int netId, int lGrpId) {
 	}
 }
 
+void SNN::copyNetworkConfig(int netId) {
+	// do nothing, CPU computing backend can access networkConfigs[] directly
+}
+
 void SNN::copyGrpIdsLookupArray(int netId) {
 	memcpy(managerRuntimeData.grpIds, runtimeData[netId].grpIds, sizeof(short int) *  networkConfigs[netId].numNAssigned);
 }

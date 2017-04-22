@@ -88,7 +88,7 @@ TEST(setConnMon, interfaceDeath) {
 	const int GRP_SIZE = 10;
 
 	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
@@ -138,7 +138,7 @@ TEST(setConnMon, fname) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("setConnMon.fname",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
@@ -172,7 +172,7 @@ TEST(ConnMon, getters) {
 	float wtScale = 0.01f;
 
 	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
@@ -247,7 +247,7 @@ TEST(ConnMon, takeSnapshot) {
 	float wtScale = 0.01f;
 
 	// loop over both CPU and GPU mode.
-	for(int mode=0; mode<=1; mode++){
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// first iteration, test CPU mode, second test GPU mode
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
@@ -299,7 +299,7 @@ TEST(ConnMon, weightFile) {
 	float wtScale = 0.01f;
 
 	// loop over both CPU and GPU mode.
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		// loop over time interval options
 		long fileLength[3] = {0,0,0};
 		for (int interval=-1; interval<=3; interval+=2) {
@@ -373,7 +373,7 @@ TEST(ConnMon, weightChange) {
 	float wtScale = 0.01f;
 
 	// loop over both CPU and GPU mode.
-	for (int mode=0; mode<=1; mode++) {
+	for (int mode = 0; mode < TESTED_MODES; mode++) {
 		sim = new CARLsim("ConnMon.setConnectionMonitorDeath",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g0 = sim->createGroup("g0", GRP_SIZE, EXCITATORY_NEURON, 0);

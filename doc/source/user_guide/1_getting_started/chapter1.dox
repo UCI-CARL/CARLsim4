@@ -7,10 +7,11 @@
 \section ch1s1_preinstallation 1.1 Pre-Installation
 \author Kristofor D. Carlson
 \author Michael Beyeler
+\author Ting-Shuo Chou
 
 CARLsim runs on both generic x86 CPUs and off-the-shelf NVIDIA GPUs.
 Full support of all CARLsim features requires that the NVIDIA CUDA parallel computing platform be installed.
-It is now also possible to compile CARLsim without GPU support (see \ref ch1s2s1s3_cpuonly).
+It is now also possible to compile CARLsim without GPU support (see \ref ch1s2s1s3_compiling).
 
 CARLsim requires GPUs with a compute capability of 2.0 or higher.
 To find the compute capability of your device please refer to the
@@ -28,7 +29,7 @@ the file <tt>helper_cuda.h</tt>, which usually resides in
 
 \subsection ch1s1s1_os 1.1.1 Supported Operating Systems
 CARLsim has been tested on the following platforms:
-- Windows 10
+- Windows 7/10
 - Ubuntu 16.04
 
 
@@ -132,21 +133,14 @@ The easiest way to set these is to add them to your
 
 The following options are available:
 
-- Installation directory: By default, the CARLsim library lives in <tt>/usr/local/lib</tt>,
-  and CARLsim include files live in <tt>/usr/local/include/carlsim</tt>.
+- Installation directory: By default, the CARLsim library lives in <tt>~/CARL/lib</tt>,
+  and CARLsim include files live in <tt>~/CARL/include</tt>.
   You can overwrite these by exporting an evironment variable called
   <tt>CARLSIM4_INSTALL_DIR</tt>:
   \code
   $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/location
   \endcode
-
-- GPU support: By default, CARLsim comes with CUDA support.
-  Obviously, this requires CUDA to be installed first.
-  If you want to run CARLsim without GPU support, you need to export an
-  environment variable called <tt>CARLSIM4_NO_CUDA</tt> and set it to 1:
-  \code
-  $ export CARLSIM4_NO_CUDA=1
-  \endcode
+  For advanced users or administrators, you could set the path to <tt>/usr/local</tt>
 
 - Custom CUDA paths: By default, CARLsim assumes that your CUDA library lives in
   <tt>/usr/local/cuda</tt>. If this is not the case on your system, make sure to
@@ -164,15 +158,6 @@ The following options are available:
   $ export ECJ_JAR=/path/to/ECJ/JAR/file
   $ export ECJ_PTI_DIR=/path/to/ECJ/PTI
   \endcode
-
-- Code coverage: If you are a CARLsim developer, you can run the regression
-  suite and generate a code coverage report using an environment variable
-  called <tt>CARLSIM4_COVERAGE</tt>:
-  \code
-  $ export CARLSIM4_COVERAGE=1
-  \endcode
-  The whole procedure is described in ch11s4_coverage.
-
 
 Once you have made changes to your <tt>~/.bashrc</tt>, make sure they go into
 effect by either typing:
@@ -213,46 +198,54 @@ For CUDA Toolkits other than version 6.5, the paths above need to be changed acc
 the file <tt>helper_cuda.h</tt>, which usually resides in
 <tt>/usr/local/cuda/samples/common/inc</tt>.
 
+\subsubsection ch1s2s1s3_compiling 1.2.1.3 Compiling the CARLsim Library
 
-\subsubsection ch1s2s1s3_cpuonly 1.2.1.3 Installing CARLsim Without GPU Support
+When it comes to compiling CARLsim, you have several options:
 
-As mentioned above,
-GPU support can be disabled by exporting an environment
-variable called <tt>CARLSIM4_NO_CUDA</tt> and by setting it to 1:
-\code
-$ export CARLSIM4_NO_CUDA=1
-\endcode
-
-In this case, the NVIDIA CUDA toolkit is not required.
-But, obviously you will not be able to run CARLsim in ::GPU_MODE.
-
-\see \ref ch1s2s1s1_environment_variables
-
-
-\subsubsection ch1s2s1s4_compiling 1.2.1.4 Compiling the CARLsim Library
-
-When it comes to compiling and installing CARLsim, you have two options:
-
--# Install a <tt>release</tt> version:
+-# Compile a <tt>release</tt> version:
    \code
    $ make -j4
-   $ sudo -E make install
+   \endcode
+   or
+   \code
+   $ make release -j4
    \endcode
    This will enable hardware accelerations using the <tt>-O3</tt> and
    <tt>-ffast-math</tt> compile flags.
 
--# Install a <tt>debug</tt> version:
+-# Comiple a <tt>debug</tt> version:
    \code
    $ make debug -j4
-   $ sudo -E make install
    \endcode
    This will disable hardware accelerations (via <tt>-O0</tt>) and enable
    extensive debug prints (via <tt>-g -Wall</tt>).
 
+If your machine does not have a GPU card supporting CUDA framework, you could
+
+-# Compile a <tt>release</tt> version without GPU support:
+   \code
+   $ make release_nocuda -j4
+   \endcode
+
+-# Compile a <tt>debug</tt> version without GPU support:
+   \code
+   $ make debug_nocuda -j4
+   \endcode
+
+After compiling CARLsim, you can install the library by typing:
+-  \code
+   $ make install
+   \endcode
+   or
+-  \code
+   $ sudo -E make install
+   \endcode
+   , if you are an administrator.
+   
+
 \note Note the <tt>-E</tt> flag in the commands above,
 which will cause <tt>sudo</tt> to remember any environment
-variables you set above (such as <tt>CARLSIM4_INSTALL_DIR</tt> and
-<tt>CARLSIM4_NO_CUDA</tt>).
+variables you set above (such as <tt>CARLSIM4_INSTALL_DIR</tt>).
 You don't need this flag if you're not installing with <tt>sudo</tt>.
 
 \note Also, note the <tt>-j4</tt> flag, which will install CARLsim using
@@ -270,15 +263,25 @@ For more information on how to use the regression suite, please see \ref ch11_re
 \since v3.1
 
 
-\subsubsection ch1s2s1s5_verifying 1.2.1.5 Verifying the Installation
+\subsubsection ch1s2s1s4_verifying 1.2.1.4 Verifying the Installation
 
 In order to make sure the installation was successful,
-you can run the regression suite:
+you can compile the regression suite:
 
 \code
 $ make test
+\endcode
+or
+\code
+$ make test_nocuda
+\endcode
+, if you compiled CARLsim libarary without GPU support.
+
+To run the regression suite, you can type:
+\code
 $ ./carlsim/test_carlsim_tests
 \endcode
+
 
 For more information on the regression suite, please refer to
 \ref ch11_regression_suite.
@@ -287,27 +290,22 @@ For more information on the regression suite, please refer to
 
 \subsection ch1s2s2_windows 1.2.2 Windows
 
-CARLsim provides solution files for Microsoft Visual Studio (VS) 2012 and CUDA 5.5.
+CARLsim provides solution files for Microsoft Visual Studio (VS) 2015 and CUDA 8.0.
 The solution file is called <tt>CARLsim.sln</tt> and is located in the CARLsim root directory.
 In addition, every project, tutorial, and the regression suite have their own .vcxproj projects file
 in the appropriate directory.
 
 Before building the solution, <tt>Configuration</tt> should be set to <tt>x64</tt>.
 <tt>Release</tt> should be selected for project executables, and <tt>Debug</tt> should be selected
-for compiling the regression suite.
+for compiling the regression suite. For more information about the regression suite, please see
+\ref ch11_regression_suite.
 
-VS 2012 will then generate all executables (.exe) and the static library (.lib) via "Build Solution".
+VS 2015 will then generate all executables (.exe) and the static library (.lib) via "Build Solution".
 
 Newer VS versions will automatically upgrade the solution file (<tt>CARLsim.sln</tt>) and all project files
 (<tt>*.vcxproj</tt>).
-For newer CUDA Toolkit versions, the strings "CUDA 5.5.props" and "CUDA 5.5.targets" that are present in
+For newer CUDA Toolkit versions, the strings "CUDA 8.0.props" and "CUDA 8.0.targets" that are present in
 every .vcxproj file have to be manually updated to reflect the right CUDA Toolkit version number.
-
-CARLsim comes with an optional automated parameter tuning framework. For more information about
-how to install the framework please see \ref ch10_ecj. Additionally, CARLsim now comes with a
-regression suite that uses <a href="https://code.google.com/p/googletest/">Google Test</a>.
-For more information on how to use the regression suite, please see \ref ch11_regression_suite.
-
 
 
 \section ch1s3_project_workflow 1.3 Project Workflow
@@ -315,8 +313,8 @@ For more information on how to use the regression suite, please see \ref ch11_re
 \author Ting-Shuo Chou
 
 A sample "Hello World" project is provided in the <tt>projects/hello_world</tt> directory.
-The project includes a single source file <tt>main_hello_world.cpp</tt> that creates a network with two groups,
-connected with random weights, and can be used as a skeleton to create new projects.
+The project includes a single source file <tt>main_hello_world.cpp</tt> in the <tt>src</tt> directory 
+that creates a network with two groups, connected with random weights, and can be used as a skeleton to create new projects.
 
 Any output files created by the simulation will be automatically placed in the <tt>results/</tt> directory.
 
@@ -344,6 +342,10 @@ $ cd projects/hello_world
 $ make
 $ ./hello_world
 \endcode
+If you compile CARLsim library without GPU support, please build your project by typing:
+\code
+$ make nocuda
+\endcode
 
 Any output files created by the simulation will be automatically placed in the <tt>results/</tt> directory.
 This may include any spike files created by SpikeMonitor, a debug log file, and a network structure file.
@@ -366,37 +368,33 @@ $ make distclean
 The easiest way to create a new project in Linux/Mac OS X is to make a copy of the
 <tt>projects/hello_world/</tt> directory
 and all its corresponding subdirectories, rename the directory accordingly, and place it alongside
-<tt>hello_world/</tt> in the <tt>projects/</tt> directory.
-Then only minimal changes to the Makefile must be made in order for the project to compile correctly.
+<tt>hello_world/</tt> in the <tt>projects/</tt> directory. To do this, type
+\code
+$ ./init.sh your_project_name
+\endcode
 
-The Makefile provided in the directory was made so that users only have to modify a small portion of the file
-to build a custom project.
+Only minimal changes to the Makefile must be made in order for the project to compile correctly. The Makefile 
+provided in the directory was made so that users only have to modify a small portion of the file to build a custom project.
 Below is the modifiable portion of the Makefile:
 \code
-# Makefile for building project program from the CARLsim library
+# Name of the binary file to be created.
+# NOTE: There must be a corresponding .cpp file named main_$(proj_target).cpp
+proj_target := hello_world
 
-# NOTE: if you are compiling your code in a directory different from
-# examples/<example_name> or projects/<project_name> then you need to either
-# move the configured user.mk file to this directory or set the path to
-# where CARLsim can find the user.mk.
-USER_MK_PATH = ../../
-include $(USER_MK_PATH)user.mk
+# Directory where all include files reside. The Makefile will automatically
+# detect and include all .h files within that directory.
+proj_inc_dir := inc
 
-project := hello_world
-output := *.dot *.dat *.log *.csv
+# Directory where all source files reside. The Makefile will automatically
+# detect and include all .cpp and .cu files within that directory.
+proj_src_dir := src
 \endcode
-The <tt>USER_MK_PATH</tt> variable points to the <tt>user.mk</tt> file in the CARLsim root directory.
-This file is needed because it contains all necessary compilation and linking flags.
-If the <tt>user.mk</tt> is moved to a different location, the <tt>USER_MK_PATH</tt> needs to be updated
-accordingly.
 
 The name of the project can be changed via variable <tt>project</tt>.
 Whatever string is assigned here will influence the name of the Makefile target as well as the name of
 the C++ source file. For example, setting <tt>project</tt> to "hello_world" will assume that a source
 file <tt>main_hello_world.cpp</tt> exists, and will create an executable called <tt>hello_world</tt>.
 
-Finally, files and/or file extensions to be deleted with the <tt>make clean</tt> and <tt>make distclean</tt>
-commands can be edited by changing the <tt>output</tt> variable.
 
 \note The C++ source file must be named <tt>main_{project name}.cpp</tt> for the Makefile to compile correctly,
 where <tt>{project_name}</tt> is the string assigned to the <tt>project</tt> variable in the Makefile.
@@ -438,17 +436,10 @@ Then the new project is ready to be built, rebuilt, or cleaned directly through 
 
 \subsection ch1s4s1_linux 1.4.1 Linux / Mac OS X
 
-To uninstall CARLsim on a Unix platform, open a terminal, navigate to the CARLsim root directory, and type:
-\code
-$ sudo make uninstall
-\endcode
-
-This will remove the directory pointed to by the environment variable <tt>CARLSIM_LIB_DIR</tt>.
-By default, this variable points to the location <tt>"/opt/CARL/CARLsim"</tt>.
+To uninstall CARLsim on a Unix platform, open a terminal, simply remove the installed library and header files in
+<tt>CARLSIM4_INSTALL_DIR</tt>
 
 \note Any environments that have been added to <tt>~/.bashrc</tt> must be removed manually.
-\attention Before uninstalling, make sure that the environment variable <tt>CARLSIM_LIB_DIR</tt> is properly set.
-
 
 \subsection ch1s4s2_windows 1.4.2 Windows
 

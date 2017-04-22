@@ -45,10 +45,10 @@ proj_src_dir   := .
 
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
 # sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+ifdef CARLSIM4_INSTALL_DIR
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := $(HOME)/CARL/carlsim
 endif
 
 # include compile flags etc.
@@ -97,7 +97,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Test Suite options:)
+	$(info CARLsim4 Project options:)
 	$(info )
 	$(info make               Compiles test suite
 	$(info make clean         Cleans out all object files)
