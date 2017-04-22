@@ -5227,8 +5227,6 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 
 	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId];
 	managerRuntimeData.recovery[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? 0.0f : managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId];
-	//KERNEL_INFO("INITIAL RECOVERY IS: %f", managerRuntimeData.recovery[lNId]);
-	KERNEL_INFO("INITIAL VOLTAGE IS: %f; INITIAL NEXT VOLTAGE IS: %f", managerRuntimeData.voltage[lNId], managerRuntimeData.nextVoltage[lNId]);
 
  	if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 		// set the baseFiring with some standard deviation.

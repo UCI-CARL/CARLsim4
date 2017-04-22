@@ -693,19 +693,6 @@ void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
 		// with homeostasis flag can be used here.
 		runtimeData[netId].avgFiring[lNId] += 1000 / (groupConfigs[netId][lGrpId].avgTimeScale * 1000);
 	}
-
-	// DEBUG CODE -- REMOVE (BEGIN)
-
-	// KERNEL_INFO("This simulation has %i number of steps per millisecond;", networkConfigs[netId].simNumStepsPerMs);
-
-	//if (groupConfigs[netId][lGrpId].withParamModel_9)
-	//{
-	//	KERNEL_INFO("This is a nine parameter group!");
-	//}
-	//else
-	//	KERNEL_INFO("This is a four parameter group!");
-
-	// DEBUG CODE -- REMOVE (END)
 }
 
 bool SNN::getPoissonSpike(int lNId, int netId) {
@@ -893,12 +880,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
-	//KERNEL_INFO("Crash Site 1");
-	//KERNEL_INFO("INITIAL VOLTAGE IS: %f; INITIAL NEXT VOLTAGE IS: %f", runtimeData[netId].voltage[0], runtimeData[netId].nextVoltage[0]);
-
 	float timeStep = networkConfigs[netId].timeStep;
 
-	//KERNEL_INFO("Number of groups is %i", networkConfigs[netId].numGroups);
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
 			if (groupConfigs[netId][lGrpId].WithHomeostasis) {
@@ -908,11 +891,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 			continue;
 		}
 
-		//KERNEL_INFO("Number of neurons in this group is %i", groupConfigs[netId][lGrpId].lEndN - groupConfigs[netId][lGrpId].lStartN + 1);
 		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 			assert(lNId < networkConfigs[netId].numNReg);
-
-			//KERNEL_INFO("Crash Site 2. Next voltage is: %f", runtimeData[netId].nextVoltage[lNId]);
 
 			// P7
 			// update conductances
@@ -921,8 +901,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 			float u = runtimeData[netId].recovery[lNId];
 			float I_sum, NMDAtmp;
 			float gNMDA, gGABAb;
-
-			//KERNEL_INFO("Crash Site 2.5");
 
 			// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
 			float k = runtimeData[netId].Izh_k[lNId];
@@ -954,17 +932,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				totalCurrent += runtimeData[netId].current[lNId];
 			}
 
-			//KERNEL_INFO("Crash Site 3");
 
 			switch (networkConfigs[netId].simIntegrationMethod) {
 			case FORWARD_EULER:
 				if (!groupConfigs[netId][lGrpId].withParamModel_9)
 				{	// 4-param Izhikevich
-					// update vpos and upos for the current neuron
-					//KERNEL_INFO("Voltage is: %f", v);
-					//KERNEL_INFO("Recovery is: %f", u);
 					v = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
-					//KERNEL_INFO("Voltage is: %f", v);
 					if (v > 30.0f) {
 						v = 30.0f; // break the loop but evaluate u[i]
 						j = networkConfigs[netId].simNumStepsPerMs;
@@ -972,11 +945,7 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				}
 				else
 				{	// 9-param Izhikevich
-					// update vpos and upos for the current neuron
-					//KERNEL_INFO("Voltage is: %f", v);
-					//KERNEL_INFO("vr is: %f", vr);
 					v = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
-					//KERNEL_INFO("Voltage is: %f", v);
 					if (v > vpeak) {
 						v = vpeak; // break the loop but evaluate u[i]
 						j = networkConfigs[netId].simNumStepsPerMs;;
@@ -985,7 +954,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 				if (v < -90.0f) v = -90.0f;
 
-				//KERNEL_INFO("Recovery is: %f", u);
 				if (!groupConfigs[netId][lGrpId].withParamModel_9)
 				{
 					u += dudtIzhikevich4(v, u, a, b, timeStep);
@@ -996,7 +964,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 				}
 				break;
 			case RUNGE_KUTTA4:
-				//KERNEL_INFO("RUNGE_KUTTA4!");
 				if (!groupConfigs[netId][lGrpId].withParamModel_9) {
 					// 4-param Izhikevich
 					float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
@@ -1012,7 +979,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 					float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
 					float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
-					//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
 					v = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 					if (v > 30.0f) {
 						v = 30.0f;
@@ -1021,7 +987,6 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 					if (v < -90.0f) v = -90.0f;
 
 					u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
-					//KERNEL_INFO("Voltage is: %f; Recovery is: %f", v, u);
 				}
 				else {
 					// 9-param Izhikevich
@@ -1070,16 +1035,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 			// P8
 			// update average firing rate for homeostasis
-			//KERNEL_INFO("Updated the firing homeostasis rate!");
-			//KERNEL_INFO("Local neuron id %i; Timestep %i!", lNId, j);
 			if (groupConfigs[netId][lGrpId].WithHomeostasis)
 				runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 		} // end StartN...EndN
 
 		// P9
 		// decay dopamine concentration
-		//KERNEL_INFO("Decayed Dopamine concentration!");
-		//KERNEL_INFO("Local group id %i; Timestep %i!", lGrpId, j);
 		if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
 			runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
 		}

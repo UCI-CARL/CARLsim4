@@ -931,10 +931,6 @@ __device__ void updateNeuronState(int nid, int grpId) {
 		case FORWARD_EULER:
 			if (!groupConfigsGPU[grpId].withParamModel_9)
 			{	// 4-param Izhikevich
-				// update vpos and upos for the current neuron
-
-				//printf("Voltage is: %f\n", v);
-				//printf("Recovery is: %f\n", u);
 				v = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 				if (v > 30.0f) {
 					// record spike but keep integrating
@@ -944,7 +940,6 @@ __device__ void updateNeuronState(int nid, int grpId) {
 			}
 			else
 			{	// 9-param Izhikevich
-				// update vpos and upos for the current neuron
 				v = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 				if (v > vpeak) {
 					v = vpeak;
@@ -995,19 +990,15 @@ __device__ void updateNeuronState(int nid, int grpId) {
 				// 9-param Izhikevich
 				float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 				float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
-				//printf("k1: %f; l1: %f\n", k1, l1);
 
 				float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
 				float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
-				//printf("k2: %f; l2: %f\n", k2, l2);
 
 				float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
 				float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
-				//printf("k3: %f; l3: %f\n", k3, l3);
 
 				float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
 				float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
-				//printf("k4: %f; l4: %f\n", k4, l4);
 
 				const float one_sixth = 1.0f / 6.0f;
 				v = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
@@ -2912,16 +2903,8 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 	
-	//for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
-		// update all neuron state (i.e., voltage and recovery), including homeostasis
-		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > ();
-		CUDA_GET_LAST_ERROR("Kernel execution failed");
-
-		// the above kernel should end with a syncthread statement to be on the safe side
-		//CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].voltage[0], &runtimeData[netId].nextVoltage[0],
-		//	sizeof(float) * networkConfigs[netId].numNReg, cudaMemcpyDeviceToDevice));
-	//}
-
+	kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > ();
+	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }
 
 void SNN::globalStateUpdate_G_GPU(int netId) {
