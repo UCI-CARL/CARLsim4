@@ -1970,7 +1970,7 @@ void SNN::checkDestSrcPtrs(RuntimeData* dest, RuntimeData* src, cudaMemcpyKind k
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  * \return void
  *
- * \note This function is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copying.
+ * \note This function is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copy.
  * \sa copyNeuronState(), fetchConductanceAMPA()
  * \since v3.0
  */
@@ -2014,7 +2014,7 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
 * \return void
 *
-* \note This function is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying.
+* \note This function is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copy.
 * \sa copyNeuronState(), fetchConductanceNMDA()
 * \since v3.0
 */
@@ -2066,7 +2066,7 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
 * \return void
 *
-* \note This function is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying.
+* \note This function is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copy.
 * \sa copyNeuronState(), fetchConductanceGABAa()
 * \since v3.0
 */
@@ -2147,18 +2147,18 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 /*!
  * \brief This function allocates device (GPU) memory space and copies variables related to nueron state to it
  *
- * This function allocates device (GPU) memory space and copies variables related to nueron state to it/
+ * This function allocates device (GPU) memory space and copies variables related to nueron state to it.
  * \n It accesses the follwoing data:
  * \n (allocate and) copy voltage, recovery, current, avgFiring 
  *
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest The pointer to runtime data desitnation
- * \param[in] allocateMem The flag indicates whether allocating memory space before copying
+ * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \return void
  *
  * \note This function is called by allocateSNN_GPU(). Only copying from host to device is required
- * \sa allocateSNN_GPU fetchNeuronState
+ * \sa allocateSNN_GPU() fetchNeuronState()
  * \since v3.0
  */
 void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {
@@ -2218,13 +2218,13 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 }
 
 /*!
- * \brief this function allocates device (GPU) memory space and copies the spike count of each neuron to it
+ * \brief This function allocates device (GPU) memory space and copies the spike count of each neuron to it
  *
- * This function:
- * (allocate and) copy nSpikeCnt
+ * This function allocates device (GPU) memory space and copies the spike count of each neuron to it.
+ * \n It access following data:
+ * \n (allocate and) copy nSpikeCnt
  *
- * This function is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copying
- *
+
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest The pointer to runtime data desitnation
@@ -2233,7 +2233,8 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
  * \param[in] allocateMem The flag indicates whether allocating memory space before copy
  * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
- * \sa copyAuxiliaryData fetchNeuronSpikeCount
+ * \note This function is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copy.
+ * \sa copyAuxiliaryData() fetchNeuronSpikeCount()
  * \since v4.0
  */
 void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) {
@@ -2258,12 +2259,11 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 }
 
 /*!
- * \brief this function allocates device (GPU) memory space and copies variables related to group state to it
+ * \brief This function allocates device (GPU) memory space and copies variables related to group state to it
  *
- * This function:
- * (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
- *
- * This function is called by allocateSNN_GPU() and fetchGroupState(). It supports bi-directional copying
+ * This function allocates device (GPU) memory space and copies variables related to group state to it
+ * \n It accesses following data:
+ * \n (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
  *
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
@@ -2271,8 +2271,10 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
  * \param[in] src The pointer to runtime data source
  * \param[in] kind The direction of copying
  * \param[in] allocateMem The flag indicates whether allocating memory space before copying
+ * \return void
  *
- * \sa allocateSNN_GPU fetchGroupState
+ * \note This function is called by allocateSNN_GPU() and fetchGroupState(). It supports bi-directional copy.
+ * \sa allocateSNN_GPU() fetchGroupState()
  * \since v3.0
  */
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
@@ -2314,21 +2316,22 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 }
 
 /*!
- * \brief this function allocates device (GPU) memory space and copies neural parameters to it
+ * \brief This function allocates device (GPU) memory space and copies neural parameters to it
  *
- * This function:
- * (allocate and) copy Izh_a, Izh_b, Izh_c, Izh_d
- * initialize baseFiringInv
- * (allocate and) copy baseFiring, baseFiringInv
- *
- * This function is only called by copyNeuronState(). Only copying direction from host to device is required.
+ * This function allocates device (GPU) memory space and copies neural parameters to it
+ * \n It accesses following data:
+ * \n (allocate and) copy Izh_a, Izh_b, Izh_c, Izh_d
+ * \n initialize baseFiringInv
+ * \n (allocate and) copy baseFiring, baseFiringInv
  *
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest The pointer to runtime data desitnation
  * \param[in] allocateMem The flag indicates whether allocating memory space before copying
+ * \return void
  *
- * \sa copyNeuronState
+ * \note This function is only called by copyNeuronState(). Only copying direction from host to device is required.
+ * \sa copyNeuronState()
  * \since v3.0
  */
 void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) {
@@ -2398,22 +2401,24 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 }
 
 /*!
- * \brief this function allocates device (GPU) memory space and copies short-term plasticity (STP) state to it
+ * \brief This function allocates device (GPU) memory space and copies short-term plasticity (STP) state to it
  *
- * This function:
- * initialize STP_Pitch
- * (allocate and) copy stpu, stpx
+ * This function allocates device (GPU) memory space and copies short-term plasticity (STP) state to it.
+ * \n It accesses following data:
+ * \n initialize STP_Pitch
+ * \n (allocate and) copy stpu, stpx
  *
- * This function is called by allocateSNN_GPU() and fetchSTPState(). It supports bi-directional copying
- *
+
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
  * \param[in] dest The pointer to runtime data desitnation
  * \param[in] src The pointer to runtime data source
  * \param[in] kind The direction of copying
  * \param[in] allocateMem The flag indicates whether allocating memory space before copying
+ * \return void
  *
- * \sa allocateSNN_GPU fetchSTPState
+ * \noteThis function is called by allocateSNN_GPU() and fetchSTPState(). It supports bi-directional copy.
+ * \sa allocateSNN_GPU() fetchSTPState()
  * \since v3.0
  */
 void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
@@ -2488,12 +2493,14 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 }
 
 /*!
- * \brief This function copies networkConfig form host to device
+ * \brief This function copies networkConfig form host to devices
  *
- * This function:
+ * This function copies runtime networkConfig form host to devices.
+ * \n It accesses following data:
  * \n copy networkConfig
  *
  * \param[in] netId The id of a local network whose networkConfig will be copied to device (GPU) memory
+ * \return void
  *
  * \since v4.0
  */
@@ -2505,12 +2512,14 @@ void SNN::copyNetworkConfig(int netId, cudaMemcpyKind kind) {
 }
 
 /*!
- * \brief This function copies groupConfigs form host to device
+ * \brief This function copies groupConfigs form host to devices
  *
- * This function:
- * copy groupConfigs
+ * This function copies runtime groupConfigs from host to devices
+ * \n It accesses following data::
+ * \n copy groupConfigs
  *
  * \param[in] netId The id of a local network whose groupConfigs will be copied to device (GPU) memory
+ * \return void
  *
  * \since v4.0
  */
@@ -2520,17 +2529,19 @@ void SNN::copyGroupConfigs(int netId) {
 }
 
 /*!
- * \brief this function copy weight state in device (GPU) memory space to main (CPU) memory space
+ * \brief This function copies weight state in device (GPU) memory space to main (CPU) memory space
  *
- * This function:
+ * This function copies weight state in device (GPU) memory space to main (CPU) memory space.
+ * \n It accesses following data:
  * \n copy wt, wtChange synSpikeTime
- *
- * \n This function is only called by fetchWeightState(). Only copying direction from device to host is required.
  *
  * \param[in] netId The id of a local network, which is the same as the device (GPU) id
  * \param[in] lGrpId The local group id in a local network, which specifiy the group(s) to be copied
+ * \return void
  *
- * \sa fetchWeightState
+ * \note This function is only called by fetchWeightState(). Only copying direction from device to host is required.
+ *
+ * \sa fetchWeightState()
  * \since v4.0
  */
 void SNN::copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) {
