@@ -1,0 +1,2 @@
+targetFiringExc1    targetFiringExc2    errorMarginHz    maxIter    stepSize
+20	0.1	100	0.1

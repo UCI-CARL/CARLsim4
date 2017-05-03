@@ -1,27 +1,83 @@
 #!/bin/bash
 
-numNeuronsGroup1='500'
-numNeuronsGroup2='200'
-numSynapses='100'
+a='316'
+b=(100 200 300 400 500 600)
+nums='2'
+w=(1.9921 1.0085 0.7097 0.5529 0.4109 0.3455)
 
-
-for numN1 in $numNeuronsGroup1 # number of neurons in group1, which defines the workload
+#echo "GPU0-GPU0" >> record.csv  
+for numN1 in $a # number of neurons in group1, which defines the workload
 do
-	for numN2 in $numNeuronsGroup2 #number of neurons in group2
-	do
-		for numS in $numSynapses # number of synapse per neuron in group1
-		do
-			echo $numN $numS
-			./benchmark2 $numN1 $numN2  100 10 1 10 6 "record.csv" 42 $numS  "GPU" "CPU" 0 0 "Homeostasis"
-		#13 parameters in total.
+	for n in $nums
+	do 
+			
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "CPU" "GPU" 0 0 "Fixed"
+		#15 parameters in total.
 		#1,number of neurons in group1 | 2, number of neurons in group2
-		#3,number of neurons in group3 | 4, number of neurons in group4
-		#5,number of synapse per neuron | 5, numebr of input neurons
-		#7, randSeed | 8, recordFile | 9, simulateTime | 10, inputFireRate
-		#11, inputWeight | 12, excWeight | 13, need weight tuning or not
-		done	
+		#3,number of neurons in input group | 4, simulate time 
+		#5, input fire rate | 6, connection weight of input to exc1
+		#7, connection weight of exc1 to exc2
+		#8, record file | 9, randseed  | 10, number of synapse per neuron
+		#11, mode for group1 | 12, mode for group2 | 13, id of core2 
+		#14, whether need weight tuning | 15, connection type
 	done
 done
 
+echo "GPU0-GPU1" >> record.csv  
+
+for numN1 in $a # number of neurons in group1, which defines the workload
+do
+	for n in $nums
+	do 
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "GPU" "GPU" 1 0 "Fixed"
+	done
+done
+
+
+
+echo "GPU0-CPU0" >> record.csv  
+
+for numN1 in $a # number of neurons in group1, which defines the workload
+do
+	for n in $nums
+	do 
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "GPU" "CPU" 0 0 "Fixed"
+	done
+done
+
+
+echo "CPU0-CPU0" >> record.csv  
+
+for numN1 in $a # number of neurons in group1, which defines the workload
+do
+	for n in $nums
+	do 
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "CPU" "CPU" 0 0 "Fixed"
+	done
+done
+
+
+
+echo "CPU0-CPU1" >> record.csv  
+
+for numN1 in $a # number of neurons in group1, which defines the workload
+do
+	for n in $nums
+	do 
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "CPU" "CPU" 1 0 "Fixed"
+	done
+done
+
+
+
+echo "CPU0-GPU0" >> record.csv  
+
+for numN1 in $a # number of neurons in group1, which defines the workload
+do
+	for n in $nums
+	do 
+		./benchmark2 $numN1 $numN1 100 10 10 6.5  ${w[$n]} "record.csv" 42 ${b[$n]}  "CPU" "GPU" 0 0 "Fixed"
+	done
+done
 
 

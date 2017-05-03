@@ -1,0 +1,4 @@
+Benchmark1: First Benchmark, 2 groups(1 exc,1 inh, reverse connection), balance or not.
+Benchmark2: Basic Benchmark, 2 groups(2 excs, no reverse connection), 6 cases
+Benchmark3: Benchmark for 4 GPU card on HPC
+Benchmark4: Multi CPU cores

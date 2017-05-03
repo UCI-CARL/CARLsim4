@@ -109,12 +109,12 @@ int main(int argc, char* argv[] ) {
 	int gInput;
 
 	if(core1 == "GPU"){
-		gExc1 = sim.createGroup("exc", N_EXC1, EXCITATORY_NEURON, 0, GPU_CORES);
+		gExc1 = sim.createGroup("exc1", N_EXC1, EXCITATORY_NEURON, 0, GPU_CORES);
 		sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, GPU_CORES);
 	}
 	else if(core1 == "CPU"){
-		gExc1 = sim.createGroup("exc", N_EXC1, EXCITATORY_NEURON, 0, CPU_CORES);
+		gExc1 = sim.createGroup("exc1", N_EXC1, EXCITATORY_NEURON, 0, CPU_CORES);
 		sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		gInput = sim.createSpikeGeneratorGroup("input", N_INPUT, EXCITATORY_NEURON, 0, CPU_CORES);
 	}
@@ -125,11 +125,11 @@ int main(int argc, char* argv[] ) {
 
 
 	if(core2 == "GPU"){
-		gExc2 = sim.createGroup("exc", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), GPU_CORES);
+		gExc2 = sim.createGroup("exc2", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), GPU_CORES);
 		sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS	
 	}
 	else if(core2 == "CPU"){
-		gExc2 = sim.createGroup("exc", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), CPU_CORES);
+		gExc2 = sim.createGroup("exc2", N_EXC2, EXCITATORY_NEURON, atoi(argv[13]), CPU_CORES);
 		sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS	
 	}
 	else{
@@ -143,22 +143,22 @@ int main(int argc, char* argv[] ) {
 
 	if(connectionType == "Fixed"){
 		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
+		c1 = sim.connect(gExc1, gExc2, "random", RangeWeight(excWeight), pConn1, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
 
 	}
 	else if(connectionType == "STP"){
 		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "random", RangeWeight(excWeight), pConn1, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 		sim.setSTP(gExc1, true);
 	}
 	else if(connectionType == "STDP"){
 		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "random", RangeWeight(excWeight), pConn1, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 		sim.setESTDP(gExc1, true, STANDARD, ExpCurve(2e-4f, 20.0f, -6.6e-5f, 60.0f));
 	}
 	else if(connectionType == "Homeostasis"){
 		c0 = sim.connect(gInput, gExc1, "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
-		c1 = sim.connect(gExc1, gExc2, "full", RangeWeight(excWeight), 1.0, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+		c1 = sim.connect(gExc1, gExc2, "random", RangeWeight(excWeight), pConn1, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 		sim.setESTDP(gExc1, true, STANDARD, ExpCurve(2e-4f, 20.0f, -6.6e-5f, 60.0f));
 		sim.setHomeostasis(gExc1, true, 1.0f, 10.0f);
 		sim.setHomeoBaseFiringRate(gExc1, 35.0f, 0.0f);	
@@ -225,13 +225,9 @@ int main(int argc, char* argv[] ) {
 		
 		printf("Verify result (gExc1=%.4fHz, gExc2=%.4fHz,  +/- %.4fHz)\n", targetFiringExc1, targetFiringExc2, errorMarginHz); 
 		
-		//spkMon1->startRecording();
-		//spkMon2->startRecording();
 	
 		//sim.runNetwork(1,0);
 		
-		//spkMon1->stopRecording();
-		//spkMon2->stopRecording();
 		
 		//spkMon1->print(false);
 		//spkMon2->print(false);
@@ -240,16 +236,23 @@ int main(int argc, char* argv[] ) {
 	}
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
+//	spkMon1->startRecording();
+//	spkMon2->startRecording();
 
 	watch.lap("runNetwork");
-	
-	for (int t = 0; t < simulateTime; t++) {
-		sim.runNetwork(1, 0, true);
-	}
+
+
+//	for (int t = 0; t < simulateTime; t++) {
+		sim.runNetwork(simulateTime, 0, true);
+//	}
 
  	watch.stop();
 
-	fprintf(recordFile, "%ld,%ld,%ld\n", watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(3));     	
+//	spkMon1->stopRecording();
+//	spkMon2->stopRecording();
+
+
+	fprintf(recordFile, "%d,%f,%ld,%ld,%ld\n",N_EXC1, pConn1*N_EXC1, watch.getLapTime(0), watch.getLapTime(1), watch.getLapTime(3));     	
 	fclose(recordFile);
 	
 

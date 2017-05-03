@@ -1,0 +1,27 @@
+#!/bin/bash
+
+numNeuron='2000'
+numSynapse=(100 200 300 400 500 600)
+numCore='1 2 4 8 16'
+index=' 0 1 2 3 4 5'
+weight=(1.9921 1.0085 0.7097 0.5529 0.4109 0.3455)
+
+
+for numC in $numCore
+do
+	echo "number of cores is" numC >> record.csv
+	for numN in $numNeuron # number of neurons in group1, which defines the workload
+	do
+		for n in $index # number of synapse per neuron in group1
+		do
+			./benchmark4 $numN 100 ${numSynapse[$n]} "record.csv" 10 10 6.5 ${weight[$n]}  42 $numC
+			#
+			#1, number of neurons in groups |2, number of input neurons
+			#3, number of synapse per neuron |4, recordFile |5, simulate time
+			#6, input fire rate |7, connection weight from input to exc1
+			#8, connection weight from exc1 to exc2 |9, randseed |10, number of cores
+		done
+	done
+done
+
+

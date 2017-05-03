@@ -17,7 +17,6 @@ do
 		#9, weight of synapse whose pre-synaptic group is input neurons
 		#10, weight of synapse whose pre-synaptic group is excitatory
 		#11, weight of synapse whose pre-synaptic group is inhibitory
-		#12, whether need to tune the weights(1-yes,0-no)
 	done
 done
 
