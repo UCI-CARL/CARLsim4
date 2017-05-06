@@ -273,6 +273,13 @@ public:
 	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
+	 * \brief creates a group of Leaky-Integrate-and-Fire (LIF) spiking neurons
+	 * \TODO finish doc
+	 * \STATE ::CONFIG_STATE
+	 */
+	int createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
 	 * side length 1)
 	 *
@@ -294,6 +301,18 @@ public:
 	 * \since v3.0
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
+	 * \brief Create a group of LIF spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
+	 * side length 1)
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpName    the group name
+	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
+	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
+	 * \since v4.0
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -541,6 +560,15 @@ public:
 		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
 		float izh_d, float izh_d_sd);
+
+	/*!
+	 * \brief Sets LIF neuron parameters
+	 *
+	 * \TODO finish docu
+	 * \STATE ::CONFIG_STATE
+	 */
+	void setNeuronParametersLIF(int grpId, float tau_m, float tau_ref, float vTh=1.0f, float vReset=0.0f, 
+		const RangeFR& rangeFR=RangeFR(200.0f, 400.0f), const RangeIntercept& rangeInt=RangeIntercept(0.0f, 0.99f));
 
 	/*!
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
