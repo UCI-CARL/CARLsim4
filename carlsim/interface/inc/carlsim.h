@@ -562,12 +562,20 @@ public:
 		float izh_d, float izh_d_sd);
 
 	/*!
-	 * \brief Sets LIF neuron parameters
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
 	 *
-	 * \TODO finish docu
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] rangeFR uniform firing rate distribution range (in Hz) for constant input current=1 (min, max).
+	 *				Must be smaller than (1000/tau_ref).
+	 * \param[in] rangeInt uniform Intercept distribution of the tuning curves of the neurons (min, max)
+	 * 
 	 * \STATE ::CONFIG_STATE
 	 */
-	void setNeuronParametersLIF(int grpId, float tau_m, float tau_ref, float vTh=1.0f, float vReset=0.0f, 
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, 
 		const RangeFR& rangeFR=RangeFR(200.0f, 400.0f), const RangeIntercept& rangeInt=RangeIntercept(0.0f, 0.99f));
 
 	/*!
