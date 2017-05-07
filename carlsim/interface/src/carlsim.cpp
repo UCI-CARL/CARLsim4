@@ -224,7 +224,12 @@ public:
 		return createGroup(grpName, Grid3D(nNeur,1,1), neurType, preferredPartition, preferredBackend);
 	}
 
-	// create group of Izhikevich spiking neurons on 3D grid
+	// create group of LIF spiking neurons on 1D grid
+	int createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES){
+		return createGroupLIF(grpName, Grid3D(nNeur,1,1), neurType, preferredPartition, preferredBackend);
+	}
+
+	// create a group of Izhikevich spiking neurons on 3D grid
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 		std::string funcName = "createGroup(\""+grpName+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
@@ -245,6 +250,32 @@ public:
 			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
 
 		int grpId = snn_->createGroup(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
+		grpIds_.push_back(grpId); // keep track of all groups
+
+		return grpId;
+	}
+
+	// create a group of LIF spiking neurons on 3D grid
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+		std::string funcName = "createGroupLIF(\""+grpName+"\")";
+		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
+			funcName, "CONFIG.");
+		UserErrors::assertTrue(grid.numX>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numX");
+		UserErrors::assertTrue(grid.numY>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numY");
+		UserErrors::assertTrue(grid.numZ>0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grid.numZ");
+
+		// if user has called any set functions with grpId=ALL, and is now adding another group, previously set properties
+		// will not apply to newly added group
+		if (hasSetSTPALL_)
+			userWarnings_.push_back("Make sure to call setSTP on group "+grpName);
+		if (hasSetSTDPALL_)
+			userWarnings_.push_back("Make sure to call setSTDP on group "+grpName);
+		if (hasSetHomeoALL_)
+			userWarnings_.push_back("Make sure to call setHomeostasis on group "+grpName);
+		if (hasSetHomeoBaseFiringALL_)
+			userWarnings_.push_back("Make sure to call setHomeoBaseFiringRate on group "+grpName);
+
+		int grpId = snn_->createGroupLIF(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
 
 		return grpId;
@@ -449,6 +480,34 @@ public:
 		// wrapper identical to core func
 		snn_->setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
 			izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
+	}
+
+	// set neuron parameters for LIF spiking neuron
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, 
+		const RangeFR& rangeFR, const RangeIntercept& rangeInt)
+	{
+		std::string funcName = "setNeuronParametersLIF(\"" + getGroupName(grpId) + "\")";
+		UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+
+		UserErrors::assertTrue(tau_m >= 0 , UserErrors::CANNOT_BE_NEGATIVE, funcName, "tau_m");
+		UserErrors::assertTrue(tau_ref >= 0 , UserErrors::CANNOT_BE_NEGATIVE, funcName, "tau_ref");
+
+		UserErrors::assertTrue(vReset < vTh , UserErrors::CANNOT_BE_LARGER, funcName, "vReset");
+
+		UserErrors::assertTrue(rangeFR.minFR >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.minFR");
+		UserErrors::assertTrue(rangeFR.maxFR > 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.maxFR");
+		UserErrors::assertTrue(rangeFR.minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
+		UserErrors::assertTrue(rangeFR.minFR < rangeFR.maxFR , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
+		UserErrors::assertTrue(rangeFR.maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.maxFR");
+
+		UserErrors::assertTrue(rangeInt.minInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.minInt");
+		UserErrors::assertTrue(rangeInt.maxInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.maxInt");
+		UserErrors::assertTrue(rangeInt.minInt < rangeInt.maxInt , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.minInt");
+		UserErrors::assertTrue(rangeInt.maxInt < 1.0f , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.maxInt");
+
+		// wrapper identical to core func
+		snn_->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR, rangeInt);
 	}
 
 	// set parameters for each neuronmodulator
@@ -1530,6 +1589,14 @@ int CARLsim::createGroup(const std::string& grpName, int nNeur, int neurType, in
 	return _impl->createGroup(grpName, nNeur, neurType, preferredPartition, preferredBackend);
 }
 
+// create LIF group with / without grid	
+int CARLsim::createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createGroupLIF(grpName, grid, neurType, preferredPartition, preferredBackend);
+}
+int CARLsim::createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	return _impl->createGroupLIF(grpName, nNeur, neurType, preferredPartition, preferredBackend);
+}
+
 // create spike gen group with / without grid
 int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 	return _impl->createSpikeGeneratorGroup(grpName, grid, neurType, preferredPartition, preferredBackend);
@@ -1589,6 +1656,12 @@ void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float 
 {
 	_impl->setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
 		izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
+}
+
+void CARLsim::setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, 
+	const RangeFR& rangeFR, const RangeIntercept& rangeInt)
+{
+	_impl->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR, rangeInt);
 }
 
 void CARLsim::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, 

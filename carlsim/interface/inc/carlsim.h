@@ -567,11 +567,12 @@ public:
 	 * \param[in] grpId group ID
 	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
 	 * \param[in] tau_ref absolute refractory period in ms
-	 * \param[in] vTh Threshold voltage for firing
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
 	 * \param[in] vReset Membrane potential resets to this value immediately after spike
 	 * \param[in] rangeFR uniform firing rate distribution range (in Hz) for constant input current=1 (min, max).
-	 *				Must be smaller than (1000/tau_ref).
-	 * \param[in] rangeInt uniform Intercept distribution of the tuning curves of the neurons (min, max)
+	 *				Must be smaller than (1000/tau_ref) and positive.
+	 * \param[in] rangeInt uniform Intercept distribution of the tuning curves of the neurons (min, max).
+	 *				Must be in the range 0 to <1.
 	 * 
 	 * \STATE ::CONFIG_STATE
 	 */

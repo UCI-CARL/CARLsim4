@@ -373,6 +373,48 @@ struct RadiusRF {
 };
 
 /*!
+ * \brief Struct defines the minimum and maximum limits of the LIF neuron firing range
+ *
+ */
+struct RangeFR {
+	RangeFR(float _minFR, float _maxFR){
+		UserErrors::assertTrue(_minFR >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "minFR");
+		UserErrors::assertTrue(_maxFR > 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "maxFR");
+		UserErrors::assertTrue(_minFR < _maxFR, UserErrors::CANNOT_BE_LARGER, "RangeFR", "minFR", "maxFR");
+
+		minFR = _minFR;
+		maxFR = _maxFR;
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeFR &r) {
+        return strm << "RangeFR=[" << r.minFR << "," << r.maxFR << "]";
+    }
+
+	float minFR, maxFR;
+};
+
+/*!
+ * \brief Struct defines the minimum and maximum x-intercepts of the LIF neuron tuning curve
+ *
+ */
+struct RangeIntercept {
+	RangeIntercept(float _minInt, float _maxInt){
+		UserErrors::assertTrue(_minInt >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "minInt");
+		UserErrors::assertTrue(_maxInt > 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "maxInt");
+		UserErrors::assertTrue(_minInt < _maxInt, UserErrors::CANNOT_BE_LARGER, "RangeIntercept", "minInt", "maxInt");
+
+		minInt = _minInt;
+		maxInt = _maxInt;
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeIntercept &r) {
+        return strm << "RangeIntercept=[" << r.minInt << "," << r.maxInt << "]";
+    }
+
+	float minInt, maxInt;
+};
+
+/*!
  * \brief A struct for retrieving STDP related information of a group
  *
  * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupSTDPInfo()
