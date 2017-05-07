@@ -693,9 +693,6 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
-	//float vreset = runtimeData[netId].Izh_c[lNId];
-	//runtimeData[netId].voltage[lNId] = vreset;
-	//runtimeData[netId].recovery[lNId] += runtimeData[netId].Izh_d[lNId];
 	if (groupConfigs[netId][lGrpId].WithSTDP)
 		runtimeData[netId].lastSpikeTime[lNId] = simTime;
 
@@ -917,10 +914,12 @@ void*  SNN::globalStateUpdate_CPU(int netId) {
 	// loop that allows smaller integration time step for v's and u's
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 
+		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
+
 		//KERNEL_INFO("Number of groups is %i", networkConfigs[netId].numGroups);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
-				if (groupConfigs[netId][lGrpId].WithHomeostasis & (j == networkConfigs[netId].simNumStepsPerMs)) {
+				if (groupConfigs[netId][lGrpId].WithHomeostasis & (lastIter)) {
 					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
 						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 				}
@@ -1088,7 +1087,7 @@ void*  SNN::globalStateUpdate_CPU(int netId) {
 				runtimeData[netId].recovery[lNId] = u;
 
 				// update current & average firing rate for homeostasis once per globalStateUpdate_CPU call
-				if (j == networkConfigs[netId].simNumStepsPerMs)
+				if (lastIter)
 				{
 					if (networkConfigs[netId].sim_with_conductances) {
 						runtimeData[netId].current[lNId] = I_sum;
@@ -1108,7 +1107,7 @@ void*  SNN::globalStateUpdate_CPU(int netId) {
 			} // end StartN...EndN
 
 			  // decay dopamine concentration once per globalStateUpdate_CPU call
-			if (j == networkConfigs[netId].simNumStepsPerMs)
+			if (lastIter)
 			{
 				// P9
 				// decay dopamine concentration
