@@ -173,6 +173,13 @@ public:
 	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType);
 
+	/* Creates synaptic projections using a callback mechanism.
+	*
+	* \param _grpId1:ID lower layer group
+	* \param _grpId2 ID upper level group
+	*/
+	short int connectCompartments(int grpIdLower, int grpIdUpper);
+
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
 	 * \param name the symbolic name of a group
@@ -189,6 +196,13 @@ public:
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
+	/*!
+	* \brief Coupling constants for the compartment are set using this method.
+	* \param grpId  		the symbolic name of a group
+	* \param couplingUp   	the coupling constant for upper connections
+	* \param couplingDown	the coupling constant for lower connections
+	*/
+	void setCompartmentParameters(int grpId, float couplingUp, float couplingDown);
 
 	/*!
 	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether

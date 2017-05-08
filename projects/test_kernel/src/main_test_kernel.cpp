@@ -62,6 +62,72 @@ int main() {
 	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 0.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
+	// COMPARTMENT TESTING
+	// Groups for manual compartment testing
+	int s = sim.createGroup("soma", N_EXC, EXCITATORY_NEURON);
+	int d1 = sim.createGroup("d1", N_EXC, EXCITATORY_NEURON);
+	int d2 = sim.createGroup("d2", N_EXC, EXCITATORY_NEURON);
+	int d3 = sim.createGroup("d3", N_EXC, EXCITATORY_NEURON);
+	int d4 = sim.createGroup("d4", N_EXC, EXCITATORY_NEURON);
+	int d5 = sim.createGroup("d5", N_EXC, EXCITATORY_NEURON);
+	int d6 = sim.createGroup("d6", 2 * N_EXC, EXCITATORY_NEURON);
+
+	// some regular neuron groups
+	int reg0 = sim.createGroup("reg0", 2 * N_EXC, EXCITATORY_NEURON);
+	int reg1 = sim.createGroup("reg1", 2 * N_EXC, EXCITATORY_NEURON);
+
+	// make them 9-param Izzy neurons
+	sim.setNeuronParameters(s, 550.0f, 2.0, -59.0, -50.0, 0.0, -0.0, 24.0, -53.0, 109.0f);
+	sim.setNeuronParameters(d1, 367.0f, 1.0, -59.0, -44.0, 0.0, 3.0, 20.0, -46.0, 24.0f);
+	sim.setNeuronParameters(d2, 425.0f, 2.0, -59.0, -25.0, 0.0, 0.0, 13.0, -38.0, 69.0f);
+	sim.setNeuronParameters(d3, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim.setNeuronParameters(d4, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim.setNeuronParameters(d5, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim.setNeuronParameters(d6, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim.setNeuronParameters(reg0, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim.setNeuronParameters(reg1, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+
+	// enable compartments
+	sim.setCompartmentParameters(s, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d1, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d2, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d3, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d4, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d5, 1.0f, 1.0f);
+	sim.setCompartmentParameters(d6, 1.0f, 1.0f);
+
+	int gen = sim.createSpikeGeneratorGroup("SpikeGen", N_EXC, EXCITATORY_NEURON);
+
+	// Compartment interface testing
+
+	// grpIDs must be valid, cannot be identical
+	//sim.connectCompartments(d3, d3);
+	//sim.connectCompartments(s, -1);
+
+	// no spike generators in connect call
+	//sim.connectCompartments(gen, s);
+
+	// groups must be of same size
+	//sim.connectCompartments(s, d6);
+
+	// connectCompartments is bidirectional: connecting same groups twice is illegal
+	sim.connectCompartments(s, d1);
+
+	//sim.connectCompartments(s, d1);
+	//sim.connectCompartments(d1, s);
+
+	// can't have both synaptic and compartmental connections on the same groups
+	//sim.connect(s, d1, "full", RangeWeight(1.0f), 1.0f);
+	//sim.connect(d1, s, "full", RangeWeight(1.0f), 1.0f);
+
+	// can't be involved in more than 4 connections (d1-d4), d5 must break
+	sim.connectCompartments(d2, s);
+	sim.connectCompartments(d3, s);
+	sim.connectCompartments(s, d4);
+	//sim.connectCompartments(d5, s);
+
+	// COMPARTMENT TESTING OVER
+
 	sim.setConductances(true);
 
 	//FORWARD_EULER

@@ -210,6 +210,11 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	return (numConnections - 1);
 }
 
+// make a compartmental connection between two groups
+short int SNN::connectCompartments(int grpIdLower, int grpIdUpper) {
+	return 0;
+}
+
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
@@ -297,6 +302,10 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	numSpikeGenGrps++;
 
 	return grpConfigMD.gGrpId;
+}
+
+void SNN::setCompartmentParameters(int grpId, float couplingUp, float couplingDown) {
+	return;
 }
 
 // set conductance values for a simulation (custom values or disable conductances alltogether)
