@@ -606,6 +606,7 @@ private:
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
+	void generateCompConnectionRuntime(int netId);
 
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network

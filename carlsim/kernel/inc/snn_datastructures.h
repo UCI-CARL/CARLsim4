@@ -306,9 +306,6 @@ typedef struct GroupConfig_s {
 
 	float compCouplingUp;
 	float compCouplingDown;
-	int   compNeighbors[4];
-	float compCoupling[4];
-	short numCompNeighbors;
 
 	SpikeGeneratorCore* spikeGenFunc;
 
