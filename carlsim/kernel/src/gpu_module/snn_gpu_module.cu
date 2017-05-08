@@ -887,6 +887,19 @@ __device__ inline float dudtIzhikevich9(float volt, float recov, float voltRest,
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
+
+__device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, float const1 = 0.0f) {
+	float compCurrent = 0.0f;
+	for (int k = 0; k<groupConfigsGPU[grpId].numCompNeighbors; k++) {
+		int grpIdOther = groupConfigsGPU[grpId].compNeighbors[k];
+		int neurIdOther = neurId - groupConfigsGPU[grpId].lStartN + groupConfigsGPU[grpIdOther].lStartN;
+		compCurrent += groupConfigsGPU[grpId].compCoupling[k] * ((runtimeDataGPU.voltage[neurIdOther] + const1)
+			- (runtimeDataGPU.voltage[neurId] + const0));
+	}
+
+	return compCurrent;
+}
+
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
 /*!
@@ -928,6 +941,9 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 	}
 	else {
 		totalCurrent += runtimeDataGPU.current[nid];
+	}
+	if (groupConfigsGPU[grpId].withCompartments) {
+		totalCurrent += getCompCurrent_GPU(grpId, nid);
 	}
 
 	switch (networkConfigGPU.simIntegrationMethod) {

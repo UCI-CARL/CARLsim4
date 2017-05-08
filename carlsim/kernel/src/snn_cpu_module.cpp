@@ -899,6 +899,20 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
+float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, float const1) {
+	float compCurrent = 0.0f;
+	for (int k = 0; k < groupConfigs[netid][lGrpId].numCompNeighbors; k++) {
+		// compartment connections are always one-to-one, which means that the i-th neuron in grpId connects
+		// to the i-th neuron in grpIdOther
+		int lGrpIdOther = groupConfigs[netid][lGrpId].compNeighbors[k];
+		int lneurIdOther = lneurId - groupConfigs[netid][lGrpId].lStartN + groupConfigs[netid][lGrpIdOther].lStartN;
+		compCurrent += groupConfigs[netid][lGrpId].compCoupling[k] * ((runtimeData[netid].voltage[lneurIdOther] + const1)
+			- (runtimeData[netid].voltage[lneurId] + const0));
+	}
+
+	return compCurrent;
+}
+
 
 #if defined(WIN32) || defined(WIN64)
 void  SNN::globalStateUpdate_CPU(int netId) {
@@ -968,6 +982,9 @@ void*  SNN::globalStateUpdate_CPU(int netId) {
 				}
 				else {
 					totalCurrent += runtimeData[netId].current[lNId];
+				}
+				if (groupConfigs[netId][lGrpId].withCompartments) {
+					totalCurrent += getCompCurrent(netId, lGrpId, lNId);
 				}
 
 				//KERNEL_INFO("Crash Site 3");

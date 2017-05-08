@@ -345,7 +345,6 @@ void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingD
 		}
 	}
 	else {
-		sim_with_compartments = true;
 		groupConfigMap[gGrpId].withCompartments = true;
 		groupConfigMap[gGrpId].compCouplingUp = couplingUp;
 		groupConfigMap[gGrpId].compCouplingDown = couplingDown;
@@ -2764,6 +2763,9 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
 			groupConfigs[netId][lGrpId].numCompNeighbors = 0;
+			groupConfigs[netId][lGrpId].withCompartments = groupConfigMap[gGrpId].withCompartments;
+			groupConfigs[netId][lGrpId].compCouplingUp = groupConfigMap[gGrpId].compCouplingUp;
+			groupConfigs[netId][lGrpId].compCouplingDown = groupConfigMap[gGrpId].compCouplingDown;
 			memset(&groupConfigs[netId][lGrpId].compNeighbors, 0, sizeof(groupConfigs[netId][lGrpId].compNeighbors[0])*MAX_NUM_COMP_CONN);
 			memset(&groupConfigs[netId][lGrpId].compCoupling, 0, sizeof(groupConfigs[netId][lGrpId].compCoupling[0])*MAX_NUM_COMP_CONN);
 
@@ -4842,7 +4844,7 @@ void SNN::partitionSNN() {
 				}
 			}
 
-			printf("The size of compConnectConfigMap is: %i\n", compConnectConfigMap.size());
+			//printf("The size of compConnectConfigMap is: %i\n", compConnectConfigMap.size());
 			for (std::map<int, compConnectConfig>::iterator connIt = compConnectConfigMap.begin(); connIt != compConnectConfigMap.end(); connIt++) {
 				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
 					localCompConnectLists[netId].push_back(compConnectConfigMap[connIt->second.connId]); // Copy by value

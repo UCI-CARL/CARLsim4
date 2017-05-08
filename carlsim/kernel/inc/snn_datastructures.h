@@ -429,6 +429,7 @@ typedef struct GroupConfigRT_s {
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
 
+	bool withCompartments;
 	float compCouplingUp;
 	float compCouplingDown;
 	int   compNeighbors[4];

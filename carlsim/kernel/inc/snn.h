@@ -738,7 +738,7 @@ private:
 
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
 
-	float getCompCurrent(int grpId, int neurId, float const0 = 0.0f, float const1 = 0.0f);
+	float getCompCurrent(int netid, int lGrpId, int lneurId, float const0 = 0.0f, float const1 = 0.0f);
 
 	// Abstract layer for setupNetwork() and runNetwork()
 	void allocateSNN(int netId);
@@ -1024,10 +1024,8 @@ private:
 	std::list<ConnectConfig> localConnectLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
 	std::list<compConnectConfig> localCompConnectLists[MAX_NET_PER_SNN];
-	std::list<compConnectConfig> externalCompConnectLists[MAX_NET_PER_SNN];
 
 	std::list<ConnectionInfo> connectionLists[MAX_NET_PER_SNN];
-	std::list<compConnectionInfo> compConnectionLists[MAX_NET_PER_SNN];
 
 	std::list<RoutingTableEntry> spikeRoutingTable;
 
