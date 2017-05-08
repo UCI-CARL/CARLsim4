@@ -1112,7 +1112,6 @@ private:
 		unsigned int maxMaxSpikeD2;
 		int maxNumN;
 		int maxNumNReg;
-		int maxNumCompConnections;
 		int maxNumNSpikeGen;
 		int maxNumNAssigned;
 		int maxNumGroups;

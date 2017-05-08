@@ -266,6 +266,7 @@ public:
 
 	/*!
 	* \brief make a compartmental connection between two compartmentally enabled groups
+	* Note: all compartmentally connected groups must be located on the same partition.
 	*
 	* first group is in the lower layer; second group is in the upper layer
 	* \TODO finish docu
@@ -552,7 +553,7 @@ public:
 		float izh_d, float izh_d_sd);
 
 	/*!
-	* \brief Sets coupling constants G_u and G_d for hte compartment
+	* \brief Sets coupling constants G_u and G_d for the compartment.
 	*
 	* \TODO finish docu
 	* \STATE ::CONFIG_STATE

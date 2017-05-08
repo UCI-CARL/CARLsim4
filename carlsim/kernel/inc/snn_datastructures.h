@@ -166,7 +166,6 @@ typedef struct ConnectConfigRT_s {
 typedef struct compConnectionInfo_s {
 	int								grpSrc, grpDest;
 	short int               		connId;
-	struct compConnectionInfo_s*    next;
 }compConnectionInfo;
 
 /*!
@@ -180,28 +179,7 @@ typedef struct compConnectionInfo_s {
 typedef struct compConnectConfig_s {
 	int							grpSrc, grpDest;
 	short int               	connId;
-	struct compConnectInfo_s*   next;
 } compConnectConfig;
-
-/*!
-* \brief the intermediate data of compartmental connect config
-*
-* \note for futre use
-*/
-typedef struct compConnectConfigMD_s {
-
-} compConnectConfigMD;
-
-/*!
-* \brief The runtime configuration of a connection
-*
-* This structure contains the configurations of compartmental connections that are created by optimizeAndPartiionNetwork(),
-* which is ready to be executed by computing backend.
-* \see CARLsimState
-* \see SNNState
-*/
-typedef struct compConnectConfigRT_s {
-} compConnectConfigRT;
 
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
@@ -657,6 +635,7 @@ typedef struct NetworkConfigRT_s  {
 	// configurations for execution features
 	bool sim_with_fixedwts;
 	bool sim_with_conductances;
+	bool sim_with_compartments;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;
 	bool sim_with_homeostasis;

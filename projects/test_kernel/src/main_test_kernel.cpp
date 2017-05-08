@@ -64,17 +64,17 @@ int main() {
 
 	// COMPARTMENT TESTING
 	// Groups for manual compartment testing
-	int s = sim.createGroup("soma", N_EXC, EXCITATORY_NEURON);
-	int d1 = sim.createGroup("d1", N_EXC, EXCITATORY_NEURON);
-	int d2 = sim.createGroup("d2", N_EXC, EXCITATORY_NEURON);
-	int d3 = sim.createGroup("d3", N_EXC, EXCITATORY_NEURON);
-	int d4 = sim.createGroup("d4", N_EXC, EXCITATORY_NEURON);
-	int d5 = sim.createGroup("d5", N_EXC, EXCITATORY_NEURON);
-	int d6 = sim.createGroup("d6", 2 * N_EXC, EXCITATORY_NEURON);
+	int s = sim.createGroup("soma", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d1 = sim.createGroup("d1", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d2 = sim.createGroup("d2", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d3 = sim.createGroup("d3", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d4 = sim.createGroup("d4", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d5 = sim.createGroup("d5", N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int d6 = sim.createGroup("d6", 2 * N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 
 	// some regular neuron groups
-	int reg0 = sim.createGroup("reg0", 2 * N_EXC, EXCITATORY_NEURON);
-	int reg1 = sim.createGroup("reg1", 2 * N_EXC, EXCITATORY_NEURON);
+	int reg0 = sim.createGroup("reg0", 2 * N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
+	int reg1 = sim.createGroup("reg1", 2 * N_EXC, EXCITATORY_NEURON, 0, GPU_CORES);
 
 	// make them 9-param Izzy neurons
 	sim.setNeuronParameters(s, 550.0f, 2.0, -59.0, -50.0, 0.0, -0.0, 24.0, -53.0, 109.0f);

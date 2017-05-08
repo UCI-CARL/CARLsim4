@@ -218,22 +218,30 @@ short int SNN::connectCompartments(int grpIdLower, int grpIdUpper) {
 	assert(!isPoissonGroup(grpIdLower));
 	assert(!isPoissonGroup(grpIdUpper));
 
+	// the two groups must be located on the same partition
+	assert(groupConfigMap[grpIdLower].preferredNetId == groupConfigMap[grpIdUpper].preferredNetId);
+
 	// this flag must be set if any compartmental connections exist
 	// note that grpId.withCompartments is not necessarily set just yet, this will be done in
 	// CpuSNN::setCompartmentParameters
 	sim_with_compartments = true;
 
-	// add entry to linked list
-	/*
-	compConnectInfo_t* newInfo = (compConnectInfo_t*)calloc(1, sizeof(compConnectInfo_t));
-	newInfo->grpSrc = grpIdLower;
-	newInfo->grpDest = grpIdUpper;
-	newInfo->connId = numCompartmentConnections++;
-	newInfo->next = compConnectBegin;
-	compConnectBegin = newInfo;
-	*/
+	compConnectConfig compConnConfig;
 
-	return 0;
+	compConnConfig.grpSrc = grpIdLower;
+	compConnConfig.grpDest = grpIdUpper;
+	compConnConfig.connId = -1;
+
+	// assign a connection id
+	assert(compConnConfig.connId == -1);
+	compConnConfig.connId = numCompartmentConnections;
+
+	// store the configuration of a connection
+	compConnectConfigMap[numConnections] = compConnConfig;
+
+	numCompartmentConnections++;
+
+	return (numCompartmentConnections - 1);
 }
 
 // create group of Izhikevich neurons
@@ -254,7 +262,7 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	GroupConfigMD grpConfigMD;
 
 	//All groups are non-compartmental by default
-	grpConfig.withCompartments = 0;
+	grpConfig.withCompartments = false;
 	
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
@@ -4550,6 +4558,9 @@ void SNN::verifyNetwork() {
 	// NOTE: this used to be updateParameters
 	//verifyNumNeurons();
 
+	// make sure compartment config is valid
+	verifyCompartments();
+
 	// make sure STDP post-group has some incoming plastic connections
 	verifySTDP();
 
@@ -4594,6 +4605,26 @@ void SNN::verifyNetwork() {
 	if (glbNetworkConfig.maxDelay > MAX_SYN_DELAY) {
 		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h", glbNetworkConfig.maxDelay);
 		exitSimulation(1);
+	}
+}
+
+void SNN::verifyCompartments() {
+	for (std::map<int, compConnectConfig>::iterator it = compConnectConfigMap.begin(); it != compConnectConfigMap.end(); it++)
+	{
+		int grpLower = it->second.grpSrc;
+		int grpUpper = it->second.grpDest;
+
+		// make sure groups are compartmentally enabled
+		if (!groupConfigMap[grpLower].withCompartments) {
+			KERNEL_ERROR("Group %s(%d) is not compartmentally enabled, cannot be part of a compartmental connection.",
+				groupConfigMap[grpLower].grpName.c_str(), grpLower);
+			exitSimulation(1);
+		}
+		if (!groupConfigMap[grpUpper].withCompartments) {
+			KERNEL_ERROR("Group %s(%d) is not compartmentally enabled, cannot be part of a compartmental connection.",
+				groupConfigMap[grpUpper].grpName.c_str(), grpUpper);
+			exitSimulation(1);
+		}
 	}
 }
 
@@ -4769,6 +4800,12 @@ void SNN::partitionSNN() {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
 					localConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]); // Copy by value
+				}
+			}
+
+			for (std::map<int, compConnectConfig>::iterator connIt = compConnectConfigMap.begin(); connIt != compConnectConfigMap.end(); connIt++) {
+				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
+					localCompConnectLists[netId].push_back(compConnectConfigMap[connIt->second.connId]); // Copy by value
 				}
 			}
 		}

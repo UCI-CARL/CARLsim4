@@ -276,6 +276,11 @@ public:
 			UserErrors::MUST_BE_IDENTICAL, funcName.str(), "Sizes of " + grpIdLowerStr.str() + " and " +
 			grpIdUpperStr.str());
 
+		// groups must be located on the same partition
+		UserErrors::assertTrue(groupPrefNetIds_.at(grpIdLower) == groupPrefNetIds_.at(grpIdUpper),
+			UserErrors::MUST_BE_IDENTICAL, funcName.str(), "Preferred partions of " + grpIdLowerStr.str() + " and " +
+			grpIdUpperStr.str());
+
 		// groups cannot be both chemically (synaptically) and electrically (compartmentally) connected
 		UserErrors::assertTrue(std::find(connSyn_[grpIdLower].begin(), connSyn_[grpIdLower].end(), grpIdUpper) ==
 			connSyn_[grpIdLower].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName.str(),
@@ -334,6 +339,14 @@ public:
 
 		int grpId = snn_->createGroup(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
+
+		int partitionOffset = 0;
+		if (preferredBackend == CPU_CORES)
+			partitionOffset = MAX_NUM_CUDA_DEVICES;
+		else if (preferredBackend == GPU_CORES)
+			partitionOffset = 0;
+		int prefPartition = preferredPartition + partitionOffset;
+		groupPrefNetIds_.insert(std::pair<int, int>(grpId, prefPartition));
 
 		// extend 2D connection matrices to number of groups
 		connSyn_.resize(grpIds_.size());
@@ -1547,6 +1560,8 @@ private:
 	//! a 2D matrix storing for each groupId (first dim) to which other groups it is compartmentally connected
 	//! to (second dim)
 	std::vector<std::vector<int> > connComp_;
+
+	std::map<int, int> groupPrefNetIds_; //!< a list of all created groups' preferred net ids
 
 	unsigned int numConnections_;	//!< keep track of number of allocated connections
 	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
