@@ -212,9 +212,29 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 // make a compartmental connection between two groups
 short int SNN::connectCompartments(int grpIdLower, int grpIdUpper) {
+	assert(grpIdLower >= 0 && grpIdLower < numGroups);
+	assert(grpIdUpper >= 0 && grpIdUpper < numGroups);
+	assert(grpIdLower != grpIdUpper);
+	assert(!isPoissonGroup(grpIdLower));
+	assert(!isPoissonGroup(grpIdUpper));
+
+	// this flag must be set if any compartmental connections exist
+	// note that grpId.withCompartments is not necessarily set just yet, this will be done in
+	// CpuSNN::setCompartmentParameters
+	sim_with_compartments = true;
+
+	// add entry to linked list
+	/*
+	compConnectInfo_t* newInfo = (compConnectInfo_t*)calloc(1, sizeof(compConnectInfo_t));
+	newInfo->grpSrc = grpIdLower;
+	newInfo->grpDest = grpIdUpper;
+	newInfo->connId = numCompartmentConnections++;
+	newInfo->next = compConnectBegin;
+	compConnectBegin = newInfo;
+	*/
+
 	return 0;
 }
-
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
@@ -232,6 +252,9 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	// initialize group configuration
 	GroupConfig grpConfig;
 	GroupConfigMD grpConfigMD;
+
+	//All groups are non-compartmental by default
+	grpConfig.withCompartments = 0;
 	
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
@@ -272,7 +295,10 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	// initialize group configuration
 	GroupConfig grpConfig;
 	GroupConfigMD grpConfigMD;
-	
+
+	//All groups are non-compartmental by default  FIXME:IS THIS NECESSARY?
+	grpConfig.withCompartments = 0;
+
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
 	grpConfig.type = neurType | POISSON_NEURON;
@@ -304,9 +330,21 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	return grpConfigMD.gGrpId;
 }
 
-void SNN::setCompartmentParameters(int grpId, float couplingUp, float couplingDown) {
-	return;
+void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingDown) {
+	if (gGrpId == ALL) { 
+		for (int grpId = 0; grpId<numGroups; grpId++) {
+			setCompartmentParameters(grpId, couplingUp, couplingDown);
+		}
+	}
+	else {
+		sim_with_compartments = true;
+		groupConfigMap[gGrpId].withCompartments = true;
+		groupConfigMap[gGrpId].compCouplingUp = couplingUp;
+		groupConfigMap[gGrpId].compCouplingDown = couplingDown;
+		glbNetworkConfig.numComp += groupConfigMap[gGrpId].numN;
+	}
 }
+
 
 // set conductance values for a simulation (custom values or disable conductances alltogether)
 void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
@@ -1842,6 +1880,7 @@ void SNN::SNNinit() {
 
 	numGroups = 0;
 	numConnections = 0;
+	numCompartmentConnections = 0;
 	numSpikeGenGrps = 0;
 	simulatorDeleted = false;
 
@@ -1853,6 +1892,7 @@ void SNN::SNNinit() {
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
 
+	sim_with_compartments = false;
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
 	sim_with_conductances = false; // default is false
 	sim_with_stdp = false;
@@ -1874,6 +1914,9 @@ void SNN::SNNinit() {
 	rGABAb = 1.0-1.0/100.0;
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
+
+	// default integration method: Forward-Euler with 0.5ms integration step
+	setIntegrationMethod(FORWARD_EULER, 2);
 
 	mulSynFast = NULL;
 	mulSynSlow = NULL;
@@ -2713,6 +2756,10 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
+			groupConfigs[netId][lGrpId].numCompNeighbors = 0;
+			memset(&groupConfigs[netId][lGrpId].compNeighbors, 0, sizeof(groupConfigs[netId][lGrpId].compNeighbors[0])*MAX_NUM_COMP_CONN);
+			memset(&groupConfigs[netId][lGrpId].compCoupling, 0, sizeof(groupConfigs[netId][lGrpId].compCoupling[0])*MAX_NUM_COMP_CONN);
+
 			//!< homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
 			groupConfigs[netId][lGrpId].avgTimeScale_decay = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleDecay;
@@ -3144,6 +3191,7 @@ void SNN::collectGlobalNetworkConfigC() {
 	glbNetworkConfig.numNPois = glbNetworkConfig.numNExcPois + glbNetworkConfig.numNInhPois;
 	glbNetworkConfig.numN = glbNetworkConfig.numNReg + glbNetworkConfig.numNPois;
 }
+
 
 void SNN::collectGlobalNetworkConfigP() {
 	// print group and connection overview
@@ -5070,8 +5118,10 @@ void SNN::generateRuntimeSNN() {
 	// 1. genearte configurations for the simulation
 	// generate (copy) group configs from groupPartitionLists[]
 	generateRuntimeGroupConfigs();
+
 	// generate (copy) connection configs from localConnectLists[] and exeternalConnectLists[]
 	generateRuntimeConnectConfigs();
+
 	// generate local network configs and accquire maximum size of rumtime data
 	generateRuntimeNetworkConfigs();
 

@@ -163,6 +163,46 @@ typedef struct ConnectConfigRT_s {
 	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
 } ConnectConfigRT;
 
+typedef struct compConnectionInfo_s {
+	int								grpSrc, grpDest;
+	short int               		connId;
+	struct compConnectionInfo_s*    next;
+}compConnectionInfo;
+
+/*!
+* \brief The configuration of a compartmental connection
+*
+* This structure contains the configurations of compartmental connections that are created during configuration state.
+* The configurations are later processed by compileNetwork() and translated to meta data which are ready to
+* be linked.
+* \see CARLsimState
+*/
+typedef struct compConnectConfig_s {
+	int							grpSrc, grpDest;
+	short int               	connId;
+	struct compConnectInfo_s*   next;
+} compConnectConfig;
+
+/*!
+* \brief the intermediate data of compartmental connect config
+*
+* \note for futre use
+*/
+typedef struct compConnectConfigMD_s {
+
+} compConnectConfigMD;
+
+/*!
+* \brief The runtime configuration of a connection
+*
+* This structure contains the configurations of compartmental connections that are created by optimizeAndPartiionNetwork(),
+* which is ready to be executed by computing backend.
+* \see CARLsimState
+* \see SNNState
+*/
+typedef struct compConnectConfigRT_s {
+} compConnectConfigRT;
+
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
 	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
@@ -284,6 +324,14 @@ typedef struct GroupConfig_s {
 	int          numN;
 	bool isSpikeGenerator;
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool withCompartments;
+
+	float compCouplingUp;
+	float compCouplingDown;
+	int   compNeighbors[4];
+	float compCoupling[4];
+	short numCompNeighbors;
+
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
@@ -405,6 +453,12 @@ typedef struct GroupConfigRT_s {
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+
+	float compCouplingUp;
+	float compCouplingDown;
+	int   compNeighbors[4];
+	float compCoupling[4];
+	short numCompNeighbors;
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
@@ -490,7 +544,6 @@ typedef struct RuntimeData_s {
 	SynInfo* preSynapticIds;
 
 	DelayInfo* postDelayInfo;  	//!< delay information
-
 	unsigned int* timeTableD1; //!< firing table, only used in CPU_MODE currently
 	unsigned int* timeTableD2; //!< firing table, only used in CPU_MODE currently
 	
@@ -548,6 +601,7 @@ typedef struct GlobalNetworkConfig_s {
 	int numNExcReg;   //!< number of regular excitatory neurons in the global network
 	int numNInhReg;   //!< number of regular inhibitory neurons in the global network
 	int numNReg;      //!< number of regular (spking) neurons in the global network
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
 	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
 	int numNPois;     //!< number of poisson neurons in the global network
@@ -574,6 +628,7 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcReg;   //!< number of regular excitatory neurons
 	int numNInhReg;   //!< number of regular inhibitory neurons
 	int numNReg;      //!< number of regular (spking) neurons
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons
 	int numNInhPois;  //!< number of inhibitory poisson neurons
 	int numNPois;     //!< number of poisson neurons
