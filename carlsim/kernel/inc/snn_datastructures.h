@@ -169,7 +169,9 @@ typedef struct NeuralDynamicsConfig_s {
 							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
 							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
 							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
-							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f)
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), lif_tau_m(-1), 
+							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minFR(0.0f),
+							   lif_maxFR(0.0f), lif_minInt(0.0f), lif_maxInt(0.0f)
 	{}
 	float 		Izh_C;
 	float 		Izh_C_sd;
@@ -189,6 +191,14 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
+	int 		lif_tau_m; //!< parameters for a LIF spiking group
+	int 		lif_tau_ref;
+	float 		lif_vTh;
+	float 		lif_vReset;
+	float 		lif_minFR;
+	float 		lif_maxFR;
+	float 		lif_minInt;
+	float 		lif_maxInt;
 
 } NeuralDynamicsConfig;
 
@@ -284,6 +294,7 @@ typedef struct GroupConfig_s {
 	int          numN;
 	bool isSpikeGenerator;
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF;
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
@@ -405,6 +416,7 @@ typedef struct GroupConfigRT_s {
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF; //!< True = a LIF spiking group
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
@@ -435,6 +447,15 @@ typedef struct RuntimeData_s {
 	float* Izh_d;
 	float* current;
 	float* extCurrent;
+	
+	int* lif_tau_m; //!< parameters for a LIF spiking group
+	int* lif_tau_ref;
+	float* lif_vTh;
+	float* lif_vReset;
+	float* lif_minFR;
+	float* lif_maxFR;
+	float* lif_minInt;
+	float* lif_maxInt;
 
 	//! Keeps track of all neurons that spiked at current time.
 	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,

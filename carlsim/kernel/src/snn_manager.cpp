@@ -235,6 +235,54 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	
 	grpConfig.isSpikeGenerator = false;
 	grpConfig.grid = grid;
+	grpConfig.isLIF = false;
+
+	if (preferredPartition == ANY) {
+		grpConfig.preferredNetId = ANY;
+	} else if (preferredBackend == CPU_CORES) {
+		grpConfig.preferredNetId = preferredPartition + CPU_RUNTIME_BASE;
+	} else {
+		grpConfig.preferredNetId = preferredPartition + GPU_RUNTIME_BASE;
+	}
+
+	// assign a global group id
+	grpConfigMD.gGrpId = numGroups;
+
+	// store the configuration of a group
+	groupConfigMap[numGroups] = grpConfig; // numGroups == grpId
+	groupConfigMDMap[numGroups] = grpConfigMD;
+
+	assert(numGroups < MAX_GRP_PER_SNN); // make sure we don't overflow connId
+	numGroups++;
+
+	return grpConfigMD.gGrpId;
+}
+
+// create group of LIF neurons
+// use int for nNeur to avoid arithmetic underflow
+int SNN::createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	assert(grid.numX * grid.numY * grid.numZ > 0);
+	assert(neurType >= 0);
+	assert(numGroups < MAX_GRP_PER_SNN);
+
+	if ( (!(neurType & TARGET_AMPA) && !(neurType & TARGET_NMDA) &&
+		  !(neurType & TARGET_GABAa) && !(neurType & TARGET_GABAb)) || (neurType & POISSON_NEURON)) {
+		KERNEL_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
+		exitSimulation(1);
+	}
+
+	// initialize group configuration
+	GroupConfig grpConfig;
+	GroupConfigMD grpConfigMD;
+	
+	// init parameters of neural group size and location
+	grpConfig.grpName = grpName;
+	grpConfig.type = neurType;
+	grpConfig.numN = grid.N;
+	
+	grpConfig.isLIF = true;
+	grpConfig.isSpikeGenerator = false;
+	grpConfig.grid = grid;
 
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
@@ -274,6 +322,7 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.numN = grid.N;
 	grpConfig.isSpikeGenerator = true;
 	grpConfig.grid = grid;
+	grpConfig.isLIF = false;
 
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
@@ -416,6 +465,7 @@ void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d = izh_d;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd = izh_d_sd;
 		groupConfigMap[gGrpId].withParamModel_9 = 0;
+		groupConfigMap[gGrpId].isLIF = 0;
 	}
 }
 
@@ -458,7 +508,37 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
 		groupConfigMap[gGrpId].withParamModel_9 = 1;
+		groupConfigMap[gGrpId].isLIF = 0;
 		KERNEL_INFO("Set a nine parameter group!");
+	}
+}
+
+
+// set LIF parameters for the group
+void SNN::setNeuronParametersLIF(int gGrpId, int tau_m, int tau_ref, float vTh, float vReset, 
+	float minFR, float maxFR, float minInt, float maxInt)
+{
+	assert(gGrpId >= -1);
+	assert(tau_m >= 0); assert(tau_ref >= 0); assert(vReset < vTh); assert(minFR >= 0.0f);
+	assert(maxFR > 0.0f); assert(minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minFR < maxFR);
+	assert(maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minInt >= 0.0f);
+	assert(maxInt >= 0.0f); assert(minInt < maxInt); assert(maxInt < 1.0f);
+
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, minFR, maxFR, minInt, maxInt);
+		}
+	} else {
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m = tau_m;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref = tau_ref;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh = vTh;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset = vReset;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR = minFR;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR = maxFR;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt = minInt;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt = maxInt;
+		groupConfigMap[gGrpId].withParamModel_9 = 0;
+		groupConfigMap[gGrpId].isLIF = 1;
 	}
 }
 
@@ -2484,6 +2564,14 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vr	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vt	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_m      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_ref      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_vTh      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_vReset      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_minFR      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_maxFR      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_minInt      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_maxInt      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
@@ -2499,6 +2587,14 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vr, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_m, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_ref, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_vTh, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_vReset, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_minFR, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_maxFR, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_minInt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_maxInt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
@@ -2739,6 +2835,7 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
 			groupConfigs[netId][lGrpId].withParamModel_9 = groupConfigMap[gGrpId].withParamModel_9;
+			groupConfigs[netId][lGrpId].isLIF = groupConfigMap[gGrpId].isLIF;
 
 		}
 
@@ -5210,8 +5307,13 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	int gGrpId = groupConfigs[netId][lGrpId].gGrpId; // get global group id
 	assert(lNId < networkConfigs[netId].numNReg);
 
-	if (groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a == -1) {
+	if (groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a == -1 && groupConfigMap[gGrpId].isLIF == 0) {
 		KERNEL_ERROR("setNeuronParameters must be called for group %s (G:%d,L:%d)",groupConfigMap[gGrpId].grpName.c_str(), gGrpId, lGrpId);
+		exitSimulation(1);
+	}
+
+	if (groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m == -1 && groupConfigMap[gGrpId].isLIF == 1) {
+		KERNEL_ERROR("setNeuronParametersLIF must be called for group %s (G:%d,L:%d)",groupConfigMap[gGrpId].grpName.c_str(), gGrpId, lGrpId);
 		exitSimulation(1);
 	}
 
@@ -5225,7 +5327,16 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.Izh_vt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd * (float)drand48();
 	managerRuntimeData.Izh_vpeak[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd * (float)drand48();
 
-	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId];
+	managerRuntimeData.lif_tau_m[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m;
+	managerRuntimeData.lif_tau_ref[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref;
+	managerRuntimeData.lif_vTh[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh;
+	managerRuntimeData.lif_vReset[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset;
+	managerRuntimeData.lif_minFR[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR;
+	managerRuntimeData.lif_maxFR[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR;
+	managerRuntimeData.lif_minInt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt;
+	managerRuntimeData.lif_maxInt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt;
+
+	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].isLIF ? managerRuntimeData.lif_vReset[lNId] : (groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId]);
 	managerRuntimeData.recovery[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? 0.0f : managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId];
 
  	if (groupConfigs[netId][lGrpId].WithHomeostasis) {
@@ -5340,6 +5451,18 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.Izh_vpeak!=NULL) delete[] managerRuntimeData.Izh_vpeak;
 	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
 	managerRuntimeData.Izh_C = NULL; managerRuntimeData.Izh_k = NULL; managerRuntimeData.Izh_vr = NULL; managerRuntimeData.Izh_vt = NULL; managerRuntimeData.Izh_vpeak = NULL;
+
+	if (managerRuntimeData.lif_tau_m!=NULL) delete[] managerRuntimeData.lif_tau_m;
+	if (managerRuntimeData.lif_tau_ref!=NULL) delete[] managerRuntimeData.lif_tau_ref;
+	if (managerRuntimeData.lif_vTh!=NULL) delete[] managerRuntimeData.lif_vTh;
+	if (managerRuntimeData.lif_vReset!=NULL) delete[] managerRuntimeData.lif_vReset;
+	if (managerRuntimeData.lif_minFR!=NULL) delete[] managerRuntimeData.lif_minFR;
+	if (managerRuntimeData.lif_maxFR!=NULL) delete[] managerRuntimeData.lif_maxFR;
+	if (managerRuntimeData.lif_minInt!=NULL) delete[] managerRuntimeData.lif_minInt;
+	if (managerRuntimeData.lif_maxInt!=NULL) delete[] managerRuntimeData.lif_maxInt;
+	managerRuntimeData.lif_tau_m=NULL; managerRuntimeData.lif_tau_ref=NULL; managerRuntimeData.lif_vTh=NULL;
+	managerRuntimeData.lif_vReset=NULL; managerRuntimeData.lif_minFR=NULL; managerRuntimeData.lif_maxFR=NULL;
+	managerRuntimeData.lif_minInt=NULL; managerRuntimeData.lif_maxInt=NULL;
 
 	if (managerRuntimeData.Npre!=NULL) delete[] managerRuntimeData.Npre;
 	if (managerRuntimeData.Npre_plastic!=NULL) delete[] managerRuntimeData.Npre_plastic;

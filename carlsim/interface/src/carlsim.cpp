@@ -507,7 +507,7 @@ public:
 		UserErrors::assertTrue(rangeInt.maxInt < 1.0f , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.maxInt");
 
 		// wrapper identical to core func
-		snn_->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR, rangeInt);
+		snn_->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR.minFR, rangeFR.maxFR, rangeInt.minInt, rangeInt.maxInt);
 	}
 
 	// set parameters for each neuronmodulator
