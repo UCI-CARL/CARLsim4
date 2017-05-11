@@ -2505,8 +2505,11 @@ void* SNN::deleteRuntimeData_CPU(int netId) {
 	delete[] runtimeData[netId].lastSpikeTime;
 	delete[] runtimeData[netId].spikeGenBits;
 
-	delete[] runtimeData[netId].firingTableD2;
-	delete[] runtimeData[netId].firingTableD1;
+	delete [] runtimeData[netId].timeTableD1;
+	delete [] runtimeData[netId].timeTableD2;
+
+	delete [] runtimeData[netId].firingTableD2;
+	delete [] runtimeData[netId].firingTableD1;
 
 	int** tempPtrs;
 	tempPtrs = new int*[networkConfigs[netId].numGroups];
