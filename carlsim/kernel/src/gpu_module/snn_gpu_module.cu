@@ -952,8 +952,6 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 		{	// 4-param Izhikevich
 			// update vpos and upos for the current neuron
 
-			//printf("Voltage is: %f\n", v_next);
-			//printf("Recovery is: %f\n", u);
 			v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 			if (v_next > 30.0f) {
 				// record spike but keep integrating
@@ -1017,19 +1015,15 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			// 9-param Izhikevich
 			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
-			//printf("k1: %f; l1: %f\n", k1, l1);
 
 			float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
-			//printf("k2: %f; l2: %f\n", k2, l2);
 
 			float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
-			//printf("k3: %f; l3: %f\n", k3, l3);
 
 			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
-			//printf("k4: %f; l4: %f\n", k4, l4);
 
 			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);

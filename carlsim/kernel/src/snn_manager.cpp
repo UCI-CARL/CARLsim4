@@ -305,7 +305,7 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	GroupConfigMD grpConfigMD;
 
 	//All groups are non-compartmental by default  FIXME:IS THIS NECESSARY?
-	grpConfig.withCompartments = 0;
+	grpConfig.withCompartments = false;
 
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
@@ -1948,8 +1948,6 @@ void SNN::SNNinit() {
 	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
 	managerRuntimeData.allocated = false; // FIXME: redundant??
-
-
 
 	// default weight update parameter
 	wtANDwtChangeUpdateInterval_ = 1000; // update weights every 1000 ms (default)

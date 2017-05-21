@@ -184,9 +184,9 @@ TEST(COMPARTMENTS, spikeTimesCPUvsGPU) {
 		std::vector<std::vector<int> > cpu_spkTimesSP, cpu_spkTimesSR, cpu_spkTimesSLM, cpu_spkTimesSO;
 
 		for (int numIntSteps = 10; numIntSteps <= 100; numIntSteps += 10) {
-			printf("This simulation has coba: %i. And has %i steps.\n", hasCOBA, numIntSteps);
+			//printf("This simulation has coba: %i. And has %i steps.\n", hasCOBA, numIntSteps);
 			for (int isGPUmode = 0; isGPUmode <= 1; isGPUmode++) {
-				printf("This is GPU mode: %i.\n", isGPUmode);
+				//printf("This is GPU mode: %i.\n", isGPUmode);
 				CARLsim* sim = new CARLsim("COMPARTMENTS.spikeTimesCPUvsGPU",
 					isGPUmode ? GPU_MODE : CPU_MODE, SILENT, 0, 42);
 				sim->setIntegrationMethod(RUNGE_KUTTA4, numIntSteps);
