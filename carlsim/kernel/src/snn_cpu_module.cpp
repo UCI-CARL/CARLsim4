@@ -52,9 +52,9 @@
 
 // spikeGeneratorUpdate_CPU on CPUs
 #if defined(WIN32) || defined(WIN64)
-void SNN::spikeGeneratorUpdate_CPU(int netId) {
+	void SNN::spikeGeneratorUpdate_CPU(int netId) {
 #else // POSIX
-void* SNN::spikeGeneratorUpdate_CPU(int netId) {
+	void* SNN::spikeGeneratorUpdate_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].allocated);
 	assert(runtimeData[netId].memType == CPU_MEM);
@@ -82,13 +82,13 @@ void* SNN::spikeGeneratorUpdate_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->spikeGeneratorUpdate_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*)arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer)->spikeGeneratorUpdate_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
