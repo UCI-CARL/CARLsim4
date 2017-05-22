@@ -84,17 +84,17 @@
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 	// Static multithreading subroutine method - helper for the above method  
 	void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*)arguments;
+		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer)->spikeGeneratorUpdate_CPU(args->netId);
+		((SNN *)args->snn_pointer) -> spikeGeneratorUpdate_CPU(args->netId);
 		pthread_exit(0);
 	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::updateTimingTable_CPU(int netId) {
+	void SNN::updateTimingTable_CPU(int netId) {
 #else // POSIX
-void* SNN::updateTimingTable_CPU(int netId) {
+	void* SNN::updateTimingTable_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -103,13 +103,13 @@ void* SNN::updateTimingTable_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->updateTimingTable_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*)arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer)->updateTimingTable_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 //void SNN::routeSpikes_CPU() {
@@ -228,9 +228,9 @@ void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
 //}
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 #else // POSIX
-void* SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	void* SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 #endif
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
 
@@ -245,19 +245,19 @@ void* SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLO
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*)arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer)->convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
+		pthread_exit(0);
+	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 #else // POSIX
-void* SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
+	void* SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 #endif
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
 
@@ -271,19 +271,19 @@ void* SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLO
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperConvertExtSpikesD1_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->convertExtSpikesD1_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperConvertExtSpikesD1_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> convertExtSpikesD1_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
+		pthread_exit(0);
+	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::clearExtFiringTable_CPU(int netId) {
+	void SNN::clearExtFiringTable_CPU(int netId) {
 #else // POSIX
-void* SNN::clearExtFiringTable_CPU(int netId) {
+	void* SNN::clearExtFiringTable_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -292,13 +292,13 @@ void* SNN::clearExtFiringTable_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperClearExtFiringTable_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->clearExtFiringTable_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperClearExtFiringTable_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> clearExtFiringTable_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 void SNN::copyTimeTable(int netId, bool toManager) {
@@ -307,8 +307,7 @@ void SNN::copyTimeTable(int netId, bool toManager) {
 	if (toManager) {
 		memcpy(managerRuntimeData.timeTableD2, runtimeData[netId].timeTableD2, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
 		memcpy(managerRuntimeData.timeTableD1, runtimeData[netId].timeTableD1, sizeof(int) * (1000 + glbNetworkConfig.maxDelay + 1));
-	}
-	else {
+	} else {
 		memcpy(runtimeData[netId].timeTableD2, managerRuntimeData.timeTableD2, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
 		memcpy(runtimeData[netId].timeTableD1, managerRuntimeData.timeTableD1, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1));
 	}
@@ -329,16 +328,15 @@ void SNN::copyExtFiringTable(int netId) {
 // FIXME: make sure this is right when separating cpu_module to a standalone class
 // FIXME: currently this function clear nSpikeCnt of manager runtime data
 #if defined(WIN32) || defined(WIN64)
-void SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
+	void SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
 #else // POSIX
-void* SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
+	void* SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	if (lGrpId == ALL) {
 		memset(runtimeData[netId].nSpikeCnt, 0, sizeof(int) * networkConfigs[netId].numN);
-	}
-	else {
+	} else {
 		int lStartN = groupConfigs[netId][lGrpId].lStartN;
 		int numN = groupConfigs[netId][lGrpId].numN;
 		memset(runtimeData[netId].nSpikeCnt + lStartN, 0, sizeof(int) * numN);
@@ -346,28 +344,28 @@ void* SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperResetSpikeCnt_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->resetSpikeCnt_CPU(args->netId, args->lGrpId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperResetSpikeCnt_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> resetSpikeCnt_CPU(args->netId, args->lGrpId);
+		pthread_exit(0);
+	}
 #endif
 
 // This method loops through all spikes that are generated by neurons with a delay of 1ms
 // and delivers the spikes to the appropriate post-synaptic neuron
 #if defined(WIN32) || defined(WIN64)
-void SNN::doCurrentUpdateD1_CPU(int netId) {
+	void SNN::doCurrentUpdateD1_CPU(int netId) {
 #else // POSIX
-void* SNN::doCurrentUpdateD1_CPU(int netId) {
+	void* SNN::doCurrentUpdateD1_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
-
-	int k = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] - 1;
+	
+	int k     = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] - 1;
 	int k_end = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay];
 
-	while ((k >= k_end) && (k >= 0)) {
+	while((k >= k_end) && (k >= 0)) {
 		int lNId = runtimeData[netId].firingTableD1[k];
 		//assert(lNId < networkConfigs[netId].numN);
 
@@ -375,7 +373,7 @@ void* SNN::doCurrentUpdateD1_CPU(int netId) {
 
 		unsigned int offset = runtimeData[netId].cumulativePost[lNId];
 
-		for (int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d + 1) {
+		for(int idx_d = dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d = idx_d + 1) {
 			// get synaptic info...
 			SynInfo postInfo = runtimeData[netId].postSynapticIds[offset + idx_d];
 
@@ -394,21 +392,21 @@ void* SNN::doCurrentUpdateD1_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperDoCurrentUpdateD1_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->doCurrentUpdateD1_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDoCurrentUpdateD1_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> doCurrentUpdateD1_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 // This method loops through all spikes that are generated by neurons with a delay of 2+ms
 // and delivers the spikes to the appropriate post-synaptic neuron
 #if defined(WIN32) || defined(WIN64)
-void SNN::doCurrentUpdateD2_CPU(int netId) {
+	void SNN::doCurrentUpdateD2_CPU(int netId) {
 #else // POSIX
-void* SNN::doCurrentUpdateD2_CPU(int netId) {
+	void* SNN::doCurrentUpdateD2_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -459,27 +457,27 @@ void* SNN::doCurrentUpdateD2_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperDoCurrentUpdateD2_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->doCurrentUpdateD2_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDoCurrentUpdateD2_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> doCurrentUpdateD2_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
+	void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 #else // POSIX
-void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
+	void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	//decay the STP variables before adding new spikes.
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 			if (groupConfigs[netId][lGrpId].WithSTP) {
-				int ind_plus = STP_BUF_POS(lNId, simTime, glbNetworkConfig.maxDelay);
+				int ind_plus  = STP_BUF_POS(lNId, simTime, glbNetworkConfig.maxDelay);
 				int ind_minus = STP_BUF_POS(lNId, (simTime - 1), glbNetworkConfig.maxDelay);
 				runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - groupConfigs[netId][lGrpId].STP_tau_u_inv);
 				runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * groupConfigs[netId][lGrpId].STP_tau_x_inv;
@@ -487,12 +485,11 @@ void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 
 			// decay conductances
 			if (networkConfigs[netId].sim_with_conductances && IS_REGULAR_NEURON(lNId, networkConfigs[netId].numNReg, networkConfigs[netId].numNPois)) {
-				runtimeData[netId].gAMPA[lNId] *= dAMPA;
+				runtimeData[netId].gAMPA[lNId]  *= dAMPA;
 				if (sim_with_NMDA_rise) {
 					runtimeData[netId].gNMDA_r[lNId] *= rNMDA;	// rise
 					runtimeData[netId].gNMDA_d[lNId] *= dNMDA;	// decay
-				}
-				else {
+				} else {
 					runtimeData[netId].gNMDA[lNId] *= dNMDA;	// instantaneous rise
 				}
 
@@ -500,8 +497,7 @@ void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 				if (sim_with_GABAb_rise) {
 					runtimeData[netId].gGABAb_r[lNId] *= rGABAb;	// rise
 					runtimeData[netId].gGABAb_d[lNId] *= dGABAb;	// decay
-				}
-				else {
+				} else {
 					runtimeData[netId].gGABAb[lNId] *= dGABAb;	// instantaneous rise
 				}
 			}
@@ -510,39 +506,37 @@ void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->doSTPUpdateAndDecayCond_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> doSTPUpdateAndDecayCond_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::findFiring_CPU(int netId) {
+	void SNN::findFiring_CPU(int netId) {
 #else // POSIX
-void* SNN::findFiring_CPU(int netId) {
+	void* SNN::findFiring_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 			bool needToWrite = false;
 			// given group of neurons belong to the poisson group....
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
-				if (groupConfigs[netId][lGrpId].isSpikeGenFunc) {
+				if(groupConfigs[netId][lGrpId].isSpikeGenFunc) {
 					unsigned int offset = lNId - groupConfigs[netId][lGrpId].lStartN + groupConfigs[netId][lGrpId].Noffset;
 					needToWrite = getSpikeGenBit(offset, netId);
-				}
-				else { // spikes generated by poission rate
+				} else { // spikes generated by poission rate
 					needToWrite = getPoissonSpike(lNId, netId);
 				}
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeData[netId].lastSpikeTime[lNId] = simTime;
-			}
-			else if (runtimeData[netId].curSpike[lNId]) {
+			} else if (runtimeData[netId].curSpike[lNId]) {
 				runtimeData[netId].curSpike[lNId] = false;
 				needToWrite = true;
 			}
@@ -559,8 +553,7 @@ void* SNN::findFiring_CPU(int netId) {
 						fireId = runtimeData[netId].spikeCountD1Sec;
 						runtimeData[netId].spikeCountD1Sec++;
 					}
-				}
-				else { // MaxDelay > 1
+				} else { // MaxDelay > 1
 					if (runtimeData[netId].spikeCountD2Sec + runtimeData[netId].spikeCountLastSecLeftD2 + 1 < networkConfigs[netId].maxSpikesD2) {
 						fireId = runtimeData[netId].spikeCountD2Sec + runtimeData[netId].spikeCountLastSecLeftD2;
 						runtimeData[netId].spikeCountD2Sec++;
@@ -573,19 +566,17 @@ void* SNN::findFiring_CPU(int netId) {
 				// update firing table: firingTableD1(W), firingTableD2(W)
 				if (groupConfigs[netId][lGrpId].MaxDelay == 1) {
 					runtimeData[netId].firingTableD1[fireId] = lNId;
-				}
-				else { // MaxDelay > 1
+				} else { // MaxDelay > 1
 					runtimeData[netId].firingTableD2[fireId] = lNId;
 				}
 
 				// update external firing table: extFiringTableEndIdxD1(W), extFiringTableEndIdxD2(W), extFiringTableD1(W), extFiringTableD2(W)
-				if (groupConfigs[netId][lGrpId].hasExternalConnect) {
+				if (groupConfigs[netId][lGrpId].hasExternalConnect)    {
 					int extFireId = -1;
 					if (groupConfigs[netId][lGrpId].MaxDelay == 1) {
 						extFireId = runtimeData[netId].extFiringTableEndIdxD1[lGrpId]++;
 						runtimeData[netId].extFiringTableD1[lGrpId][extFireId] = lNId + groupConfigs[netId][lGrpId].LtoGOffset;
-					}
-					else { // MaxDelay > 1
+					} else { // MaxDelay > 1
 						extFireId = runtimeData[netId].extFiringTableEndIdxD2[lGrpId]++;
 						runtimeData[netId].extFiringTableD2[lGrpId][extFireId] = lNId + groupConfigs[netId][lGrpId].LtoGOffset;
 					}
@@ -613,26 +604,26 @@ void* SNN::findFiring_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperFindFiring_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->findFiring_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperFindFiring_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 
 void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 	unsigned int pos_ij = runtimeData[netId].cumulativePre[lNId]; // the index of pre-synaptic neuron
-	for (int j = 0; j < runtimeData[netId].Npre_plastic[lNId]; pos_ij++, j++) {
+	for(int j = 0; j < runtimeData[netId].Npre_plastic[lNId]; pos_ij++, j++) {
 		int stdp_tDiff = (simTime - runtimeData[netId].synSpikeTime[pos_ij]);
 		assert(!((stdp_tDiff < 0) && (runtimeData[netId].synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
 		if (stdp_tDiff > 0) {
 			// check this is an excitatory or inhibitory synapse
 			if (groupConfigs[netId][lGrpId].WithESTDP && runtimeData[netId].maxSynWt[pos_ij] >= 0) { // excitatory synapse
-																									 // Handle E-STDP curve
+				// Handle E-STDP curve																					 // Handle E-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC < 25)
@@ -650,9 +641,8 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					KERNEL_ERROR("Invalid E-STDP curve!");
 					break;
 				}
-			}
-			else if (groupConfigs[netId][lGrpId].WithISTDP && runtimeData[netId].maxSynWt[pos_ij] < 0) { // inhibitory synapse
-																										 // Handle I-STDP curve
+			} else if (groupConfigs[netId][lGrpId].WithISTDP && runtimeData[netId].maxSynWt[pos_ij] < 0) { // inhibitory synapse
+					// Handle I-STDP curve																				 // Handle I-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
@@ -663,12 +653,10 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					if (stdp_tDiff <= groupConfigs[netId][lGrpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						runtimeData[netId].wtChange[pos_ij] -= groupConfigs[netId][lGrpId].BETA_LTP;
 						//printf("I-STDP LTP\n");
-					}
-					else if (stdp_tDiff <= groupConfigs[netId][lGrpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
+					} else if (stdp_tDiff <= groupConfigs[netId][lGrpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
 						runtimeData[netId].wtChange[pos_ij] -= groupConfigs[netId][lGrpId].BETA_LTD;
 						//printf("I-STDP LTD\n");
-					}
-					else { /*do nothing*/ }
+					} else { /*do nothing*/ }
 					break;
 				default:
 					KERNEL_ERROR("Invalid I-STDP curve!");
@@ -685,7 +673,7 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 	int ind_plus = STP_BUF_POS(lNId, simTime, networkConfigs[netId].maxDelay); // index of right after the spike, such as in u^+
 	int ind_minus = STP_BUF_POS(lNId, (simTime - 1), networkConfigs[netId].maxDelay); // index of right before the spike, such as in u^-
 
-																					  // du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
 	runtimeData[netId].stpu[ind_plus] += groupConfigs[netId][lGrpId].STP_U * (1.0f - runtimeData[netId].stpu[ind_minus]);
 
 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
@@ -707,12 +695,12 @@ bool SNN::getPoissonSpike(int lNId, int netId) {
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
 	return runtimeData[netId].randNum[lNId - networkConfigs[netId].numNReg] * 1000.0f
-		< runtimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg];
+					< runtimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg];
 }
 
 bool SNN::getSpikeGenBit(unsigned int nIdPos, int netId) {
 	const int nIdBitPos = nIdPos % 32;
-	const int nIdIndex = nIdPos / 32;
+	const int nIdIndex  = nIdPos / 32;
 	return ((runtimeData[netId].spikeGenBits[nIdIndex] >> nIdBitPos) & 0x1);
 }
 
@@ -734,7 +722,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	unsigned int pos = runtimeData[netId].cumulativePre[postNId] + synId;
 	assert(postNId < networkConfigs[netId].numNReg); // \FIXME is this assert supposed to be for pos?
 
-													 // get group id of pre- / post-neuron
+	// get group id of pre- / post-neuron
 	short int post_grpId = runtimeData[netId].grpIds[postNId];
 	short int pre_grpId = runtimeData[netId].grpIds[preNId];
 
@@ -760,8 +748,8 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		// I noticed that for connect(.., RangeDelay(1), ..) tD will be 0
-		int ind_minus = STP_BUF_POS(preNId, (simTime - tD - 1), networkConfigs[netId].maxDelay);
-		int ind_plus = STP_BUF_POS(preNId, (simTime - tD), networkConfigs[netId].maxDelay);
+		int ind_minus = STP_BUF_POS(preNId, (simTime-tD-1), networkConfigs[netId].maxDelay);
+		int ind_plus  = STP_BUF_POS(preNId, (simTime-tD), networkConfigs[netId].maxDelay);
 
 		change *= groupConfigs[netId][pre_grpId].STP_A * runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
 
@@ -778,13 +766,12 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	// NOTE: it's faster to += 0.0 rather than checking for zero and not updating
 	if (sim_with_conductances) {
 		if (pre_type & TARGET_AMPA) // if postNId expresses AMPAR
-			runtimeData[netId].gAMPA[postNId] += change * mulSynFast[mulIndex]; // scale by some factor
+			runtimeData[netId].gAMPA [postNId] += change * mulSynFast[mulIndex]; // scale by some factor
 		if (pre_type & TARGET_NMDA) {
 			if (sim_with_NMDA_rise) {
 				runtimeData[netId].gNMDA_r[postNId] += change * sNMDA * mulSynSlow[mulIndex];
 				runtimeData[netId].gNMDA_d[postNId] += change * sNMDA * mulSynSlow[mulIndex];
-			}
-			else {
+			} else {
 				runtimeData[netId].gNMDA[postNId] += change * mulSynSlow[mulIndex];
 			}
 		}
@@ -794,13 +781,11 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 			if (sim_with_GABAb_rise) {
 				runtimeData[netId].gGABAb_r[postNId] -= change * sGABAb * mulSynSlow[mulIndex];
 				runtimeData[netId].gGABAb_d[postNId] -= change * sGABAb * mulSynSlow[mulIndex];
-			}
-			else {
+			} else {
 				runtimeData[netId].gGABAb[postNId] -= change * mulSynSlow[mulIndex];
 			}
 		}
-	}
-	else {
+	} else {
 		runtimeData[netId].current[postNId] += change;
 	}
 
@@ -820,7 +805,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 
 		if (stdp_tDiff >= 0) {
 			if (groupConfigs[netId][post_grpId].WithISTDP && ((pre_type & TARGET_GABAa) || (pre_type & TARGET_GABAb))) { // inhibitory syanpse
-																														 // Handle I-STDP curve
+				// Handle I-STDP curve
 				switch (groupConfigs[netId][post_grpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][post_grpId].TAU_MINUS_INV_INB < 25) { // LTD of inhibitory syanpse, which increase synapse weight
@@ -830,19 +815,16 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 				case PULSE_CURVE: // pulse curve
 					if (stdp_tDiff <= groupConfigs[netId][post_grpId].LAMBDA) { // LTP of inhibitory synapse, which decreases synapse weight
 						runtimeData[netId].wtChange[pos] -= groupConfigs[netId][post_grpId].BETA_LTP;
-					}
-					else if (stdp_tDiff <= groupConfigs[netId][post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
+					} else if (stdp_tDiff <= groupConfigs[netId][post_grpId].DELTA) { // LTD of inhibitory syanpse, which increase synapse weight
 						runtimeData[netId].wtChange[pos] -= groupConfigs[netId][post_grpId].BETA_LTD;
-					}
-					else { /*do nothing*/ }
+					} else { /*do nothing*/ }
 					break;
 				default:
 					KERNEL_ERROR("Invalid I-STDP curve");
 					break;
 				}
-			}
-			else if (groupConfigs[netId][post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
-																															// Handle E-STDP curve
+			} else if (groupConfigs[netId][post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
+				    // Handle E-STDP curve
 				switch (groupConfigs[netId][post_grpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
@@ -853,8 +835,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 					KERNEL_ERROR("Invalid E-STDP curve");
 					break;
 				}
-			}
-			else { /*do nothing*/ }
+			} else { /*do nothing*/ }
 		}
 		assert(!((stdp_tDiff < 0) && (runtimeData[netId].lastSpikeTime[postNId] != MAX_SIMULATION_TIME)));
 	}
@@ -902,9 +883,9 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 
 
 #if defined(WIN32) || defined(WIN64)
-void  SNN::globalStateUpdate_CPU(int netId) {
+	void  SNN::globalStateUpdate_CPU(int netId) {
 #else // POSIX
-void*  SNN::globalStateUpdate_CPU(int netId) {
+	void*  SNN::globalStateUpdate_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -1107,24 +1088,24 @@ void*  SNN::globalStateUpdate_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperGlobalStateUpdate_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->globalStateUpdate_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperGlobalStateUpdate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> globalStateUpdate_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 // This function updates the synaptic weights from its derivatives..
 #if defined(WIN32) || defined(WIN64)
-void SNN::updateWeights_CPU(int netId) {
+	void SNN::updateWeights_CPU(int netId) {
 #else // POSIX
-void* SNN::updateWeights_CPU(int netId) {
+	void* SNN::updateWeights_CPU(int netId) {
 #endif
 	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
-	assert(sim_in_testing == false);
-	assert(sim_with_fixedwts == false);
+	assert(sim_in_testing==false);
+	assert(sim_with_fixedwts==false);
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	// update synaptic weights here for all the neurons..
@@ -1155,14 +1136,13 @@ void* SNN::updateWeights_CPU(int netId) {
 				//				if (wtChange[offset+j])
 				//					printf("connId=%d, wtChange[%d]=%f\n",connIdsPreIdx[offset+j],offset+j,wtChange[offset+j]);
 
-				// homeostatic weight update
-				// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+												// homeostatic weight update
+												// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
 				switch (groupConfigs[netId][lGrpId].WithESTDPtype) {
 				case STANDARD:
 					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 						runtimeData[netId].wt[offset + j] += (diff_firing*runtimeData[netId].wt[offset + j] * homeostasisScale + runtimeData[netId].wtChange[offset + j])*runtimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
-					}
-					else {
+					} else {
 						// just STDP weight update
 						runtimeData[netId].wt[offset + j] += effectiveWtChange;
 					}
@@ -1171,8 +1151,7 @@ void* SNN::updateWeights_CPU(int netId) {
 					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 						effectiveWtChange = runtimeData[netId].grpDA[lGrpId] * effectiveWtChange;
 						runtimeData[netId].wt[offset + j] += (diff_firing*runtimeData[netId].wt[offset + j] * homeostasisScale + effectiveWtChange)*runtimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
-					}
-					else {
+					} else {
 						runtimeData[netId].wt[offset + j] += runtimeData[netId].grpDA[lGrpId] * effectiveWtChange;
 					}
 					break;
@@ -1230,13 +1209,13 @@ void* SNN::updateWeights_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperUpdateWeights_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->updateWeights_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperUpdateWeights_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> updateWeights_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 /*!
