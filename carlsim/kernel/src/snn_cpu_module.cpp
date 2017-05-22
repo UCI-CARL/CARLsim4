@@ -642,7 +642,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					break;
 				}
 			} else if (groupConfigs[netId][lGrpId].WithISTDP && runtimeData[netId].maxSynWt[pos_ij] < 0) { // inhibitory synapse
-						// Handle I-STDP curve																				 // Handle I-STDP curve
+				// Handle I-STDP curve																				 // Handle I-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
@@ -695,7 +695,7 @@ bool SNN::getPoissonSpike(int lNId, int netId) {
 	// if poisson firing probability is say 1.0 then the random poisson ptr
 	// will always be less than 1.0 and hence it will continiously fire
 	return runtimeData[netId].randNum[lNId - networkConfigs[netId].numNReg] * 1000.0f
-					< runtimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg];
+			< runtimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg];
 }
 
 bool SNN::getSpikeGenBit(unsigned int nIdPos, int netId) {
@@ -1404,7 +1404,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// presyn excitatory connections
-		if (allocateMem)
+		if(allocateMem)
 			dest->Npre_plastic = new unsigned short[networkConfigs[netId].numNAssigned];
 		memcpy(&dest->Npre_plastic[posN], &src->Npre_plastic[posN], sizeof(short) * lengthN);
 
@@ -1459,7 +1459,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
  *
  * \sa allocateSNN_CPU
  * \since v4.0
-*/
+ */
 void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	int lengthN, lengthSyn, posN, posSyn;
 
@@ -1519,7 +1519,7 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
  *
  * \sa allocateSNN_CPU
  * \since v4.0
-*/
+ */
 void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	assert(networkConfigs[netId].numPreSynNet > 0);
 
@@ -1548,7 +1548,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
  * \brief this function allocates memory sapce and copies variables related to nueron state to it
  *
  * This function:
- * (allocate and) copy voltage, recovery, current, avgFiring
+ * (allocate and) copy voltage, recovery, current, avgFiring 
  *
  * This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
  *
@@ -1559,7 +1559,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
  *
  * \sa allocateSNN_CPU fetchNeuronState
  * \since v3.0
-*/
+ */
 void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int ptrPos, length;
 
@@ -1598,7 +1598,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	memcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length);
 
 	if (sim_with_conductances) {
-	//conductance information
+		//conductance information
 		copyConductanceAMPA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceNMDA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceGABAa(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
@@ -1637,11 +1637,11 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
  *
  * \sa copyNeuronState fetchConductanceAMPA
  * \since v3.0
-*/
+ */
 void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
@@ -1687,11 +1687,10 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 
 	int ptrPos, length;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		ptrPos  = 0;
 		length  = networkConfigs[netId].numNReg;
-	}
-	else {
+	} else {
 		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
 		length  = groupConfigs[netId][lGrpId].numN;
 	}
@@ -1733,20 +1732,20 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
  *
  * \sa copyNeuronState fetchConductanceGABAa
  * \since v3.0
-*/
+ */
 void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		ptrPos  = 0;
 		length  = networkConfigs[netId].numNReg;
 	} else {
 		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
 		length  = groupConfigs[netId][lGrpId].numN;
 	}
-	assert(length <= networkConfigs[netId].numNReg);
+	assert(length  <= networkConfigs[netId].numNReg);
 	assert(length > 0);
 
 	assert(src->gGABAa != NULL);
@@ -1772,7 +1771,7 @@ void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, Runtime
  *
  * \sa copyNeuronState fetchConductanceGABAb
  * \since v3.0
-*/
+ */
 void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
@@ -1826,7 +1825,7 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int posN, lengthN;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		posN  = 0;
 		lengthN  = networkConfigs[netId].numNReg;
 	} else {
@@ -2463,9 +2462,9 @@ void SNN::copySpikeTables(int netId) {
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 	// Static multithreading subroutine method - helper for the above method  
 	void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*)arguments;
+		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer)->deleteRuntimeData_CPU(args->netId);
+		((SNN *)args->snn_pointer) -> deleteRuntimeData_CPU(args->netId);
 		pthread_exit(0);
 	}
 #endif
