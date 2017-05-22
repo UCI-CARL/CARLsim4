@@ -430,7 +430,7 @@ __device__ void updateExtFiringTable(int lNId, short int lGrpId) {
 }
 
 __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
-					volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int simTime) {
+				volatile unsigned int& fireCnt, volatile unsigned int& fireCntD1, int simTime) {
 	__shared__ volatile unsigned int cntD2;
 	__shared__ volatile unsigned int cntD1;
 	__shared__ volatile int blkErrCode;
@@ -526,7 +526,7 @@ __device__ void updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsi
 			unsigned int  end_p = runtimeDataGPU.cumulativePre[nid] + runtimeDataGPU.Npre_plastic[nid];
 			for(unsigned int p  = runtimeDataGPU.cumulativePre[nid] + threadIdx.x % LTP_GROUPING_SZ;
 					p < end_p;
-					p += LTP_GROUPING_SZ) {
+					p+=LTP_GROUPING_SZ) {
 				int stdp_tDiff = (simTime - runtimeDataGPU.synSpikeTime[p]);
 				if (stdp_tDiff > 0) {
 					if (groupConfigsGPU[grpId].WithESTDP) {
@@ -736,15 +736,15 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 			// P6-1
 			// load the initial current due to noise inputs for neuron 'post_nid'
 			// initial values of the conductances for neuron 'post_nid'
-			float AMPA_sum    = 0.0f;
-			float NMDA_sum    = 0.0f;
-			float NMDA_r_sum  = 0.0f;
-			float NMDA_d_sum  = 0.0f;
-			float GABAa_sum   = 0.0f;
-			float GABAb_sum   = 0.0f;
-			float GABAb_r_sum = 0.0f;
-			float GABAb_d_sum = 0.0f;
-			int   lmt         = runtimeDataGPU.Npre[postNId];
+			float AMPA_sum		 = 0.0f;
+			float NMDA_sum		 = 0.0f;
+			float NMDA_r_sum	 = 0.0f;
+			float NMDA_d_sum	 = 0.0f;
+			float GABAa_sum		 = 0.0f;
+			float GABAb_sum		 = 0.0f;
+			float GABAb_r_sum	 = 0.0f;
+			float GABAb_d_sum	 = 0.0f;
+			int   lmt			 = runtimeDataGPU.Npre[postNId];
 			unsigned int cum_pos = runtimeDataGPU.cumulativePre[postNId];
 
 			// find the total current to this neuron...
@@ -1189,7 +1189,7 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 	case STANDARD:
 		if (groupConfigsGPU[grpId].WithHomeostasis) {
 			// this factor is slow
-			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f + fabs(diff_firing)*50.0f);
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
 			t_wt += t_effectiveWtChange;
 		}
@@ -1197,7 +1197,7 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 	case DA_MOD:
 		if (groupConfigsGPU[grpId].WithHomeostasis) {
 			t_effectiveWtChange = runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
-			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f + fabs(diff_firing)*50.0f);
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
 			t_wt += runtimeDataGPU.grpDA[grpId] * t_effectiveWtChange;
 		}
@@ -1212,7 +1212,7 @@ __device__ void updateSynapticWeights(int nid, unsigned int synId, int grpId, fl
 	case STANDARD:
 		if (groupConfigsGPU[grpId].WithHomeostasis) {
 			// this factor is slow
-			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f + fabs(diff_firing)*50.0f);
+			t_wt += (diff_firing*t_wt*homeostasisScale + t_effectiveWtChange) * baseFiring * avgTimeScaleInv / (1.0f+fabs(diff_firing)*50.0f);
 		} else {
 			t_wt += t_effectiveWtChange;
 		}
@@ -1956,7 +1956,7 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 
 	int ptrPos, length;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		ptrPos = 0;
 		length = networkConfigs[netId].numNReg;
 	} else {
@@ -1968,15 +1968,15 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 
 	if (isSimulationWithNMDARise()) {
 		assert(src->gNMDA_r != NULL);
-		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->gNMDA_r, sizeof(float) * length));
+		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->gNMDA_r, sizeof(float) * length));
 		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float) * length, kind));
 
 		assert(src->gNMDA_d != NULL);
-		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->gNMDA_d, sizeof(float) * length));
+		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->gNMDA_d, sizeof(float) * length));
 		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float) * length, kind));
 	} else {
 		assert(src->gNMDA != NULL);
-		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->gNMDA, sizeof(float) * length));
+		if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**) &dest->gNMDA, sizeof(float) * length));
 		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->gNMDA[ptrPos + destOffset], &src->gNMDA[ptrPos], sizeof(float) * length, kind));
 	}
 }
@@ -2803,103 +2803,103 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	checkAndSetGPUDevice(netId);
 
 	// cudaFree all device pointers
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].voltage));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].recovery));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].current));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extCurrent));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plastic));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plasticInv));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npost));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].cumulativePost));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].cumulativePre));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].synSpikeTime));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].wt));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].wtChange));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].maxSynWt));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nSpikeCnt));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].avgFiring));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].baseFiring));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].baseFiringInv));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].voltage) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].recovery) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].current) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extCurrent) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plastic) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plasticInv) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npost) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].cumulativePost) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].cumulativePre) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].synSpikeTime) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].wt) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].wtChange) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].maxSynWt) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nSpikeCnt) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].avgFiring) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].baseFiring) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].baseFiringInv) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpDA));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grp5HT));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpACh));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpNE));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpDA) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grp5HT) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpACh) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpNE) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpDABuffer));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grp5HTBuffer));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpAChBuffer));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpNEBuffer));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpDABuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grp5HTBuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpAChBuffer) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpNEBuffer) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpIds));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpIds) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_a));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_b));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_c));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_d));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_a) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_b) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_c) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_d) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA) );
 	if (sim_with_NMDA_rise) {
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_r));
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_d));
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_r) );
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_d) );
 	}
 	else {
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA));
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA) );
 	}
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAa));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAa) );
 	if (sim_with_GABAb_rise) {
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb_r));
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb_d));
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb_r) );
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb_d) );
 	}
 	else {
-		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb));
+		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gGABAb) );
 	}
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].stpu));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].stpx));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].stpu) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].stpx) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].connIdsPreIdx));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].connIdsPreIdx) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].groupIdInfo));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].neuronAllocation));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].groupIdInfo) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].neuronAllocation) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].postDelayInfo));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].postSynapticIds));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].preSynapticIds));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].I_set));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].poissonFireRate));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lastSpikeTime));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].spikeGenBits));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].postDelayInfo) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].postSynapticIds) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].preSynapticIds) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].I_set) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].poissonFireRate) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lastSpikeTime) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].spikeGenBits) );
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].firingTableD2));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].firingTableD1));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].firingTableD2) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].firingTableD1) );
 
 	int** tempPtrs;
 	tempPtrs = new int*[networkConfigs[netId].numGroups];
 
 	// fetch device memory address stored in extFiringTableD2
-	CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost) );
 	for (int i = 0; i < networkConfigs[netId].numGroups; i++)
-		CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableD2));
+		CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableD2) );
 
 	// fetch device memory address stored in extFiringTableD1
-	CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost));
+	CUDA_CHECK_ERRORS( cudaMemcpy(tempPtrs, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups, cudaMemcpyDeviceToHost) );
 	for (int i = 0; i < networkConfigs[netId].numGroups; i++)
-		CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableD1));
+		CUDA_CHECK_ERRORS( cudaFree(tempPtrs[i]) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableD1) );
 
 	delete [] tempPtrs;
 
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableEndIdxD2));
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableEndIdxD1));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableEndIdxD2) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extFiringTableEndIdxD1) );
 
 	// delete random numbr generator on GPU(s)
 	// Note: RNG_rand48 objects allocate device memory
