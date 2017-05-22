@@ -105,9 +105,9 @@
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 	// Static multithreading subroutine method - helper for the above method  
 	void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*)arguments;
+		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer)->updateTimingTable_CPU(args->netId);
+		((SNN *)args->snn_pointer) -> updateTimingTable_CPU(args->netId);
 		pthread_exit(0);
 	}
 #endif
@@ -247,9 +247,9 @@
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 	// Static multithreading subroutine method - helper for the above method  
 	void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*)arguments;
+		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer)->convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
+		((SNN *)args->snn_pointer) -> convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
 		pthread_exit(0);
 	}
 #endif
@@ -361,7 +361,7 @@ void SNN::copyExtFiringTable(int netId) {
 	void* SNN::doCurrentUpdateD1_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
-	
+
 	int k     = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] - 1;
 	int k_end = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay];
 
@@ -490,7 +490,7 @@ void SNN::copyExtFiringTable(int netId) {
 					runtimeData[netId].gNMDA_r[lNId] *= rNMDA;	// rise
 					runtimeData[netId].gNMDA_d[lNId] *= dNMDA;	// decay
 				} else {
-					runtimeData[netId].gNMDA[lNId] *= dNMDA;	// instantaneous rise
+					runtimeData[netId].gNMDA[lNId]   *= dNMDA;	// instantaneous rise
 				}
 
 				runtimeData[netId].gGABAa[lNId] *= dGABAa;
@@ -522,8 +522,8 @@ void SNN::copyExtFiringTable(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 			bool needToWrite = false;
 			// given group of neurons belong to the poisson group....
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
@@ -571,7 +571,7 @@ void SNN::copyExtFiringTable(int netId) {
 				}
 
 				// update external firing table: extFiringTableEndIdxD1(W), extFiringTableEndIdxD2(W), extFiringTableD1(W), extFiringTableD2(W)
-				if (groupConfigs[netId][lGrpId].hasExternalConnect)    {
+				if (groupConfigs[netId][lGrpId].hasExternalConnect)     {
 					int extFireId = -1;
 					if (groupConfigs[netId][lGrpId].MaxDelay == 1) {
 						extFireId = runtimeData[netId].extFiringTableEndIdxD1[lGrpId]++;
@@ -623,7 +623,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 		if (stdp_tDiff > 0) {
 			// check this is an excitatory or inhibitory synapse
 			if (groupConfigs[netId][lGrpId].WithESTDP && runtimeData[netId].maxSynWt[pos_ij] >= 0) { // excitatory synapse
-				// Handle E-STDP curve																					 // Handle E-STDP curve
+				// Handle E-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC < 25)
@@ -642,7 +642,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					break;
 				}
 			} else if (groupConfigs[netId][lGrpId].WithISTDP && runtimeData[netId].maxSynWt[pos_ij] < 0) { // inhibitory synapse
-					// Handle I-STDP curve																				 // Handle I-STDP curve
+						// Handle I-STDP curve																				 // Handle I-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
@@ -656,7 +656,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					} else if (stdp_tDiff <= groupConfigs[netId][lGrpId].DELTA) { // LTD of inhibitory syanpse, which increase sysnapse weight
 						runtimeData[netId].wtChange[pos_ij] -= groupConfigs[netId][lGrpId].BETA_LTD;
 						//printf("I-STDP LTD\n");
-					} else { /*do nothing*/ }
+					} else { /*do nothing*/}
 					break;
 				default:
 					KERNEL_ERROR("Invalid I-STDP curve!");
@@ -772,7 +772,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 				runtimeData[netId].gNMDA_r[postNId] += change * sNMDA * mulSynSlow[mulIndex];
 				runtimeData[netId].gNMDA_d[postNId] += change * sNMDA * mulSynSlow[mulIndex];
 			} else {
-				runtimeData[netId].gNMDA[postNId] += change * mulSynSlow[mulIndex];
+				runtimeData[netId].gNMDA [postNId] += change * mulSynSlow[mulIndex];
 			}
 		}
 		if (pre_type & TARGET_GABAa)
@@ -824,7 +824,7 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 					break;
 				}
 			} else if (groupConfigs[netId][post_grpId].WithESTDP && ((pre_type & TARGET_AMPA) || (pre_type & TARGET_NMDA))) { // excitatory synapse
-				    // Handle E-STDP curve
+				// Handle E-STDP curve
 				switch (groupConfigs[netId][post_grpId].WithESTDPcurve) {
 				case EXP_CURVE: // exponential curve
 				case TIMING_BASED_CURVE: // sc curve
@@ -1136,8 +1136,8 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				//				if (wtChange[offset+j])
 				//					printf("connId=%d, wtChange[%d]=%f\n",connIdsPreIdx[offset+j],offset+j,wtChange[offset+j]);
 
-												// homeostatic weight update
-												// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
+								// homeostatic weight update
+								// FIXME: check WithESTDPtype and WithISTDPtype first and then do weight change update
 				switch (groupConfigs[netId][lGrpId].WithESTDPtype) {
 				case STANDARD:
 					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
@@ -1165,8 +1165,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				case STANDARD:
 					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 						runtimeData[netId].wt[offset + j] += (diff_firing*runtimeData[netId].wt[offset + j] * homeostasisScale + runtimeData[netId].wtChange[offset + j])*runtimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
-					}
-					else {
+					} else {
 						// just STDP weight update
 						runtimeData[netId].wt[offset + j] += effectiveWtChange;
 					}
@@ -1175,8 +1174,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 						effectiveWtChange = runtimeData[netId].grpDA[lGrpId] * effectiveWtChange;
 						runtimeData[netId].wt[offset + j] += (diff_firing*runtimeData[netId].wt[offset + j] * homeostasisScale + effectiveWtChange)*runtimeData[netId].baseFiring[lNId] / groupConfigs[netId][lGrpId].avgTimeScale / (1 + fabs(diff_firing) * 50);
-					}
-					else {
+					} else {
 						runtimeData[netId].wt[offset + j] += runtimeData[netId].grpDA[lGrpId] * effectiveWtChange;
 					}
 					break;
@@ -1219,22 +1217,22 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 #endif
 
 /*!
-* \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
-* timeTableD1(D2) by removing older firing information.
-*/
-#if defined(WIN32) || defined(WIN64)
-void SNN::shiftSpikeTables_CPU(int netId) {
+ * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
+ * timeTableD1(D2) by removing older firing information.
+ */
+ #if defined(WIN32) || defined(WIN64)
+	void SNN::shiftSpikeTables_CPU(int netId) {
 #else // POSIX
-void* SNN::shiftSpikeTables_CPU(int netId) {
+	void* SNN::shiftSpikeTables_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// Read the neuron ids that fired in the last glbNetworkConfig.maxDelay seconds
 	// and put it to the beginning of the firing table...
-	for (int p = runtimeData[netId].timeTableD2[999], k = 0; p < runtimeData[netId].timeTableD2[999 + networkConfigs[netId].maxDelay + 1]; p++, k++) {
+	for(int p = runtimeData[netId].timeTableD2[999], k = 0; p < runtimeData[netId].timeTableD2[999 + networkConfigs[netId].maxDelay + 1]; p++, k++) {
 		runtimeData[netId].firingTableD2[k] = runtimeData[netId].firingTableD2[p];
 	}
 
-	for (int i = 0; i < networkConfigs[netId].maxDelay; i++) {
+	for(int i = 0; i < networkConfigs[netId].maxDelay; i++) {
 		runtimeData[netId].timeTableD2[i + 1] = runtimeData[netId].timeTableD2[1000 + i + 1] - runtimeData[netId].timeTableD2[1000];
 		runtimeData[netId].timeTableD1[i + 1] = runtimeData[netId].timeTableD1[1000 + i + 1] - runtimeData[netId].timeTableD1[1000];
 	}
@@ -1253,13 +1251,13 @@ void* SNN::shiftSpikeTables_CPU(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperShiftSpikeTables_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->shiftSpikeTables_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperShiftSpikeTables_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> shiftSpikeTables_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 void SNN::allocateSNN_CPU(int netId) {
@@ -1332,37 +1330,37 @@ void SNN::allocateSNN_CPU(int netId) {
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroupsAssigned; lGrpId++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupConfigMap[groupConfigs[netId][lGrpId].gGrpId].grpName.c_str());
 
-		KERNEL_DEBUG("\tType: %d", (int)groupConfigs[netId][lGrpId].Type);
-		KERNEL_DEBUG("\tNumN: %d", groupConfigs[netId][lGrpId].numN);
-		KERNEL_DEBUG("\tM: %d", groupConfigs[netId][lGrpId].numPostSynapses);
-		KERNEL_DEBUG("\tPreM: %d", groupConfigs[netId][lGrpId].numPreSynapses);
-		KERNEL_DEBUG("\tspikeGenerator: %d", (int)groupConfigs[netId][lGrpId].isSpikeGenerator);
-		KERNEL_DEBUG("\tFixedInputWts: %d", (int)groupConfigs[netId][lGrpId].FixedInputWts);
-		KERNEL_DEBUG("\tMaxDelay: %d", (int)groupConfigs[netId][lGrpId].MaxDelay);
-		KERNEL_DEBUG("\tWithSTDP: %d", (int)groupConfigs[netId][lGrpId].WithSTDP);
+		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);
+		KERNEL_DEBUG("\tNumN: %d",groupConfigs[netId][lGrpId].numN);
+		KERNEL_DEBUG("\tM: %d",groupConfigs[netId][lGrpId].numPostSynapses);
+		KERNEL_DEBUG("\tPreM: %d",groupConfigs[netId][lGrpId].numPreSynapses);
+		KERNEL_DEBUG("\tspikeGenerator: %d",(int)groupConfigs[netId][lGrpId].isSpikeGenerator);
+		KERNEL_DEBUG("\tFixedInputWts: %d",(int)groupConfigs[netId][lGrpId].FixedInputWts);
+		KERNEL_DEBUG("\tMaxDelay: %d",(int)groupConfigs[netId][lGrpId].MaxDelay);
+		KERNEL_DEBUG("\tWithSTDP: %d",(int)groupConfigs[netId][lGrpId].WithSTDP);
 		if (groupConfigs[netId][lGrpId].WithSTDP) {
-			KERNEL_DEBUG("\t\tE-STDP type: %s", stdpType_string[groupConfigs[netId][lGrpId].WithESTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_PLUS_INV_EXC: %f", groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC);
-			KERNEL_DEBUG("\t\tTAU_MINUS_INV_EXC: %f", groupConfigs[netId][lGrpId].TAU_MINUS_INV_EXC);
-			KERNEL_DEBUG("\t\tALPHA_PLUS_EXC: %f", groupConfigs[netId][lGrpId].ALPHA_PLUS_EXC);
-			KERNEL_DEBUG("\t\tALPHA_MINUS_EXC: %f", groupConfigs[netId][lGrpId].ALPHA_MINUS_EXC);
-			KERNEL_DEBUG("\t\tI-STDP type: %s", stdpType_string[groupConfigs[netId][lGrpId].WithISTDPtype]);
-			KERNEL_DEBUG("\t\tTAU_PLUS_INV_INB: %f", groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB);
-			KERNEL_DEBUG("\t\tTAU_MINUS_INV_INB: %f", groupConfigs[netId][lGrpId].TAU_MINUS_INV_INB);
-			KERNEL_DEBUG("\t\tALPHA_PLUS_INB: %f", groupConfigs[netId][lGrpId].ALPHA_PLUS_INB);
-			KERNEL_DEBUG("\t\tALPHA_MINUS_INB: %f", groupConfigs[netId][lGrpId].ALPHA_MINUS_INB);
-			KERNEL_DEBUG("\t\tLAMBDA: %f", groupConfigs[netId][lGrpId].LAMBDA);
-			KERNEL_DEBUG("\t\tDELTA: %f", groupConfigs[netId][lGrpId].DELTA);
-			KERNEL_DEBUG("\t\tBETA_LTP: %f", groupConfigs[netId][lGrpId].BETA_LTP);
-			KERNEL_DEBUG("\t\tBETA_LTD: %f", groupConfigs[netId][lGrpId].BETA_LTD);
+			KERNEL_DEBUG("\t\tE-STDP type: %s",stdpType_string[groupConfigs[netId][lGrpId].WithESTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_PLUS_INV_EXC: %f",groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC);
+			KERNEL_DEBUG("\t\tTAU_MINUS_INV_EXC: %f",groupConfigs[netId][lGrpId].TAU_MINUS_INV_EXC);
+			KERNEL_DEBUG("\t\tALPHA_PLUS_EXC: %f",groupConfigs[netId][lGrpId].ALPHA_PLUS_EXC);
+			KERNEL_DEBUG("\t\tALPHA_MINUS_EXC: %f",groupConfigs[netId][lGrpId].ALPHA_MINUS_EXC);
+			KERNEL_DEBUG("\t\tI-STDP type: %s",stdpType_string[groupConfigs[netId][lGrpId].WithISTDPtype]);
+			KERNEL_DEBUG("\t\tTAU_PLUS_INV_INB: %f",groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB);
+			KERNEL_DEBUG("\t\tTAU_MINUS_INV_INB: %f",groupConfigs[netId][lGrpId].TAU_MINUS_INV_INB);
+			KERNEL_DEBUG("\t\tALPHA_PLUS_INB: %f",groupConfigs[netId][lGrpId].ALPHA_PLUS_INB);
+			KERNEL_DEBUG("\t\tALPHA_MINUS_INB: %f",groupConfigs[netId][lGrpId].ALPHA_MINUS_INB);
+			KERNEL_DEBUG("\t\tLAMBDA: %f",groupConfigs[netId][lGrpId].LAMBDA);
+			KERNEL_DEBUG("\t\tDELTA: %f",groupConfigs[netId][lGrpId].DELTA);
+			KERNEL_DEBUG("\t\tBETA_LTP: %f",groupConfigs[netId][lGrpId].BETA_LTP);
+			KERNEL_DEBUG("\t\tBETA_LTD: %f",groupConfigs[netId][lGrpId].BETA_LTD);
 		}
-		KERNEL_DEBUG("\tWithSTP: %d", (int)groupConfigs[netId][lGrpId].WithSTP);
+		KERNEL_DEBUG("\tWithSTP: %d",(int)groupConfigs[netId][lGrpId].WithSTP);
 		if (groupConfigs[netId][lGrpId].WithSTP) {
 			KERNEL_DEBUG("\t\tSTP_U: %f", groupConfigs[netId][lGrpId].STP_U);
-			//				KERNEL_DEBUG("\t\tSTP_tD: %f",groupConfigs[netId][lGrpId].STP_tD);
-			//				KERNEL_DEBUG("\t\tSTP_tF: %f",groupConfigs[netId][lGrpId].STP_tF);
+//				KERNEL_DEBUG("\t\tSTP_tD: %f",groupConfigs[netId][lGrpId].STP_tD);
+//				KERNEL_DEBUG("\t\tSTP_tF: %f",groupConfigs[netId][lGrpId].STP_tF);
 		}
-		KERNEL_DEBUG("\tspikeGen: %s", groupConfigs[netId][lGrpId].isSpikeGenFunc ? "is Set" : "is not set ");
+		KERNEL_DEBUG("\tspikeGen: %s", groupConfigs[netId][lGrpId].isSpikeGenFunc? "is Set" : "is not set ");
 	}
 
 	// allocation of CPU runtime data is done
@@ -1370,22 +1368,22 @@ void SNN::allocateSNN_CPU(int netId) {
 }
 
 /*!
-* \brief this function allocates memory sapce and copies information of pre-connections to it
-*
-* This function:
-* initialize Npre_plasticInv
-* (allocate and) copy Npre, Npre_plastic, Npre_plasticInv, cumulativePre, preSynapticIds
-* (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
-*
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU
-* \since v4.0
+ * \brief this function allocates memory sapce and copies information of pre-connections to it
+ *
+ * This function:
+ * initialize Npre_plasticInv
+ * (allocate and) copy Npre, Npre_plastic, Npre_plasticInv, cumulativePre, preSynapticIds
+ * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
+ *
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU
+ * \since v4.0
 */
 void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	int lengthN, lengthSyn, posN, posSyn;
@@ -1393,14 +1391,13 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	if (lGrpId == ALL) {
 		lengthN = networkConfigs[netId].numNAssigned;
 		posN = 0;
-	}
-	else {
+	} else {
 		lengthN = groupConfigs[netId][lGrpId].numN;
 		posN = groupConfigs[netId][lGrpId].lStartN;
 	}
 
 	// connection synaptic lengths and cumulative lengths...
-	if (allocateMem)
+	if(allocateMem) 
 		dest->Npre = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npre[posN], &src->Npre[posN], sizeof(short) * lengthN);
 
@@ -1412,7 +1409,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 		memcpy(&dest->Npre_plastic[posN], &src->Npre_plastic[posN], sizeof(short) * lengthN);
 
 		// Npre_plasticInv is only used on GPUs, only allocate and copy it during initialization
-		if (allocateMem) {
+		if(allocateMem) {
 			float* Npre_plasticInv = new float[networkConfigs[netId].numNAssigned];
 
 			for (int i = 0; i < networkConfigs[netId].numNAssigned; i++)
@@ -1426,7 +1423,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	}
 
 	// beginning position for the pre-synaptic information
-	if (allocateMem)
+	if(allocateMem)
 		dest->cumulativePre = new unsigned int[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->cumulativePre[posN], &src->cumulativePre[posN], sizeof(int) * lengthN);
 
@@ -1434,8 +1431,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	if (lGrpId == ALL) {
 		lengthSyn = networkConfigs[netId].numPreSynNet;
 		posSyn = 0;
-	}
-	else {
+	} else {
 		lengthSyn = 0;
 		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
 			lengthSyn += dest->Npre[lNId];
@@ -1443,26 +1439,26 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 		posSyn = dest->cumulativePre[groupConfigs[netId][lGrpId].lStartN];
 	}
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->preSynapticIds = new SynInfo[networkConfigs[netId].numPreSynNet];
 	memcpy(&dest->preSynapticIds[posSyn], &src->preSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn);
 }
 
 /*!
-* \brief this function allocates memory sapce and copies information of post-connections to it
-*
-* This function:
-* (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
-*
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU
-* \since v4.0
+ * \brief this function allocates memory sapce and copies information of post-connections to it
+ *
+ * This function:
+ * (allocate and) copy Npost, cumulativePost, postSynapticIds, postDelayInfo
+ *
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU
+ * \since v4.0
 */
 void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	int lengthN, lengthSyn, posN, posSyn;
@@ -1470,19 +1466,18 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 	if (lGrpId == ALL) {
 		lengthN = networkConfigs[netId].numNAssigned;
 		posN = 0;
-	}
-	else {
+	} else {
 		lengthN = groupConfigs[netId][lGrpId].numN;
 		posN = groupConfigs[netId][lGrpId].lStartN;
 	}
 
 	// number of postsynaptic connections
-	if (allocateMem)
+	if(allocateMem)
 		dest->Npost = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npost[posN], &src->Npost[posN], sizeof(short) * lengthN);
 
 	// beginning position for the post-synaptic information
-	if (allocateMem)
+	if(allocateMem)
 		dest->cumulativePost = new unsigned int[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->cumulativePost[posN], &src->cumulativePost[posN], sizeof(int) * lengthN);
 
@@ -1491,8 +1486,7 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 	if (lGrpId == ALL) {
 		lengthSyn = networkConfigs[netId].numPostSynNet;
 		posSyn = 0;
-	}
-	else {
+	} else {
 		lengthSyn = 0;
 		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
 			lengthSyn += dest->Npost[lNId];
@@ -1501,36 +1495,36 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 	}
 
 	// actual post synaptic connection information...
-	if (allocateMem)
+	if(allocateMem)
 		dest->postSynapticIds = new SynInfo[networkConfigs[netId].numPostSynNet];
 	memcpy(&dest->postSynapticIds[posSyn], &src->postSynapticIds[posSyn], sizeof(SynInfo) * lengthSyn);
 
 	// static specific mapping and actual post-synaptic delay metric
-	if (allocateMem)
+	if(allocateMem)
 		dest->postDelayInfo = new DelayInfo[networkConfigs[netId].numNAssigned * (glbNetworkConfig.maxDelay + 1)];
 	memcpy(&dest->postDelayInfo[posN * (glbNetworkConfig.maxDelay + 1)], &src->postDelayInfo[posN * (glbNetworkConfig.maxDelay + 1)], sizeof(DelayInfo) * lengthN * (glbNetworkConfig.maxDelay + 1));
 }
 
 /*!
-* \brief this function allocates memory sapce and copies variables related to syanpses to it
-*
-* This function:
-* (allocate and) copy wt, wtChange, maxSynWt
-*
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU
-* \since v4.0
+ * \brief this function allocates memory sapce and copies variables related to syanpses to it
+ *
+ * This function:
+ * (allocate and) copy wt, wtChange, maxSynWt
+ *
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU
+ * \since v4.0
 */
 void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	assert(networkConfigs[netId].numPreSynNet > 0);
 
 	// synaptic information based
-	if (allocateMem)
+	if(allocateMem)
 		dest->wt = new float[networkConfigs[netId].numPreSynNet];
 	memcpy(dest->wt, src->wt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
@@ -1539,43 +1533,43 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 	// sim_with_fixedwts is set
 	if (!sim_with_fixedwts) {
 		// synaptic weight derivative
-		if (allocateMem)
+		if(allocateMem)
 			dest->wtChange = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->wtChange, src->wtChange, sizeof(float) * networkConfigs[netId].numPreSynNet);
 
 		// synaptic weight maximum value
-		if (allocateMem)
+		if(allocateMem)
 			dest->maxSynWt = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
 	}
 }
 
 /*!
-* \brief this function allocates memory sapce and copies variables related to nueron state to it
-*
-* This function:
-* (allocate and) copy voltage, recovery, current, avgFiring
-*
-* This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU fetchNeuronState
-* \since v3.0
+ * \brief this function allocates memory sapce and copies variables related to nueron state to it
+ *
+ * This function:
+ * (allocate and) copy voltage, recovery, current, avgFiring
+ *
+ * This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU fetchNeuronState
+ * \since v3.0
 */
 void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int ptrPos, length;
 
-	if (lGrpId == ALL) {
-		ptrPos = 0;
-		length = networkConfigs[netId].numNReg;
+	if(lGrpId == ALL) {
+		ptrPos  = 0;
+		length  = networkConfigs[netId].numNReg;
 	}
 	else {
-		ptrPos = groupConfigs[netId][lGrpId].lStartN;
-		length = groupConfigs[netId][lGrpId].numN;
+		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
+		length  = groupConfigs[netId][lGrpId].numN;
 	}
 
 	assert(length <= networkConfigs[netId].numNReg);
@@ -1583,28 +1577,28 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	if (length == 0)
 		return;
 
-	if (!allocateMem && groupConfigs[netId][lGrpId].Type & POISSON_NEURON)
+	if(!allocateMem && groupConfigs[netId][lGrpId].Type & POISSON_NEURON)
 		return;
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->recovery = new float[length];
 	memcpy(&dest->recovery[ptrPos], &managerRuntimeData.recovery[ptrPos], sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->voltage = new float[length];
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->nextVoltage = new float[length];
 	memcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length);
 
 	//neuron input current...
-	if (allocateMem)
+	if(allocateMem)
 		dest->current = new float[length];
 	memcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length);
 
 	if (sim_with_conductances) {
-		//conductance information
+	//conductance information
 		copyConductanceAMPA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceNMDA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceGABAa(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
@@ -1624,40 +1618,39 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	if (sim_with_homeostasis) {
 		//Included to enable homeostasis in CPU_MODE.
 		// Avg. Firing...
-		if (allocateMem)
+		if(allocateMem)
 			dest->avgFiring = new float[length];
 		memcpy(&dest->avgFiring[ptrPos], &managerRuntimeData.avgFiring[ptrPos], sizeof(float) * length);
 	}
 }
 
 /*!
-* \brief this function allocates memory sapce and copies AMPA conductance to it
-*
-* This function:
-* (allocate and) copy gAMPA
-*
-* This funcion is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copy
-* \param[in] destOffset the offset of data destination, which is used in local-to-global copy
-*
-* \sa copyNeuronState fetchConductanceAMPA
-* \since v3.0
+ * \brief this function allocates memory sapce and copies AMPA conductance to it
+ *
+ * This function:
+ * (allocate and) copy gAMPA
+ *
+ * This funcion is called by copyNeuronState() and fetchConductanceAMPA(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ *
+ * \sa copyNeuronState fetchConductanceAMPA
+ * \since v3.0
 */
 void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		ptrPos = 0;
 		length = networkConfigs[netId].numNReg;
-	}
-	else {
+	} else {
 		ptrPos = groupConfigs[netId][lGrpId].lStartN;
 		length = groupConfigs[netId][lGrpId].numN;
 	}
@@ -1665,29 +1658,29 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 	assert(length > 0);
 
 	//conductance information
-	assert(src->gAMPA != NULL);
-	if (allocateMem)
+	assert(src->gAMPA  != NULL);
+	if(allocateMem)
 		dest->gAMPA = new float[length];
 	memcpy(&dest->gAMPA[ptrPos + destOffset], &src->gAMPA[ptrPos], sizeof(float) * length);
 }
 
 /*!
-* \brief this function allocates memory sapce and copies NMDA conductance to it
-*
-* This function:
-* (allocate and) copy gNMDA, gNMDA_r, gNMDA_d
-*
-* This funcion is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copy
-* \param[in] destOffset the offset of data destination, which is used in local-to-global copy
-*
-* \sa copyNeuronState fetchConductanceNMDA
-* \since v3.0
+ * \brief this function allocates memory sapce and copies NMDA conductance to it
+ *
+ * This function:
+ * (allocate and) copy gNMDA, gNMDA_r, gNMDA_d
+ *
+ * This funcion is called by copyNeuronState() and fetchConductanceNMDA(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ *
+ * \sa copyNeuronState fetchConductanceNMDA
+ * \since v3.0
 */
 void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
@@ -1695,52 +1688,51 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
 	int ptrPos, length;
 
 	if (lGrpId == ALL) {
-		ptrPos = 0;
-		length = networkConfigs[netId].numNReg;
+		ptrPos  = 0;
+		length  = networkConfigs[netId].numNReg;
 	}
 	else {
-		ptrPos = groupConfigs[netId][lGrpId].lStartN;
-		length = groupConfigs[netId][lGrpId].numN;
+		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
+		length  = groupConfigs[netId][lGrpId].numN;
 	}
-	assert(length <= networkConfigs[netId].numNReg);
+	assert(length  <= networkConfigs[netId].numNReg);
 	assert(length > 0);
 
 	if (isSimulationWithNMDARise()) {
 		assert(src->gNMDA_r != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gNMDA_r = new float[length];
 		memcpy(&dest->gNMDA_r[ptrPos], &src->gNMDA_r[ptrPos], sizeof(float) * length);
 
 		assert(src->gNMDA_d != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gNMDA_d = new float[length];
 		memcpy(&dest->gNMDA_d[ptrPos], &src->gNMDA_d[ptrPos], sizeof(float) * length);
-	}
-	else {
+	} else {
 		assert(src->gNMDA != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gNMDA = new float[length];
 		memcpy(&dest->gNMDA[ptrPos + destOffset], &src->gNMDA[ptrPos], sizeof(float) * length);
 	}
 }
 
 /*!
-* \brief this function allocates memory sapce and copies GABAa conductance to it
-*
-* This function:
-* (allocate and) copy gGABAa
-*
-* This funcion is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copy
-* \param[in] destOffset the offset of data destination, which is used in local-to-global copy
-*
-* \sa copyNeuronState fetchConductanceGABAa
-* \since v3.0
+ * \brief this function allocates memory sapce and copies GABAa conductance to it
+ *
+ * This function:
+ * (allocate and) copy gGABAa
+ *
+ * This funcion is called by copyNeuronState() and fetchConductanceGABAa(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ *
+ * \sa copyNeuronState fetchConductanceGABAa
+ * \since v3.0
 */
 void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
@@ -1748,39 +1740,38 @@ void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, Runtime
 	int ptrPos, length;
 
 	if (lGrpId == ALL) {
-		ptrPos = 0;
-		length = networkConfigs[netId].numNReg;
-	}
-	else {
-		ptrPos = groupConfigs[netId][lGrpId].lStartN;
-		length = groupConfigs[netId][lGrpId].numN;
+		ptrPos  = 0;
+		length  = networkConfigs[netId].numNReg;
+	} else {
+		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
+		length  = groupConfigs[netId][lGrpId].numN;
 	}
 	assert(length <= networkConfigs[netId].numNReg);
 	assert(length > 0);
 
 	assert(src->gGABAa != NULL);
-	if (allocateMem)
+	if(allocateMem)
 		dest->gGABAa = new float[length];
 	memcpy(&dest->gGABAa[ptrPos + destOffset], &src->gGABAa[ptrPos], sizeof(float) * length);
 }
 
 /*!
-* \brief this function allocates memory sapce and copies GABAb conductance to it
-*
-* This function:
-* (allocate and) copy gGABAb, gGABAb_r, gGABAb_d
-*
-* This funcion is called by copyNeuronState() and fetchConductanceGABAb(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copy
-* \param[in] destOffset the offset of data destination, which is used in local-to-global copy
-*
-* \sa copyNeuronState fetchConductanceGABAb
-* \since v3.0
+ * \brief this function allocates memory sapce and copies GABAb conductance to it
+ *
+ * This function:
+ * (allocate and) copy gGABAb, gGABAb_r, gGABAb_d
+ *
+ * This funcion is called by copyNeuronState() and fetchConductanceGABAb(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ *
+ * \sa copyNeuronState fetchConductanceGABAb
+ * \since v3.0
 */
 void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
@@ -1788,91 +1779,88 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 	int ptrPos, length;
 
 	if (lGrpId == ALL) {
-		ptrPos = 0;
-		length = networkConfigs[netId].numNReg;
-	}
-	else {
-		ptrPos = groupConfigs[netId][lGrpId].lStartN;
-		length = groupConfigs[netId][lGrpId].numN;
+		ptrPos  = 0;
+		length  = networkConfigs[netId].numNReg;
+	} else {
+		ptrPos  = groupConfigs[netId][lGrpId].lStartN;
+		length  = groupConfigs[netId][lGrpId].numN;
 	}
 	assert(length <= networkConfigs[netId].numNReg);
 	assert(length > 0);
 
 	if (isSimulationWithGABAbRise()) {
 		assert(src->gGABAb_r != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gGABAb_r = new float[length];
 		memcpy(&dest->gGABAb_r[ptrPos], &src->gGABAb_r[ptrPos], sizeof(float) * length);
 
 		assert(src->gGABAb_d != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gGABAb_d = new float[length];
 		memcpy(&dest->gGABAb_d[ptrPos], &src->gGABAb_d[ptrPos], sizeof(float) * length);
-	}
-	else {
+	} else {
 		assert(src->gGABAb != NULL);
-		if (allocateMem)
+		if(allocateMem)
 			dest->gGABAb = new float[length];
 		memcpy(&dest->gGABAb[ptrPos + destOffset], &src->gGABAb[ptrPos], sizeof(float) * length);
 	}
 }
 
 /*!
-* \brief this function allocates memory sapce and copies external current to it
-*
-* This function:
+ * \brief this function allocates memory sapce and copies external current to it
+ *
+ * This function:
 
-* (allocate and) copy extCurrent
-*
-* This funcion is called by copyNeuronState() and setExternalCurrent. Only host-to-divice copy is required
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU fetchSTPState
-* \since v3.0
+ * (allocate and) copy extCurrent
+ *
+ * This funcion is called by copyNeuronState() and setExternalCurrent. Only host-to-divice copy is required
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU fetchSTPState
+ * \since v3.0
 */
 void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int posN, lengthN;
 
 	if (lGrpId == ALL) {
-		posN = 0;
-		lengthN = networkConfigs[netId].numNReg;
-	}
-	else {
+		posN  = 0;
+		lengthN  = networkConfigs[netId].numNReg;
+	} else {
 		assert(lGrpId >= 0);
 		posN = groupConfigs[netId][lGrpId].lStartN;
 		lengthN = groupConfigs[netId][lGrpId].numN;
 	}
 	assert(lengthN >= 0 && lengthN <= networkConfigs[netId].numNReg); // assert NOT poisson neurons
 
-	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem ? "y" : "n");
+	KERNEL_DEBUG("copyExternalCurrent: lGrpId=%d, ptrPos=%d, length=%d, allocate=%s", lGrpId, posN, lengthN, allocateMem?"y":"n");
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->extCurrent = new float[lengthN];
 	memcpy(&(dest->extCurrent[posN]), &(managerRuntimeData.extCurrent[posN]), sizeof(float) * lengthN);
 }
 
 /*!
-* \brief this function allocates memory sapce and copies neural parameters to it
-*
-* This function:
-* (allocate and) copy Izh_a, Izh_b, Izh_c, Izh_d
-* initialize baseFiringInv
-* (allocate and) copy baseFiring, baseFiringInv
-*
-* This funcion is only called by copyNeuronState(). Only copying direction from host to device is required.
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa copyNeuronState
-* \since v3.0
-*/
+ * \brief this function allocates memory sapce and copies neural parameters to it
+ *
+ * This function:
+ * (allocate and) copy Izh_a, Izh_b, Izh_c, Izh_d
+ * initialize baseFiringInv
+ * (allocate and) copy baseFiring, baseFiringInv
+ *
+ * This funcion is only called by copyNeuronState(). Only copying direction from host to device is required.
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa copyNeuronState
+ * \since v3.0
+ */
 void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int ptrPos, length;
 
@@ -1890,7 +1878,7 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		assert(dest->Izh_vpeak == NULL);
 	}
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		ptrPos = 0;
 		length = networkConfigs[netId].numNReg;
 	}
@@ -1899,127 +1887,126 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		length = groupConfigs[netId][lGrpId].numN;
 	}
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_a = new float[length];
 	memcpy(&dest->Izh_a[ptrPos], &(managerRuntimeData.Izh_a[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_b = new float[length];
 	memcpy(&dest->Izh_b[ptrPos], &(managerRuntimeData.Izh_b[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_c = new float[length];
 	memcpy(&dest->Izh_c[ptrPos], &(managerRuntimeData.Izh_c[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_C = new float[length];
 	memcpy(&dest->Izh_C[ptrPos], &(managerRuntimeData.Izh_C[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_k = new float[length];
 	memcpy(&dest->Izh_k[ptrPos], &(managerRuntimeData.Izh_k[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_vr = new float[length];
 	memcpy(&dest->Izh_vr[ptrPos], &(managerRuntimeData.Izh_vr[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_vt = new float[length];
 	memcpy(&dest->Izh_vt[ptrPos], &(managerRuntimeData.Izh_vt[ptrPos]), sizeof(float) * length);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->Izh_vpeak = new float[length];
 	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
 
 	// pre-compute baseFiringInv for fast computation on CPU cores
 	if (sim_with_homeostasis) {
 		float* baseFiringInv = new float[length];
-		for (int nid = 0; nid < length; nid++) {
+		for(int nid = 0; nid < length; nid++) {
 			if (managerRuntimeData.baseFiring[nid] != 0.0f)
 				baseFiringInv[nid] = 1.0f / managerRuntimeData.baseFiring[ptrPos + nid];
 			else
 				baseFiringInv[nid] = 0.0;
 		}
 
-		if (allocateMem)
+		if(allocateMem)
 			dest->baseFiringInv = new float[length];
 		memcpy(&dest->baseFiringInv[ptrPos], baseFiringInv, sizeof(float) * length);
 
-		if (allocateMem)
+		if(allocateMem)
 			dest->baseFiring = new float[length];
 		memcpy(&dest->baseFiring[ptrPos], managerRuntimeData.baseFiring, sizeof(float) * length);
 
-		delete[] baseFiringInv;
+		delete [] baseFiringInv;
 	}
 }
 
 /*!
-* \brief this function allocates memory sapce and copies short-term plasticity (STP) state to it
-*
-* This function:
-* initialize STP_Pitch
-* (allocate and) copy stpu, stpx
-*
-* This funcion is called by allocateSNN_CPU() and fetchSTPState(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU fetchSTPState
-* \since v3.0
-*/
+ * \brief this function allocates memory sapce and copies short-term plasticity (STP) state to it
+ *
+ * This function:
+ * initialize STP_Pitch
+ * (allocate and) copy stpu, stpx
+ *
+ * This funcion is called by allocateSNN_CPU() and fetchSTPState(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU fetchSTPState
+ * \since v3.0
+ */
 void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	// STP feature is optional, do addtional check for memory space
-	if (allocateMem) {
+	if(allocateMem) {
 		assert(dest->stpu == NULL);
 		assert(dest->stpx == NULL);
-	}
-	else {
+	} else {
 		assert(dest->stpu != NULL);
 		assert(dest->stpx != NULL);
 	}
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->stpu = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
 	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->stpx = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
 	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
 }
 
 // ToDo: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData
 /*!
-* \brief this function allocates memory sapce and copies variables related to group state to it
-*
-* This function:
-* (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
-*
-* This funcion is called by allocateSNN_CPU() and fetchGroupState(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU fetchGroupState
-* \since v3.0
-*/
+ * \brief this function allocates memory sapce and copies variables related to group state to it
+ *
+ * This function:
+ * (allocate and) copy grpDA, grp5HT, grpACh, grpNE, grpDABuffer, grp5HTBuffer, grpAChBuffer, grpNEBuffer
+ *
+ * This funcion is called by allocateSNN_CPU() and fetchGroupState(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU fetchGroupState
+ * \since v3.0
+ */
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	if (allocateMem) {
 		assert(dest->memType == CPU_MEM && !dest->allocated);
-		dest->grpDA = new float[networkConfigs[netId].numGroups];
-		dest->grp5HT = new float[networkConfigs[netId].numGroups];
-		dest->grpACh = new float[networkConfigs[netId].numGroups];
+		dest->grpDA = new float[networkConfigs[netId].numGroups]; 
+		dest->grp5HT = new float[networkConfigs[netId].numGroups]; 
+		dest->grpACh = new float[networkConfigs[netId].numGroups]; 
 		dest->grpNE = new float[networkConfigs[netId].numGroups];
 	}
 	memcpy(dest->grpDA, src->grpDA, sizeof(float) * networkConfigs[netId].numGroups);
@@ -2030,17 +2017,16 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 	if (lGrpId == ALL) {
 		if (allocateMem) {
 			assert(dest->memType == CPU_MEM && !dest->allocated);
-			dest->grpDABuffer = new float[1000 * networkConfigs[netId].numGroups];
-			dest->grp5HTBuffer = new float[1000 * networkConfigs[netId].numGroups];
-			dest->grpAChBuffer = new float[1000 * networkConfigs[netId].numGroups];
+			dest->grpDABuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grp5HTBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grpAChBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
 			dest->grpNEBuffer = new float[1000 * networkConfigs[netId].numGroups];
 		}
 		memcpy(dest->grpDABuffer, src->grpDABuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
 		memcpy(dest->grp5HTBuffer, src->grp5HTBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
 		memcpy(dest->grpAChBuffer, src->grpAChBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
 		memcpy(dest->grpNEBuffer, src->grpNEBuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
-	}
-	else {
+	} else {
 		assert(!allocateMem);
 		memcpy(&dest->grpDABuffer[lGrpId * 1000], &src->grpDABuffer[lGrpId * 1000], sizeof(float) * 1000);
 		memcpy(&dest->grp5HTBuffer[lGrpId * 1000], &src->grp5HTBuffer[lGrpId * 1000], sizeof(float) * 1000);
@@ -2050,40 +2036,40 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 }
 
 /*!
-* \brief this function allocates memory sapce and copies auxiliary runtime data to it
-*
-* This function:
-* (allocate and) reset spikeGenBits, poissonFireRate
-* initialize I_setLength, I_setPitch; (allocate and) reset I_set
-* (allocate and) copy synSpikeTime, lastSpikeTime
-* (allocate and) copy nSpikeCnt
-* (allocate and) copy grpIds, connIdsPreIdx
-* (allocate and) copy timeTableD1, timeTableD2
-* (allocate and) copy firingTableD1, firingTableD2
-* This funcion is only called by allocateSNN_CPU. Therefore, only copying direction from host to device is required
-*
-* \param[in] netId the id of local network, which is the same as Core (CPU) id
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] allocateMem a flag indicates whether allocating memory space before copying
-*
-* \sa allocateSNN_CPU
-* \since v4.0
-*/
+ * \brief this function allocates memory sapce and copies auxiliary runtime data to it
+ *
+ * This function:
+ * (allocate and) reset spikeGenBits, poissonFireRate
+ * initialize I_setLength, I_setPitch; (allocate and) reset I_set
+ * (allocate and) copy synSpikeTime, lastSpikeTime
+ * (allocate and) copy nSpikeCnt
+ * (allocate and) copy grpIds, connIdsPreIdx
+ * (allocate and) copy timeTableD1, timeTableD2
+ * (allocate and) copy firingTableD1, firingTableD2
+ * This funcion is only called by allocateSNN_CPU. Therefore, only copying direction from host to device is required
+ *
+ * \param[in] netId the id of local network, which is the same as Core (CPU) id
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copying
+ *
+ * \sa allocateSNN_CPU
+ * \since v4.0
+ */
 void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	assert(networkConfigs[netId].numN > 0);
 
-	if (allocateMem)
+	if(allocateMem)
 		dest->spikeGenBits = new unsigned int[networkConfigs[netId].numNSpikeGen / 32 + 1];
 	memset(dest->spikeGenBits, 0, sizeof(int) * (networkConfigs[netId].numNSpikeGen / 32 + 1));
 
 	// allocate the poisson neuron poissonFireRate
-	if (allocateMem)
+	if(allocateMem)
 		dest->poissonFireRate = new float[networkConfigs[netId].numNPois];
 	memset(dest->poissonFireRate, 0, sizeof(float) * networkConfigs[netId].numNPois);
 
 	// synaptic auxiliary data
 	// I_set: a bit vector indicates which synapse got a spike
-	if (allocateMem) {
+	if(allocateMem) {
 		networkConfigs[netId].I_setLength = ceil(((networkConfigs[netId].maxNumPreSynN) / 32.0f));
 		dest->I_set = new int[networkConfigs[netId].numNReg * networkConfigs[netId].I_setLength];
 	}
@@ -2091,14 +2077,14 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	memset(dest->I_set, 0, sizeof(int) * networkConfigs[netId].numNReg * networkConfigs[netId].I_setLength);
 
 	// synSpikeTime: an array indicates the last time when a synapse got a spike
-	if (allocateMem)
+	if(allocateMem)
 		dest->synSpikeTime = new int[networkConfigs[netId].numPreSynNet];
 	memcpy(dest->synSpikeTime, managerRuntimeData.synSpikeTime, sizeof(int) * networkConfigs[netId].numPreSynNet);
 
 	// neural auxiliary data
 	// lastSpikeTime: an array indicates the last time of a neuron emitting a spike
 	// neuron firing time
-	if (allocateMem)
+	if(allocateMem)
 		dest->lastSpikeTime = new int[networkConfigs[netId].numNAssigned];
 	memcpy(dest->lastSpikeTime, managerRuntimeData.lastSpikeTime, sizeof(int) * networkConfigs[netId].numNAssigned);
 
@@ -2106,12 +2092,12 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	copyNeuronSpikeCount(netId, lGrpId, dest, &managerRuntimeData, true, 0);
 
 	// quick lookup array for local group ids
-	if (allocateMem)
+	if(allocateMem)
 		dest->grpIds = new short int[networkConfigs[netId].numNAssigned];
 	memcpy(dest->grpIds, managerRuntimeData.grpIds, sizeof(short int) * networkConfigs[netId].numNAssigned);
 
 	// quick lookup array for conn ids
-	if (allocateMem)
+	if(allocateMem)
 		dest->connIdsPreIdx = new short int[networkConfigs[netId].numPreSynNet];
 	memcpy(dest->connIdsPreIdx, managerRuntimeData.connIdsPreIdx, sizeof(short int) * networkConfigs[netId].numPreSynNet);
 
@@ -2158,7 +2144,7 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 		memcpy(dest->firingTableD1, managerRuntimeData.firingTableD1, sizeof(int) * networkConfigs[netId].maxSpikesD1);
 
 	// allocate 2+ms firing table
-	if (allocateMem)
+	if(allocateMem)
 		dest->firingTableD2 = new int[networkConfigs[netId].maxSpikesD2];
 	if (networkConfigs[netId].maxSpikesD2 > 0)
 		memcpy(dest->firingTableD2, managerRuntimeData.firingTableD2, sizeof(int) * networkConfigs[netId].maxSpikesD2);
@@ -2200,47 +2186,46 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 }
 
 /*!
-* \brief this function allocates memory sapce and copies the spike count of each neuron to it
-*
-* This function:
-* (allocate and) copy nSpikeCnt
-*
-* This funcion is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copying
-*
-* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
-* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
-* \param[in] dest pointer to runtime data desitnation
-* \param[in] src pointer to runtime data source
-* \param[in] allocateMem a flag indicates whether allocating memory space before copy
-* \param[in] destOffset the offset of data destination, which is used in local-to-global copy
-*
-* \sa copyAuxiliaryData fetchNeuronSpikeCount
-* \since v4.0
-*/
+ * \brief this function allocates memory sapce and copies the spike count of each neuron to it
+ *
+ * This function:
+ * (allocate and) copy nSpikeCnt
+ *
+ * This funcion is called by copyAuxiliaryData() and fetchNeuronSpikeCount(). It supports bi-directional copying
+ *
+ * \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+ * \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+ * \param[in] dest pointer to runtime data desitnation
+ * \param[in] src pointer to runtime data source
+ * \param[in] allocateMem a flag indicates whether allocating memory space before copy
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
+ *
+ * \sa copyAuxiliaryData fetchNeuronSpikeCount
+ * \since v4.0
+ */
 void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	int posN, lengthN;
 
-	if (lGrpId == ALL) {
+	if(lGrpId == ALL) {
 		posN = 0;
 		lengthN = networkConfigs[netId].numN;
-	}
-	else {
+	} else {
 		posN = groupConfigs[netId][lGrpId].lStartN;
 		lengthN = groupConfigs[netId][lGrpId].numN;
 	}
 	assert(lengthN > 0 && lengthN <= networkConfigs[netId].numN);
 
 	// spike count information
-	if (allocateMem)
+	if(allocateMem)
 		dest->nSpikeCnt = new int[lengthN];
 	memcpy(&dest->nSpikeCnt[posN + destOffset], &src->nSpikeCnt[posN], sizeof(int) * lengthN);
 }
 
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::assignPoissonFiringRate_CPU(int netId) {
+	void SNN::assignPoissonFiringRate_CPU(int netId) {
 #else // POSIX
-void* SNN::assignPoissonFiringRate_CPU(int netId) {
+	void* SNN::assignPoissonFiringRate_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -2259,19 +2244,19 @@ void* SNN::assignPoissonFiringRate_CPU(int netId) {
 			assert(rate->isOnGPU() == false);
 			// rates allocated on CPU
 			memcpy(&runtimeData[netId].poissonFireRate[lNId - networkConfigs[netId].numNReg], rate->getRatePtrCPU(),
-				sizeof(float) * rate->getNumNeurons());
+					sizeof(float) * rate->getNumNeurons());
 		}
 	}
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperAssignPoissonFiringRate_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->assignPoissonFiringRate_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperAssignPoissonFiringRate_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*) arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer) -> assignPoissonFiringRate_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
 /*!
@@ -2367,83 +2352,83 @@ void SNN::copySpikeTables(int netId) {
 }
 
 #if defined(WIN32) || defined(WIN64)
-void SNN::deleteRuntimeData_CPU(int netId) {
+	void SNN::deleteRuntimeData_CPU(int netId) {
 #else // POSIX
-void* SNN::deleteRuntimeData_CPU(int netId) {
+	void* SNN::deleteRuntimeData_CPU(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// free all pointers
-	delete[] runtimeData[netId].voltage;
-	delete[] runtimeData[netId].nextVoltage;
-	delete[] runtimeData[netId].recovery;
-	delete[] runtimeData[netId].current;
-	delete[] runtimeData[netId].extCurrent;
-	delete[] runtimeData[netId].curSpike;
-	delete[] runtimeData[netId].Npre;
-	delete[] runtimeData[netId].Npre_plastic;
-	delete[] runtimeData[netId].Npre_plasticInv;
-	delete[] runtimeData[netId].Npost;
-	delete[] runtimeData[netId].cumulativePost;
-	delete[] runtimeData[netId].cumulativePre;
-	delete[] runtimeData[netId].synSpikeTime;
-	delete[] runtimeData[netId].wt;
-	delete[] runtimeData[netId].wtChange;
-	delete[] runtimeData[netId].maxSynWt;
-	delete[] runtimeData[netId].nSpikeCnt;
-	delete[] runtimeData[netId].avgFiring;
-	delete[] runtimeData[netId].baseFiring;
-	delete[] runtimeData[netId].baseFiringInv;
+	delete [] runtimeData[netId].voltage;
+	delete [] runtimeData[netId].nextVoltage;
+	delete [] runtimeData[netId].recovery;
+	delete [] runtimeData[netId].current;
+	delete [] runtimeData[netId].extCurrent;
+	delete [] runtimeData[netId].curSpike;
+	delete [] runtimeData[netId].Npre;
+	delete [] runtimeData[netId].Npre_plastic;
+	delete [] runtimeData[netId].Npre_plasticInv;
+	delete [] runtimeData[netId].Npost;
+	delete [] runtimeData[netId].cumulativePost;
+	delete [] runtimeData[netId].cumulativePre;
+	delete [] runtimeData[netId].synSpikeTime;
+	delete [] runtimeData[netId].wt;
+	delete [] runtimeData[netId].wtChange;
+	delete [] runtimeData[netId].maxSynWt;
+	delete [] runtimeData[netId].nSpikeCnt;
+	delete [] runtimeData[netId].avgFiring;
+	delete [] runtimeData[netId].baseFiring;
+	delete [] runtimeData[netId].baseFiringInv;
 
-	delete[] runtimeData[netId].grpDA;
-	delete[] runtimeData[netId].grp5HT;
-	delete[] runtimeData[netId].grpACh;
-	delete[] runtimeData[netId].grpNE;
+	delete [] runtimeData[netId].grpDA;
+	delete [] runtimeData[netId].grp5HT;
+	delete [] runtimeData[netId].grpACh;
+	delete [] runtimeData[netId].grpNE;
 
-	delete[] runtimeData[netId].grpDABuffer;
-	delete[] runtimeData[netId].grp5HTBuffer;
-	delete[] runtimeData[netId].grpAChBuffer;
-	delete[] runtimeData[netId].grpNEBuffer;
+	delete [] runtimeData[netId].grpDABuffer;
+	delete [] runtimeData[netId].grp5HTBuffer;
+	delete [] runtimeData[netId].grpAChBuffer;
+	delete [] runtimeData[netId].grpNEBuffer;
 
-	delete[] runtimeData[netId].grpIds;
+	delete [] runtimeData[netId].grpIds;
 
-	delete[] runtimeData[netId].Izh_a;
-	delete[] runtimeData[netId].Izh_b;
-	delete[] runtimeData[netId].Izh_c;
-	delete[] runtimeData[netId].Izh_d;
-	delete[] runtimeData[netId].Izh_C;
-	delete[] runtimeData[netId].Izh_k;
-	delete[] runtimeData[netId].Izh_vr;
-	delete[] runtimeData[netId].Izh_vt;
-	delete[] runtimeData[netId].Izh_vpeak;
-	delete[] runtimeData[netId].gAMPA;
+	delete [] runtimeData[netId].Izh_a;
+	delete [] runtimeData[netId].Izh_b;
+	delete [] runtimeData[netId].Izh_c;
+	delete [] runtimeData[netId].Izh_d;
+	delete [] runtimeData[netId].Izh_C;
+	delete [] runtimeData[netId].Izh_k;
+	delete [] runtimeData[netId].Izh_vr;
+	delete [] runtimeData[netId].Izh_vt;
+	delete [] runtimeData[netId].Izh_vpeak;
+	delete [] runtimeData[netId].gAMPA;
 	if (sim_with_NMDA_rise) {
-		delete[] runtimeData[netId].gNMDA_r;
-		delete[] runtimeData[netId].gNMDA_d;
+		delete [] runtimeData[netId].gNMDA_r;
+		delete [] runtimeData[netId].gNMDA_d;
 	}
 	else {
-		delete[] runtimeData[netId].gNMDA;
+		delete [] runtimeData[netId].gNMDA;
 	}
-	delete[] runtimeData[netId].gGABAa;
+	delete [] runtimeData[netId].gGABAa;
 	if (sim_with_GABAb_rise) {
-		delete[] runtimeData[netId].gGABAb_r;
-		delete[] runtimeData[netId].gGABAb_d;
+		delete [] runtimeData[netId].gGABAb_r;
+		delete [] runtimeData[netId].gGABAb_d;
 	}
 	else {
-		delete[] runtimeData[netId].gGABAb;
+		delete [] runtimeData[netId].gGABAb;
 	}
 
-	delete[] runtimeData[netId].stpu;
-	delete[] runtimeData[netId].stpx;
+	delete [] runtimeData[netId].stpu;
+	delete [] runtimeData[netId].stpx;
 
-	delete[] runtimeData[netId].connIdsPreIdx;
+	delete [] runtimeData[netId].connIdsPreIdx;
 
-	delete[] runtimeData[netId].postDelayInfo;
-	delete[] runtimeData[netId].postSynapticIds;
-	delete[] runtimeData[netId].preSynapticIds;
-	delete[] runtimeData[netId].I_set;
-	delete[] runtimeData[netId].poissonFireRate;
-	delete[] runtimeData[netId].lastSpikeTime;
-	delete[] runtimeData[netId].spikeGenBits;
+	delete [] runtimeData[netId].postDelayInfo;
+	delete [] runtimeData[netId].postSynapticIds;
+	delete [] runtimeData[netId].preSynapticIds;
+	delete [] runtimeData[netId].I_set;
+	delete [] runtimeData[netId].poissonFireRate;
+	delete [] runtimeData[netId].lastSpikeTime;
+	delete [] runtimeData[netId].spikeGenBits;
 
 	delete [] runtimeData[netId].timeTableD1;
 	delete [] runtimeData[netId].timeTableD2;
@@ -2457,31 +2442,31 @@ void* SNN::deleteRuntimeData_CPU(int netId) {
 	// fetch device memory address stored in extFiringTableD2
 	memcpy(tempPtrs, runtimeData[netId].extFiringTableD2, sizeof(int*) * networkConfigs[netId].numGroups);
 	for (int i = 0; i < networkConfigs[netId].numGroups; i++)
-		delete[] tempPtrs[i];
-	delete[] runtimeData[netId].extFiringTableD2;
+		delete [] tempPtrs[i];
+	delete [] runtimeData[netId].extFiringTableD2;
 
 	// fetch device memory address stored in extFiringTableD1
 	memcpy(tempPtrs, runtimeData[netId].extFiringTableD1, sizeof(int*) * networkConfigs[netId].numGroups);
 	for (int i = 0; i < networkConfigs[netId].numGroups; i++)
-		delete[] tempPtrs[i];
-	delete[] runtimeData[netId].extFiringTableD1;
+		delete [] tempPtrs[i];
+	delete [] runtimeData[netId].extFiringTableD1;
 
-	delete[] tempPtrs;
+	delete [] tempPtrs;
 
-	delete[] runtimeData[netId].extFiringTableEndIdxD2;
-	delete[] runtimeData[netId].extFiringTableEndIdxD1;
+	delete [] runtimeData[netId].extFiringTableEndIdxD2;
+	delete [] runtimeData[netId].extFiringTableEndIdxD1;
 
-	if (runtimeData[netId].randNum != NULL) delete[] runtimeData[netId].randNum;
+	if (runtimeData[netId].randNum != NULL) delete [] runtimeData[netId].randNum;
 	runtimeData[netId].randNum = NULL;
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-// Static multithreading subroutine method - helper for the above method  
-void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
-	ThreadStruct* args = (ThreadStruct*)arguments;
-	//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-	((SNN *)args->snn_pointer)->deleteRuntimeData_CPU(args->netId);
-	pthread_exit(0);
-}
+	// Static multithreading subroutine method - helper for the above method  
+	void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
+		ThreadStruct* args = (ThreadStruct*)arguments;
+		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		((SNN *)args->snn_pointer)->deleteRuntimeData_CPU(args->netId);
+		pthread_exit(0);
+	}
 #endif
 
