@@ -416,6 +416,14 @@ public:
 	 */
 	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid);
 
+	//! sets up a neuron monitor registered with a callback to process the neuron state values, there can only be one NeuronMonitor per group
+	/*!
+	* \param grpId ID of the neuron group
+	* \param neuronMon (optional) neuronMonitor class
+	* \return NeuronMonitor* pointer to a NeuronMonitor object
+	*/
+	NeuronMonitor* setNeuronMonitor(int gid, FILE* fid);
+
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial.
 	/*!Input arguments:
 	 * \param grpId ID of the neuron group
@@ -541,6 +549,13 @@ public:
 	//! Returns pointer to existing SpikeMonitorCore object, NULL else.
 	//! Should not be exposed to user interface
 	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
+
+	//! Returns pointer to existing NeuronMonitor object, NULL else
+	NeuronMonitor* getNeuronMonitor(int grpId);
+
+	//! Returns pointer to existing NeuronMonitorCore object, NULL else.
+	//! Should not be exposed to user interface
+	NeuronMonitorCore* getNeuronMonitorCore(int grpId);
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return managerRuntimeData.current; }
@@ -1081,8 +1096,11 @@ private:
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
 	int numSpikeMonitor;
-	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
-	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
+	int numNeuronMonitor;
+	SpikeMonitorCore*  spikeMonCoreList[MAX_GRP_PER_SNN];
+	SpikeMonitor*      spikeMonList[MAX_GRP_PER_SNN];
+	NeuronMonitor*     neuronMonList[MAX_GRP_PER_SNN];
+	NeuronMonitorCore* neuronMonCoreList[MAX_GRP_PER_SNN];
 
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor

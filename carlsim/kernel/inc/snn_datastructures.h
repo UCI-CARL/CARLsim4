@@ -322,7 +322,7 @@ typedef struct GroupConfigMD_s {
 						lGrpId(-1), lStartN(-1), lEndN(-1),
 					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
 						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
-						spikeMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
+						spikeMonitorId(-1), neuronMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
 	{}
 
 	int gGrpId;
@@ -340,6 +340,7 @@ typedef struct GroupConfigMD_s {
 	bool fixedInputWts;
 	bool hasExternalConnect;
 	int spikeMonitorId;
+	int neuronMonitorId;
 	int groupMonitorId;
 	float refractPeriod;
 	int currTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time

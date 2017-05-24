@@ -1131,6 +1131,47 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 	}
 }
 
+// record neuron state information, return a NeuronInfo object
+NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
+	// check whether group already has a SpikeMonitor
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		// in this case, return the current object and update fid
+		NeuronMonitor* nrnMonObj = getNeuronMonitor(gGrpId);
+
+		// update spike file ID
+		NeuronMonitorCore* nrnMonCoreObj = getNeuronMonitorCore(gGrpId);
+		nrnMonCoreObj->setNeuronFileId(fid);
+
+		KERNEL_INFO("NeuronMonitor updated for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+		return nrnMonObj;
+	}
+	else {
+		// create new NeuronMonitorCore object in any case and initialize analysis components
+		// nrnMonObj destructor (see below) will deallocate it
+		NeuronMonitorCore* nrnMonCoreObj = new NeuronMonitorCore(this, numNeuronMonitor, gGrpId);
+		neuronMonCoreList[numNeuronMonitor] = nrnMonCoreObj;
+
+		// assign neuron state file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
+		// spkMonCoreObj destructor will fclose it
+		nrnMonCoreObj->setSpikeFileId(fid);
+
+		// create a new NeuronMonitor object for the user-interface
+		// SNN::deleteObjects will deallocate it
+		NeuronMonitor* nrnMonObj = new NeuronMonitor(nrnMonCoreObj);
+		neuronMonList[numNeuronMonitor] = nrnMonObj;
+
+		// also inform the grp that it is being monitored...
+		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
+
+		numNeuronMonitor++;
+		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+
+		return nrnMonObj;
+	}
+}
+
 // FIXME: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // assigns spike rate to group
@@ -1764,6 +1805,29 @@ SpikeMonitorCore* SNN::getSpikeMonitorCore(int gGrpId) {
 	}
 }
 
+// returns pointer to existing NeuronMonitor object, NULL else
+NeuronMonitor* SNN::getNeuronMonitor(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
+NeuronMonitorCore* SNN::getNeuronMonitorCore(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonCoreList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
 RangeWeight SNN::getWeightRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
 
@@ -1895,6 +1959,7 @@ void SNN::SNNinit() {
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
+	numNeuronMonitor = 0;
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
 
@@ -5406,6 +5471,13 @@ void SNN::resetMonitors(bool deallocate) {
 	for (int i=0; i<numSpikeMonitor; i++) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
+	}
+
+	// delete all NeuronMonitor objects
+	// don't kill NeuronMonitorCore objects, they will get killed automatically
+	for (int i = 0; i<numNeuronMonitor; i++) {
+		if (neuronMonList[i] != NULL && deallocate) delete neuronMonList[i];
+		neuronMonList[i] = NULL;
 	}
 
 	// delete all GroupMonitor objects
