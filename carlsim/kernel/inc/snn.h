@@ -459,6 +459,18 @@ public:
 	 */
 	void updateSpikeMonitor(int grpId = ALL);
 
+	/*!
+	* \brief copy required neuron state values from ??? buffer to ??? buffer
+	*
+	* This function is public in SNN, but it should probably not be a public user function in CARLsim.
+	* It is usually called once every 1000ms by the core to update neuron state value binaries and NeuronMonitor objects. In GPU
+	* mode, it will first copy the neuron state info to the host. The input argument can either be a specific group ID or
+	* keyword ALL (for all groups).
+	* Core and utility functions can call updateNeuronMonitor at any point in time. The function will automatically
+	* determine the last time it was called, and update SpikeMonitor information only if necessary.
+	*/
+	void updateNeuronMonitor(int grpId = ALL);
+
 	//! stores the pre and post synaptic neuron ids with the weight and delay
 	/*
 	 * \param fid file pointer
@@ -1096,9 +1108,11 @@ private:
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
 	int numSpikeMonitor;
-	int numNeuronMonitor;
 	SpikeMonitorCore*  spikeMonCoreList[MAX_GRP_PER_SNN];
 	SpikeMonitor*      spikeMonList[MAX_GRP_PER_SNN];
+
+	// neuron monitor variables
+	int numNeuronMonitor;
 	NeuronMonitor*     neuronMonList[MAX_GRP_PER_SNN];
 	NeuronMonitorCore* neuronMonCoreList[MAX_GRP_PER_SNN];
 
@@ -1114,7 +1128,7 @@ private:
 
 	// neuron monitor variables
 	//NeuronMonitorCore* neurBufferCallback[MAX_]
-	int numNeuronMonitor;
+	//int numNeuronMonitor;
 
 	// connection monitor variables
 	int numConnectionMonitor;
