@@ -62,6 +62,7 @@
 #include <callback.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
+#include <neuron_monitor.h>
 #include <connection_monitor.h>
 #include <group_monitor.h>
 #include <linear_algebra.h>
@@ -1171,7 +1172,7 @@ public:
 	* \returns   NeuronMonitor*	pointer to a NeuronMonitor object, which can be used to calculate neuron state statistics
 	*                           or retrieve all spikes in AER format
 	*
-	* \note Only one NeuronMonitor is allowed per group.
+	* \note Only one NeuronMonitor is allowed per group. NeuronMonitor cannot be placed on groups with >100 (LARGE_NEURON_MON_GRP_SIZE) neurons
 	* \attention Using NeuronMonitor::startRecording and NeuronMonitor::stopRecording might significantly slow down the
 	* simulation. It is unwise to use this mechanism to record a large number of neuron state values (voltage, recovery, 
 	* and total current values) over a long period of time.

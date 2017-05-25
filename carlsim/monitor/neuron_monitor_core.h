@@ -104,6 +104,8 @@ public:
     //! returns the total accumulated time
     long int getAccumTime();
 
+	void writeNeuronFileHeader();
+
  private:
     //! initialization method
 	void init();

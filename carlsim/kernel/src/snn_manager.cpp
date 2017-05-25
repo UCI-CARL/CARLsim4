@@ -56,6 +56,8 @@
 #include <spike_monitor_core.h>
 #include <group_monitor.h>
 #include <group_monitor_core.h>
+#include <neuron_monitor.h>
+#include <neuron_monitor_core.h>
 
 #include <spike_buffer.h>
 #include <error_code.h>
@@ -1133,6 +1135,11 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 
 // record neuron state information, return a NeuronInfo object
 NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
+	// check if group has more than 100 neurons, if so raise an error
+	assert(getGroupNumNeurons(gGrpId) <= 100);
+	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+	int netId = groupConfigMDMap[gGrpId].netId;
+
 	// check whether group already has a SpikeMonitor
 	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
 		// in this case, return the current object and update fid
@@ -1146,6 +1153,7 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 		return nrnMonObj;
 	}
 	else {
+
 		// create new NeuronMonitorCore object in any case and initialize analysis components
 		// nrnMonObj destructor (see below) will deallocate it
 		NeuronMonitorCore* nrnMonCoreObj = new NeuronMonitorCore(this, numNeuronMonitor, gGrpId);
@@ -1155,7 +1163,7 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 		// if file pointer exists, it has already been fopened
 		// this will also write the header section of the spike file
 		// spkMonCoreObj destructor will fclose it
-		nrnMonCoreObj->setSpikeFileId(fid);
+		nrnMonCoreObj->setNeuronFileId(fid);
 
 		// create a new NeuronMonitor object for the user-interface
 		// SNN::deleteObjects will deallocate it
@@ -1164,6 +1172,17 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 
 		// also inform the grp that it is being monitored...
 		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
+
+		groupConfigs[netId][lGrpId].neuronMonitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
+		if (groupConfigs[netId][lGrpId].neuronMonitorId >= 0)
+		{
+			groupConfigs[netId][lGrpId].vrec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
+			groupConfigs[netId][lGrpId].urec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
+			groupConfigs[netId][lGrpId].Irec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
+			memset(&groupConfigs[netId][lGrpId].vrec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].vrec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
+			memset(&groupConfigs[netId][lGrpId].urec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].urec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
+			memset(&groupConfigs[netId][lGrpId].Irec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].Irec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
+		}
 
 		numNeuronMonitor++;
 		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
@@ -2607,6 +2626,7 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.totalCurrent = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
 	memset(managerRuntimeData.voltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.nextVoltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
@@ -2622,6 +2642,7 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.totalCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2831,6 +2852,9 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].compCouplingDown = groupConfigMap[gGrpId].compCouplingDown;
 			memset(&groupConfigs[netId][lGrpId].compNeighbors, 0, sizeof(groupConfigs[netId][lGrpId].compNeighbors[0])*MAX_NUM_COMP_CONN);
 			memset(&groupConfigs[netId][lGrpId].compCoupling, 0, sizeof(groupConfigs[netId][lGrpId].compCoupling[0])*MAX_NUM_COMP_CONN);
+
+			groupConfigs[netId][lGrpId].neuronMonitorId = grpIt->neuronMonitorId;
+			groupConfigs[netId][lGrpId].rec_buffer_index = 0;
 
 			//!< homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
@@ -5535,9 +5559,10 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
 	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.totalCurrent != NULL) delete[] managerRuntimeData.totalCurrent;
 	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
-	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.curSpike = NULL;
+	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.totalCurrent = NULL; managerRuntimeData.curSpike = NULL;
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
@@ -6265,8 +6290,7 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		}*/
 
 		// copy the neuron state information to the manager runtime
-		// FILL IN THIS SECTION
-		// .........................................................
+		// ???
 		
 		// find the time interval in which to update neuron state info
 		// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
@@ -6294,9 +6318,9 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 
 		// Read one neuron state value at a time from the buffer and put the neuron state values to an appopriate monitor buffer.
 		// Later the user may need need to dump these spikes to an output file
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId < groupConfigs[netId][lGrpId].lEndN; lNId++)
-		{ 
-			for (int t = numMsMin; t < numMsMax; t++) {
+		for (int t = numMsMin; t < numMsMax; t++) {
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId < groupConfigs[netId][lGrpId].lEndN; lNId++)
+			{ 
 
 				float v, u, I;
 
@@ -6310,6 +6334,10 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 				// indexed from 0..9, no matter what their real nid is
 				int nId = lNId - groupConfigs[netId][lGrpId].lStartN;
 				assert(nId >= 0);
+
+				v = groupConfigs[netId][lGrpId].vrec_buffer[t + nId];
+				u = groupConfigs[netId][lGrpId].urec_buffer[t + nId];
+				I = groupConfigs[netId][lGrpId].Irec_buffer[t + nId];
 
 				// current time is last completed second plus whatever is leftover in t
 				int time = currentTimeSec * 1000 + t;
@@ -6332,6 +6360,10 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 
 		if (nrnFileId != NULL) // flush spike file
 			fflush(nrnFileId);
+
+		// reset rec_buffer_index & all the buffers
+		groupConfigs[netId][lGrpId].rec_buffer_index = 0;
+
 	}
 }
 

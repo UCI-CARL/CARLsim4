@@ -892,9 +892,10 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	float timeStep = networkConfigs[netId].timeStep;
 	// loop that allows smaller integration time step for v's and u's
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
-
 		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			bool recordNeuronState = groupConfigs[netId][lGrpId].neuronMonitorId;
+
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
 				if (groupConfigs[netId][lGrpId].WithHomeostasis & (lastIter)) {
 					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
@@ -1064,6 +1065,14 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					// update average firing rate for homeostasis
 					if (groupConfigs[netId][lGrpId].WithHomeostasis)
 						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+
+					if (recordNeuronState)
+					{
+						groupConfigs[netId][lGrpId].vrec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = v;
+						groupConfigs[netId][lGrpId].urec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = u;
+						groupConfigs[netId][lGrpId].Irec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = totalCurrent;
+						groupConfigs[netId][lGrpId].rec_buffer_index++;
+					}
 				}
 			} // end StartN...EndN
 

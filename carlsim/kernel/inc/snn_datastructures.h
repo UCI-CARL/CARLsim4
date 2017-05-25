@@ -436,6 +436,13 @@ typedef struct GroupConfigRT_s {
 	int   compNeighbors[4];
 	float compCoupling[4];
 	short numCompNeighbors;
+
+	// neuron state recording
+	int neuronMonitorId;
+	float* vrec_buffer;
+	float* urec_buffer;
+	float* Irec_buffer;
+	int rec_buffer_index;
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
@@ -465,6 +472,7 @@ typedef struct RuntimeData_s {
 	float* Izh_c;
 	float* Izh_d;
 	float* current;
+	float* totalCurrent;
 	float* extCurrent;
 
 	//! Keeps track of all neurons that spiked at current time.

@@ -1059,7 +1059,7 @@ public:
 	}
 
 	// set neuron monitor for group and write neuron state values (voltage, recovery, and total current values) to file
-	SpikeMonitor* setNeuronMonitor(int grpId, const std::string& fileName) {
+	NeuronMonitor* setNeuronMonitor(int grpId, const std::string& fileName) {
 		std::string funcName = "setNeuronMonitor(\"" + getGroupName(grpId) + "\",\"" + fileName + "\")";
 		UserErrors::assertTrue(grpId != ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
 		UserErrors::assertTrue(grpId >= 0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
@@ -1898,7 +1898,7 @@ SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fileName) {
 }
 
 // Sets a Neuron Monitor for a groups, prints neuron state values (voltage, recovery, and total current values) to binary file
-SpikeMonitor* CARLsim::setNeuronMonitor(int grpId, const std::string& fileName) {
+NeuronMonitor* CARLsim::setNeuronMonitor(int grpId, const std::string& fileName) {
 	return _impl->setNeuronMonitor(grpId, fileName);
 }
 

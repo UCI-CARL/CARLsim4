@@ -94,6 +94,8 @@
 
 class SpikeMonitor;
 class SpikeMonitorCore;
+class NeuronMonitor;
+class NeuronMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionMonitor;
 
