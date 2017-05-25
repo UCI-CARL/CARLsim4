@@ -894,7 +894,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-			bool recordNeuronState = groupConfigs[netId][lGrpId].neuronMonitorId;
+			bool recordNeuronState = (groupConfigs[netId][lGrpId].neuronMonitorId >= 0);
 
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
 				if (groupConfigs[netId][lGrpId].WithHomeostasis & (lastIter)) {
@@ -1066,12 +1066,16 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					if (groupConfigs[netId][lGrpId].WithHomeostasis)
 						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 
+					//KERNEL_INFO("Reached the neuron state recording code in global state update!");
 					if (recordNeuronState)
 					{
+						//KERNEL_INFO("Reached inside the neuron state recording code in global state update!");
+						//KERNEL_INFO("Rec buffer index value is: %i\n", groupConfigs[netId][lGrpId].rec_buffer_index);
 						groupConfigs[netId][lGrpId].vrec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = v;
 						groupConfigs[netId][lGrpId].urec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = u;
 						groupConfigs[netId][lGrpId].Irec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = totalCurrent;
-						groupConfigs[netId][lGrpId].rec_buffer_index++;
+						groupConfigs[netId][lGrpId].rec_buffer_index = groupConfigs[netId][lGrpId].rec_buffer_index + 1;
+						//KERNEL_INFO("Finished executing the neuron state recording code in global state update!");
 					}
 				}
 			} // end StartN...EndN

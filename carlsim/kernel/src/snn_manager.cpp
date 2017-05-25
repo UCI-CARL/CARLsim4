@@ -757,10 +757,13 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	CUDA_START_TIMER(timer);
 #endif
 
+	//KERNEL_INFO("Reached the advSimStep loop!");
+
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i = 0; i < runDurationMs; i++) {
 		advSimStep();
+		//KERNEL_INFO("Executed an advSimStep!");
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
@@ -789,6 +792,8 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 
 		fetchNeuronSpikeCount(ALL);
 	}
+
+	//KERNEL_INFO("Updated monitors!");
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
@@ -2049,9 +2054,15 @@ void SNN::SNNinit() {
 void SNN::advSimStep() {
 	doSTPUpdateAndDecayCond();
 
+	//KERNEL_INFO("STPUpdate!");
+
 	spikeGeneratorUpdate();
 
+	//KERNEL_INFO("spikeGeneratorUpdate!");
+
 	findFiring();
+
+	//KERNEL_INFO("Find firing!");
 
 	updateTimingTable();
 
@@ -2059,7 +2070,11 @@ void SNN::advSimStep() {
 
 	doCurrentUpdate();
 
+	//KERNEL_INFO("doCurrentUpdate!");
+
 	globalStateUpdate();
+
+	//KERNEL_INFO("globalStateUpdate!");
 
 	clearExtFiringTable();
 }
