@@ -1137,6 +1137,50 @@ public:
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
 
 	/*!
+	* \brief Sets a Neuron Monitor for a groups, print voltage, recovery, and total current values to binary file
+	*
+	* To retrieve outputs, a neuron-monitoring callback mechanism is used. This mechanism allows the user to calculate
+	* basic statistics, store voltage/recovery/current values, or perform more complicated output monitoring. Neuron monitors are
+	* registered for a group and are called automatically by the simulator every second. Similar to an address event
+	* representation (AER), the neuron monitor indicates neuron's state by using the neuron ID within a group
+	* (0-indexed). Only one neuron monitor is allowed per group.
+	*
+	* CARLsim supports two different recording mechanisms: Recording to a neuron state (voltage, recovery, and current)
+	* file (binary) and recording to a
+	* NeuronMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+	* The latter is useful to calculate different neuron state metrics and statistics on-line.
+	*
+	* A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	* is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	* directory: "results/nrnstate_{group name}.dat", where group name is the name assigned to the group at initialization
+	* (can be retrieved via getGroupName).
+	* If no binary file shall be created, set fileName equal to the string "NULL".
+	*
+	* The function returns a pointer to a NeuronMonitor object, which can be used to calculate neuron statistics
+	* or retrieve all neuron state values from a particular time window.
+	* See \ref ??? of the User Guide for more information on how to use NeuronMonitor.
+	*
+	* If you call setNeuronMonitor twice on the same group, the same NeuronMonitor pointer will be returned, and the
+	* name of the neuron state file will be updated. This is the same as calling NeuronMonitor::setLogFile directly, and
+	* allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	*
+	* \STATE ::SETUP_STATE
+	* \param[in] grpId 		the group ID
+	* \param[in] fileName 		name of the binary file to be created. Leave empty for default name
+	*                      	"results/nrnstate_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
+	* \returns   NeuronMonitor*	pointer to a NeuronMonitor object, which can be used to calculate neuron state statistics
+	*                           or retrieve all spikes in AER format
+	*
+	* \note Only one NeuronMonitor is allowed per group.
+	* \attention Using NeuronMonitor::startRecording and NeuronMonitor::stopRecording might significantly slow down the
+	* simulation. It is unwise to use this mechanism to record a large number of neuron state values (voltage, recovery, 
+	* and total current values) over a long period of time.
+	* \see ???
+	* \see ch9s1_matlab_oat
+	*/
+	NeuronMonitor* setNeuronMonitor(int grpId, const std::string& fileName);
+
+	/*!
 	 * \brief Sets a spike rate
 	 * \TODO finish docu
 	 *
