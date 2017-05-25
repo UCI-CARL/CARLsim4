@@ -173,6 +173,13 @@ public:
 	short int connect(int gIDpre, int gIDpost, ConnectionGeneratorCore* conn, float mulSynFast, float mulSynSlow,
 		bool synWtType);
 
+	/* Creates synaptic projections using a callback mechanism.
+	*
+	* \param _grpId1:ID lower layer group
+	* \param _grpId2 ID upper level group
+	*/
+	short int connectCompartments(int grpIdLower, int grpIdUpper);
+
 	//! Creates a group of Izhikevich spiking neurons
 	/*!
 	 * \param name the symbolic name of a group
@@ -199,6 +206,13 @@ public:
 	 */
 	int createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
+	/*!
+	* \brief Coupling constants for the compartment are set using this method.
+	* \param grpId  		the symbolic name of a group
+	* \param couplingUp   	the coupling constant for upper connections
+	* \param couplingDown	the coupling constant for lower connections
+	*/
+	void setCompartmentParameters(int grpId, float couplingUp, float couplingDown);
 
 	/*!
 	 * \brief Sets custom values for conductance decay (\tau_decay) or disables conductances alltogether
@@ -531,6 +545,7 @@ public:
 
 	int getNumConnections() { return numConnections; }
 	int getNumSynapticConnections(short int connectionId);		//!< gets number of connections associated with a connection ID
+	int getNumCompartmentConnections() { return numCompartmentConnections; }
 	int getNumGroups() { return numGroups; }
 	int getNumNeurons() { return glbNetworkConfig.numN; }
 	int getNumNeuronsReg() { return glbNetworkConfig.numNReg; }
@@ -588,6 +603,7 @@ public:
 	double getRFDist3D(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
 	bool isPoint3DinRF(const RadiusRF& radius, const Point3D& pre, const Point3D& post);
 
+	bool isSimulationWithCompartments() { return sim_with_compartments; }
 	bool isSimulationWithCOBA() { return sim_with_conductances; }
 	bool isSimulationWithCUBA() { return !sim_with_conductances; }
 	bool isSimulationWithNMDARise() { return sim_with_NMDA_rise; }
@@ -617,6 +633,7 @@ private:
 	void generateGroupRuntime(int netId, int lGrpId);
 	void generatePoissonGroupRuntime(int netId, int lGrpId);
 	void generateConnectionRuntime(int netId);
+	void generateCompConnectionRuntime(int netId);
 
 	/*!
 	 * \brief scan all GroupConfigs and ConnectConfigs for generating the configuration of a local network
@@ -671,6 +688,9 @@ private:
 
 	//! make sure every group with homeostasis also has STDP
 	void verifyHomeostasis();
+
+	//! performs consistency checks for compartmentally enabled neurons
+	void verifyCompartments();
 
 	//! performs a consistency check to see whether numN* class members have been accumulated correctly
 	//void verifyNumNeurons();
@@ -744,6 +764,8 @@ private:
 	void allocateManagerSpikeTables();
 
 	bool updateTime(); //!< updates simTime, returns true when a new second is started
+
+	float getCompCurrent(int netid, int lGrpId, int lneurId, float const0 = 0.0f, float const1 = 0.0f);
 
 	// Abstract layer for setupNetwork() and runNetwork()
 	void allocateSNN(int netId);
@@ -1017,15 +1039,18 @@ private:
 
 	int numGroups;      //!< the number of groups (as in snn.createGroup, snn.createSpikeGeneratorGroup)
 	int numConnections; //!< the number of connections (as in snn.connect(...))
+	int numCompartmentConnections; //!< number of connectCompartment calls
 
 	std::map<int, GroupConfig> groupConfigMap;   //!< the hash table storing group configs created at CONFIG_STATE
 	std::map<int, GroupConfigMD> groupConfigMDMap; //!< the hash table storing group configs meta data generated at SETUP_STATE
 	std::map<int, ConnectConfig> connectConfigMap; //!< the hash table storing connection configs created at CONFIG_STATE
+	std::map<int, compConnectConfig> compConnectConfigMap; //!< the hash table storing compConnection configs created at CONFIG_STATE
 
 	// data structure assisting network partitioning
 	std::list<GroupConfigMD> groupPartitionLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> localConnectLists[MAX_NET_PER_SNN];
 	std::list<ConnectConfig> externalConnectLists[MAX_NET_PER_SNN];
+	std::list<compConnectConfig> localCompConnectLists[MAX_NET_PER_SNN];
 
 	std::list<ConnectionInfo> connectionLists[MAX_NET_PER_SNN];
 
@@ -1049,6 +1074,7 @@ private:
 	double dGABAb;              //!< multiplication factor for decay time of GABAb
 	double sGABAb;              //!< scaling factor for GABAb amplitude
 
+	bool sim_with_compartments;
 	bool sim_with_fixedwts;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;

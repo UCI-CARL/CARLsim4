@@ -163,6 +163,24 @@ typedef struct ConnectConfigRT_s {
 	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
 } ConnectConfigRT;
 
+typedef struct compConnectionInfo_s {
+	int								grpSrc, grpDest;
+	short int               		connId;
+}compConnectionInfo;
+
+/*!
+* \brief The configuration of a compartmental connection
+*
+* This structure contains the configurations of compartmental connections that are created during configuration state.
+* The configurations are later processed by compileNetwork() and translated to meta data which are ready to
+* be linked.
+* \see CARLsimState
+*/
+typedef struct compConnectConfig_s {
+	int							grpSrc, grpDest;
+	short int               	connId;
+} compConnectConfig;
+
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
 	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
@@ -295,6 +313,11 @@ typedef struct GroupConfig_s {
 	bool isSpikeGenerator;
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
 	bool isLIF;
+	bool withCompartments;
+
+	float compCouplingUp;
+	float compCouplingDown;
+
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
@@ -417,6 +440,13 @@ typedef struct GroupConfigRT_s {
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
 	bool isLIF; //!< True = a LIF spiking group
+
+	bool withCompartments;
+	float compCouplingUp;
+	float compCouplingDown;
+	int   compNeighbors[4];
+	float compCoupling[4];
+	short numCompNeighbors;
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
@@ -511,7 +541,6 @@ typedef struct RuntimeData_s {
 	SynInfo* preSynapticIds;
 
 	DelayInfo* postDelayInfo;  	//!< delay information
-
 	unsigned int* timeTableD1; //!< firing table, only used in CPU_MODE currently
 	unsigned int* timeTableD2; //!< firing table, only used in CPU_MODE currently
 	
@@ -569,6 +598,7 @@ typedef struct GlobalNetworkConfig_s {
 	int numNExcReg;   //!< number of regular excitatory neurons in the global network
 	int numNInhReg;   //!< number of regular inhibitory neurons in the global network
 	int numNReg;      //!< number of regular (spking) neurons in the global network
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
 	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
 	int numNPois;     //!< number of poisson neurons in the global network
@@ -595,6 +625,7 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcReg;   //!< number of regular excitatory neurons
 	int numNInhReg;   //!< number of regular inhibitory neurons
 	int numNReg;      //!< number of regular (spking) neurons
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons
 	int numNInhPois;  //!< number of inhibitory poisson neurons
 	int numNPois;     //!< number of poisson neurons
@@ -623,6 +654,7 @@ typedef struct NetworkConfigRT_s  {
 	// configurations for execution features
 	bool sim_with_fixedwts;
 	bool sim_with_conductances;
+	bool sim_with_compartments;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;
 	bool sim_with_homeostasis;

@@ -264,6 +264,16 @@ public:
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED);
 
+	/*!
+	* \brief make a compartmental connection between two compartmentally enabled groups
+	* Note: all compartmentally connected groups must be located on the same partition.
+	*
+	* first group is in the lower layer; second group is in the upper layer
+	* \TODO finish docu
+	* \STATE CONFIG
+	*/
+	short int connectCompartments(int grpIdLower, int grpIdUpper);
+
 
 	/*!
 	 * \brief creates a group of Izhikevich spiking neurons
@@ -578,6 +588,17 @@ public:
 	 */
 	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, 
 		const RangeFR& rangeFR=RangeFR(200.0f, 400.0f), const RangeIntercept& rangeInt=RangeIntercept(0.0f, 0.99f));
+    
+   /*!
+	* \brief Sets coupling constants G_u and G_d for the compartment.
+	*
+	* \TODO finish docu
+	* \STATE ::CONFIG_STATE
+	* \param[in] couplingUp		Coupling constant for "up" compartmental connection
+	* \param[in] couplingDown	Coupling constant for "down" compartmental connection
+	*/
+
+	void setCompartmentParameters(int grpId, float couplingUp, float couplingDown);
 
 	/*!
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
@@ -1373,6 +1394,14 @@ public:
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	* \brief Returns the maximum number of allowed compartmental connections per group.
+	*
+	* A compartmentally enabled neuron group cannot have more than this number of compartmental connections.
+	* This value is controlled by MAX_NUM_COMP_CONN in carlsim_definitions.h.
+	*/
+	int getMaxNumCompConnections();
 
 	/*!
 	 * \brief returns the 3D location a neuron codes for
