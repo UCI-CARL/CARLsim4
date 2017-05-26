@@ -1178,19 +1178,24 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 		// also inform the grp that it is being monitored...
 		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
 
+		//KERNEL_INFO("A new neuron monitor has been built for netId: %i; lGrpId: %i\n", netId, lGrpId);
 		groupConfigs[netId][lGrpId].neuronMonitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
 		if (groupConfigs[netId][lGrpId].neuronMonitorId >= 0)
 		{
 			groupConfigs[netId][lGrpId].vrec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
+			//printf("Vrec_buffer at index 0 directly after initialization is: %f", groupConfigs[netId][lGrpId].vrec_buffer[0]);
 			groupConfigs[netId][lGrpId].urec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
 			groupConfigs[netId][lGrpId].Irec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
-			memset(&groupConfigs[netId][lGrpId].vrec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].vrec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
-			memset(&groupConfigs[netId][lGrpId].urec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].urec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
-			memset(&groupConfigs[netId][lGrpId].Irec_buffer, 0, sizeof(groupConfigs[netId][lGrpId].Irec_buffer[0])*LARGE_NEURON_MON_GRP_SIZE * 1000);
+			memset(groupConfigs[netId][lGrpId].vrec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
+			//printf("Vrec_buffer at index 0 directly after memset is: %f", groupConfigs[netId][lGrpId].vrec_buffer[0]);
+			memset(groupConfigs[netId][lGrpId].urec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
+			memset(groupConfigs[netId][lGrpId].Irec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
 		}
 
+		//KERNEL_INFO("The value of vrec_buffer at index 0 is: %f\n", groupConfigs[netId][lGrpId].vrec_buffer[0]);
+
 		numNeuronMonitor++;
-		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+		KERNEL_INFO("NeuronMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 
 		return nrnMonObj;
 	}

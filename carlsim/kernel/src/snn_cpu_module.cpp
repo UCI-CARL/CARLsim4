@@ -1071,6 +1071,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					{
 						//KERNEL_INFO("Reached inside the neuron state recording code in global state update!");
 						//KERNEL_INFO("Rec buffer index value is: %i\n", groupConfigs[netId][lGrpId].rec_buffer_index);
+						//KERNEL_INFO("netId is: %i; lGrpId is: %i\n", netId, lGrpId);
 						groupConfigs[netId][lGrpId].vrec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = v;
 						groupConfigs[netId][lGrpId].urec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = u;
 						groupConfigs[netId][lGrpId].Irec_buffer[groupConfigs[netId][lGrpId].rec_buffer_index] = totalCurrent;
