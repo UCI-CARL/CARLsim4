@@ -112,3 +112,10 @@ void NeuronMonitor::setLogFile(const std::string& fileName) {
 	// tell new file id to core object
 	neuronMonitorCorePtr_->setNeuronFileId(fid);
 }
+
+void NeuronMonitor::print() {
+	std::string funcName = "print()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	neuronMonitorCorePtr_->print();
+}

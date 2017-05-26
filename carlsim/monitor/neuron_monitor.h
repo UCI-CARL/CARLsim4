@@ -78,6 +78,7 @@ class NeuronMonitor {
     void startRecording();
     void stopRecording();
     void setLogFile(const std::string& logFileName);
+	void print();
 
  private:
   //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.

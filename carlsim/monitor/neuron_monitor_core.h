@@ -106,6 +106,9 @@ public:
 
 	void writeNeuronFileHeader();
 
+	//! prints neuron states in human-readable format
+	void print();
+
  private:
     //! initialization method
 	void init();

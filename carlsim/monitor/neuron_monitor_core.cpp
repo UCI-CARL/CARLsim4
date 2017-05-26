@@ -265,3 +265,38 @@ std::vector<std::vector<float> > NeuronMonitorCore::getVectorI(){
 	assert(!isRecording());
 	return vectorI_;
 }
+
+void NeuronMonitorCore::print() {
+	assert(!isRecording());
+
+	// how many spike times to display per row
+	int dispVoltsPerRow = 7;
+
+	// spike times only available in AER mode
+	KERNEL_INFO("| Neur ID | volt");
+	KERNEL_INFO("|- - - - -|- - - - - - - - - - - - - - - - - - - - - -- - - - - - - - - - - - -")
+
+	for (int i=0; i<nNeurons_; i++) {
+		char buffer[100];
+#if defined(WIN32) || defined(WIN64)
+		_snprintf(buffer, 100, "| %7d | ", i);
+#else
+		snprintf(buffer, 100, "| %7d | ", i);
+#endif
+		int nV = vectorV_[i].size();
+		for (int j=0; j<nV; j++) {
+			char volts[10];
+#if defined(WIN32) || defined(WIN64)
+			_snprintf(volts, 10, "%4.4f", vectorV_[i][j]);
+#else
+			snprintf(volts, 10, "%4.4f", vectorV_[i][j]);
+#endif
+			strcat(buffer, volts);
+			if (j%dispVoltsPerRow == dispVoltsPerRow-1 && j<nV-1) {
+				KERNEL_INFO("%s",buffer);
+				strcpy(buffer,"|         |");
+			}
+		}
+		KERNEL_INFO("%s",buffer);
+	}
+}
