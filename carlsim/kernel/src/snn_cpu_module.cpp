@@ -867,6 +867,12 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
+// single integration step for voltage equation of LIF neurons
+inline
+float dvdtLIF(float volt, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep = 1.0f) {
+	return ((-volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
+}
+
 float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, float const1) {
 	float compCurrent = 0.0f;
 	for (int k = 0; k < groupConfigs[netid][lGrpId].numCompNeighbors; k++) {
@@ -923,6 +929,14 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				float a = runtimeData[netId].Izh_a[lNId];
 				float b = runtimeData[netId].Izh_b[lNId];
 
+				// pre-load LIF parameters
+				int lif_tau_m = runtimeData[netId].lif_tau_m[lNId];
+				int lif_tau_ref = runtimeData[netId].lif_tau_ref[lNId];
+				int lif_tau_ref_c = runtimeData[netId].lif_tau_ref_c[lNId];
+				float lif_vTh = runtimeData[netId].lif_vTh[lNId];
+				float lif_vReset = runtimeData[netId].lif_vReset[lNId];
+				float lif_gain = runtimeData[netId].lif_gain[lNId];
+				float lif_bias = runtimeData[netId].lif_bias[lNId];
 
 				float totalCurrent = runtimeData[netId].extCurrent[lNId];
 
@@ -947,7 +961,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 
 				switch (networkConfigs[netId].simIntegrationMethod) {
 				case FORWARD_EULER:
-					if (!groupConfigs[netId][lGrpId].withParamModel_9)
+					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF)
 					{	// 4-param Izhikevich
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
@@ -958,7 +972,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 							u += runtimeData[netId].Izh_d[lNId];
 						}
 					}
-					else
+					else if (!groupConfigs[netId][lGrpId].isLIF)
 					{	// 9-param Izhikevich
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
@@ -970,18 +984,47 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						}
 					}
 
-					if (v_next < -90.0f) v_next = -90.0f;
-
-					if (!groupConfigs[netId][lGrpId].withParamModel_9)
-					{
-						u += dudtIzhikevich4(v_next, u, a, b, timeStep);
+					else{
+						// LIF neuron
+						// update vpos for the current neuron
+						if (lif_tau_ref_c > 0){
+							if(j == 1){
+								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
+							}
+						}
+						else{
+							v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+							if (v_next > lif_vTh) {
+								runtimeData[netId].curSpike[lNId] = true;
+								v_next = lif_vReset;
+								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+							}
+						}
 					}
-					else
-					{
-						u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+
+					if (groupConfigs[netId][lGrpId].isLIF){
+						if (v_next < lif_vReset) v_next = lif_vReset;
+					}
+					else{
+						if (v_next < -90.0f) v_next = -90.0f;
+
+						if (!groupConfigs[netId][lGrpId].withParamModel_9)
+						{
+							u += dudtIzhikevich4(v_next, u, a, b, timeStep);
+						}
+						else
+						{
+							u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+						}
 					}
 					break;
 				case RUNGE_KUTTA4:
+
+					if (groupConfigs[netId][lGrpId].isLIF){
+						KERNEL_ERROR("RK4 integration is not supported in a simulation with LIF neurons!");
+						exitSimulation(1);
+					}
+
 					if (!groupConfigs[netId][lGrpId].withParamModel_9) {
 						// 4-param Izhikevich
 						float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);

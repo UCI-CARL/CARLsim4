@@ -2623,12 +2623,11 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_tau_m      = new int[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_tau_ref      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_ref_c      = new int[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_vTh      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_vReset      = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.lif_minFR      = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.lif_maxFR      = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.lif_minInt      = new float[managerRTDSize.maxNumNReg];
-	managerRuntimeData.lif_maxInt      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_gain      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_bias      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
@@ -2646,12 +2645,11 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_tau_m, 0, sizeof(int) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_tau_ref, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_ref_c, 0, sizeof(int) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_vTh, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_vReset, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.lif_minFR, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.lif_maxFR, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.lif_minInt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
-	memset(managerRuntimeData.lif_maxInt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_gain, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_bias, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
@@ -5465,15 +5463,40 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.Izh_vr[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr_sd * (float)drand48();
 	managerRuntimeData.Izh_vt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd * (float)drand48();
 	managerRuntimeData.Izh_vpeak[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd * (float)drand48();
-
 	managerRuntimeData.lif_tau_m[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m;
 	managerRuntimeData.lif_tau_ref[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref;
+	managerRuntimeData.lif_tau_ref_c[lNId] = 0;
 	managerRuntimeData.lif_vTh[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh;
 	managerRuntimeData.lif_vReset[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset;
-	managerRuntimeData.lif_minFR[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR;
-	managerRuntimeData.lif_maxFR[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR;
-	managerRuntimeData.lif_minInt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt;
-	managerRuntimeData.lif_maxInt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt;
+	
+	// calculate gain and bias for the lif neuron
+	if (groupConfigs[netId][lGrpId].isLIF){
+		float maxFiringRateRange = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR;
+		float xInterceptRange = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt;
+
+		if (maxFiringRateRange <= 0.000f && xInterceptRange <= 0.000f){
+			managerRuntimeData.lif_gain[lNId] = 1.0f;
+			managerRuntimeData.lif_bias[lNId] = 0.0f;	
+		}
+		else{
+			float rate = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR + maxFiringRateRange * (float)drand48();
+			float intercept = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt + xInterceptRange * (float)drand48();
+
+			float inv_tau_ref = 999999.9f;
+			if (groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref > 0){
+				inv_tau_ref = 1.0f /((float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref);
+			}
+			
+			if (rate > inv_tau_ref){
+				KERNEL_ERROR("Maximum firing rate of each LIF neuron must be less than the inverse of the refractory period (%f)", inv_tau_ref);
+				exitSimulation(1);		
+			}
+
+			float x = 1.0f / (1 - exp(((float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref - (1 / rate)) / (float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m));
+			managerRuntimeData.lif_gain[lNId] = (1.0f - x) / (intercept - 1.0f);
+			managerRuntimeData.lif_bias[lNId] = 1.0f - managerRuntimeData.lif_gain[lNId] * intercept;
+		}
+	}
 
 	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].isLIF ? managerRuntimeData.lif_vReset[lNId] : (groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId]);
 	managerRuntimeData.recovery[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? 0.0f : managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId];
@@ -5593,16 +5616,15 @@ void SNN::deleteManagerRuntimeData() {
 
 	if (managerRuntimeData.lif_tau_m!=NULL) delete[] managerRuntimeData.lif_tau_m;
 	if (managerRuntimeData.lif_tau_ref!=NULL) delete[] managerRuntimeData.lif_tau_ref;
+	if (managerRuntimeData.lif_tau_ref_c!=NULL) delete[] managerRuntimeData.lif_tau_ref_c;
 	if (managerRuntimeData.lif_vTh!=NULL) delete[] managerRuntimeData.lif_vTh;
 	if (managerRuntimeData.lif_vReset!=NULL) delete[] managerRuntimeData.lif_vReset;
-	if (managerRuntimeData.lif_minFR!=NULL) delete[] managerRuntimeData.lif_minFR;
-	if (managerRuntimeData.lif_maxFR!=NULL) delete[] managerRuntimeData.lif_maxFR;
-	if (managerRuntimeData.lif_minInt!=NULL) delete[] managerRuntimeData.lif_minInt;
-	if (managerRuntimeData.lif_maxInt!=NULL) delete[] managerRuntimeData.lif_maxInt;
+	if (managerRuntimeData.lif_gain!=NULL) delete[] managerRuntimeData.lif_gain;
+	if (managerRuntimeData.lif_bias!=NULL) delete[] managerRuntimeData.lif_bias;
 	managerRuntimeData.lif_tau_m=NULL; managerRuntimeData.lif_tau_ref=NULL; managerRuntimeData.lif_vTh=NULL;
-	managerRuntimeData.lif_vReset=NULL; managerRuntimeData.lif_minFR=NULL; managerRuntimeData.lif_maxFR=NULL;
-	managerRuntimeData.lif_minInt=NULL; managerRuntimeData.lif_maxInt=NULL;
-
+	managerRuntimeData.lif_vReset=NULL; managerRuntimeData.lif_gain=NULL; managerRuntimeData.lif_bias=NULL;
+	managerRuntimeData.lif_tau_ref_c=NULL;
+	
 	if (managerRuntimeData.Npre!=NULL) delete[] managerRuntimeData.Npre;
 	if (managerRuntimeData.Npre_plastic!=NULL) delete[] managerRuntimeData.Npre_plastic;
 	if (managerRuntimeData.Npost!=NULL) delete[] managerRuntimeData.Npost;

@@ -480,12 +480,11 @@ typedef struct RuntimeData_s {
 	
 	int* lif_tau_m; //!< parameters for a LIF spiking group
 	int* lif_tau_ref;
+	int* lif_tau_ref_c; // current refractory of the neuron
 	float* lif_vTh;
 	float* lif_vReset;
-	float* lif_minFR;
-	float* lif_maxFR;
-	float* lif_minInt;
-	float* lif_maxInt;
+	float* lif_gain;
+	float* lif_bias;
 
 	//! Keeps track of all neurons that spiked at current time.
 	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
