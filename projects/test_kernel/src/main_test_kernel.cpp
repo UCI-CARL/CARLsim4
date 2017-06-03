@@ -56,6 +56,8 @@ int main() {
 	// 4 parameter version
 	//sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
+	// test
+
 	// 9 parameter version
 	sim.setNeuronParameters(gExc, 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f); //RS
 																									  // set up a dummy (connection probability of 0) connection
@@ -85,6 +87,7 @@ int main() {
 
 	//smInput->startRecording();
 	smExc->startRecording();
+	nmExc->startRecording();
 
 	for (int t = 0; t < 1; t++) {
 		sim.runNetwork(0, 100, true);
@@ -94,8 +97,10 @@ int main() {
 
 	//smInput->stopRecording();
 	smExc->stopRecording();
+	nmExc->stopRecording();
 
 	smExc->print(true);
+	//nmExc->print();
 	//Expected Spike Times (4 param; extCurrent = 5; Euler; 2 steps / ms): 108 196 293 390 487 584 681 778 875 972
 	//Expected Spike Times (9 param; extCurrent = 70): 
 	//smInput->print(false);

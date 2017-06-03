@@ -786,6 +786,9 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
 			}
+			if (numNeuronMonitor) {
+				updateNeuronMonitor();
+			}
 			
 			shiftSpikeTables();
 		}
@@ -1144,6 +1147,11 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 	assert(getGroupNumNeurons(gGrpId) <= 100);
 	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 	int netId = groupConfigMDMap[gGrpId].netId;
+
+	printf("The global group id is: %i\n", gGrpId);
+	printf("The local group id is: %i\n", lGrpId);
+	printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
+	printf("The local group's lEndN is: %i\n", groupConfigs[netId][lGrpId].lEndN);
 
 	// check whether group already has a SpikeMonitor
 	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
@@ -6272,16 +6280,24 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 	if (!numNeuronMonitor)
 		return;
 
+	//printf("The global group id is: %i\n", gGrpId);
+
 	if (gGrpId == ALL) {
 		for (int gGrpId = 0; gGrpId < numGroups; gGrpId++)
 			updateNeuronMonitor(gGrpId);
 	}
 	else {
+		printf("UpdateNeuronMonitor is being executed!\n");
 		int netId = groupConfigMDMap[gGrpId].netId;
 		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 		// update spike monitor of a specific group
 		// find index in spike monitor arrays
 		int monitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
+
+		//printf("The local group id is: %i\n", lGrpId);
+		//printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
+		//printf("The local group's lEndN is: %i\n", groupConfigs[netId][lGrpId].lEndN);
+		//printf("RecBuffer index is: %i\n", groupConfigs[netId][lGrpId].rec_buffer_index);
 
 		// don't continue if no spike monitor enabled for this group
 		if (monitorId < 0) return;
@@ -6295,7 +6311,7 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 			return;
 
 		if (((long int)getSimTime()) - lastUpdate > 1000)
-			KERNEL_ERROR("updateSpikeMonitor(grpId=%d) must be called at least once every second", gGrpId);
+			KERNEL_ERROR("updateNeuronMonitor(grpId=%d) must be called at least once every second", gGrpId);
 
 		// AER buffer max size warning here.
 		// Because of C++ short-circuit evaluation, the last condition should not be evaluated
@@ -6313,8 +6329,8 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		// ???
 		
 		// find the time interval in which to update neuron state info
-		// usually, we call updateSpikeMonitor once every second, so the time interval is [0,1000)
-		// however, updateSpikeMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// usually, we call updateNeuronMonitor once every second, so the time interval is [0,1000)
+		// however, updateNeuronMonitor can be called at any time t \in [0,1000)... so we can have the cases
 		// [0,t), [t,1000), and even [t1, t2)
 		int numMsMin = lastUpdate % 1000; // lower bound is given by last time we called update
 		int numMsMax = getSimTimeMs(); // upper bound is given by current time
@@ -6337,12 +6353,14 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		bool writeNeuronStateToArray = nrnMonObj->isRecording();
 
 		// Read one neuron state value at a time from the buffer and put the neuron state values to an appopriate monitor buffer.
-		// Later the user may need need to dump these spikes to an output file
+		// Later the user may need need to dump these neuron state values to an output file
+		printf("The numMsMin is: %i; and numMsMax is: %i\n", numMsMin, numMsMax);
 		for (int t = numMsMin; t < numMsMax; t++) {
-			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId < groupConfigs[netId][lGrpId].lEndN; lNId++)
+			//printf("The lStartN is: %i; and lEndN is: %i\n", groupConfigs[netId][lGrpId].lStartN, groupConfigs[netId][lGrpId].lEndN);
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
 			{ 
-
 				float v, u, I;
+				int numNIds = groupConfigs[netId][lGrpId].lEndN - groupConfigs[netId][lGrpId].lStartN + 1;
 
 				// make sure neuron belongs to currently relevant group
 				int this_grpId = managerRuntimeData.grpIds[lNId];
@@ -6355,9 +6373,11 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 				int nId = lNId - groupConfigs[netId][lGrpId].lStartN;
 				assert(nId >= 0);
 
-				v = groupConfigs[netId][lGrpId].vrec_buffer[t + nId];
-				u = groupConfigs[netId][lGrpId].urec_buffer[t + nId];
-				I = groupConfigs[netId][lGrpId].Irec_buffer[t + nId];
+				v = groupConfigs[netId][lGrpId].vrec_buffer[t*numNIds + nId];
+				u = groupConfigs[netId][lGrpId].urec_buffer[t*numNIds + nId];
+				I = groupConfigs[netId][lGrpId].Irec_buffer[t*numNIds + nId];
+
+				//printf("Voltage recorded is: %f\n", v);
 
 				// current time is last completed second plus whatever is leftover in t
 				int time = currentTimeSec * 1000 + t;
