@@ -1,0 +1,23 @@
+#!/bin/bash
+
+
+echo "8000" >> "record.csv"
+./benchmark5 12000 3000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "80000" >> "record.csv"
+./benchmark5 80000 20000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "160000" >> "record.csv"
+./benchmark5 160000  40000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "320000" >> "record.csv"
+./benchmark5 320000 80000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "640000" >> "record.csv"
+./benchmark5 640000 160000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "1280000" >> "record.csv"
+./benchmark5 1280000 320000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+echo "2560000" >> "record.csv"
+./benchmark5 2560000 640000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
+
+
+#1. number of neurons in exc group; 2. number of neurons in inh group; 3. number of input neurons
+#4. simulate time; 5. input  fire rates; 6. weight from input to exc; 7. weight from exc to ing
+#8. weight from inh to exc; 9. recordfile; 10. randseed; 11. number of synapse per neuron
+#In this project, we just increase the size of group which means only first two parameters need to be changed
