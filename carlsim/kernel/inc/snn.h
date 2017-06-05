@@ -797,6 +797,7 @@ private:
 
 	// Abstract layer for trasferring data (local-to-local copy)
 	void fetchSpikeTables(int netId);
+	void fetchNeuronStateInfo(int netId, int lGrpId);
 	void fetchGroupState(int netId, int lGrpId);
 	void fetchWeightState(int netId, int lGrpId);
 	void fetchGrpIdsLookupArray(int netId);
@@ -808,6 +809,8 @@ private:
 	void fetchExtFiringTable(int netId);
 	void fetchTimeTable(int netId);
 	void writeBackTimeTable(int netId);
+
+	void retrieveNeuronStateInfo(int netId, int lGrpId);
 
 #ifndef __NO_CUDA__
 	// GPU implementation for setupNetwork() and runNetwork()
@@ -890,6 +893,7 @@ private:
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
+	void copyNeuronStateInfo(int netId, cudaMemcpyKind kind);
 	void copyTimeTable(int netId, cudaMemcpyKind kind);
 	void copyExtFiringTable(int netId, cudaMemcpyKind kind);
 #else

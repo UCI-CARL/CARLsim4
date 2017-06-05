@@ -924,7 +924,6 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				float a = runtimeData[netId].Izh_a[lNId];
 				float b = runtimeData[netId].Izh_b[lNId];
 
-
 				float totalCurrent = runtimeData[netId].extCurrent[lNId];
 
 				if (networkConfigs[netId].sim_with_conductances) {

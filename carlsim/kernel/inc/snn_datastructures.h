@@ -437,11 +437,12 @@ typedef struct GroupConfigRT_s {
 	float compCoupling[4];
 	short numCompNeighbors;
 
-	// neuron state recording
+	// CPU side neuron state recording
 	int neuronMonitorId;
 	float* vrec_buffer;
 	float* urec_buffer;
 	float* Irec_buffer;
+
 	int rec_buffer_index;
 } GroupConfigRT;
 
@@ -479,6 +480,16 @@ typedef struct RuntimeData_s {
 	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
 	//! so that we don't produce more than 1 spike per ms.
 	bool* curSpike;
+
+	// GPU side neuron state recording
+	float* vrec_buffer;
+	float* urec_buffer;
+	float* Irec_buffer;
+
+	int* nId_buffer;
+	int* grpId_buffer;
+
+	int rec_buffer_index;
 
 	// conductances and stp values
 	float* gNMDA;   //!< conductance of gNMDA
