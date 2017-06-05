@@ -1,0 +1,27 @@
+#!/bin/bash
+
+spk='0 1'
+con='0 1'
+
+for s in $spk # number of neurons in group1, which defines the workload
+do
+	for c in $con
+	do 
+		echo $s $c >> "record.csv"
+		./benchmark6 10000 10 10 6.5 1.9921  "record.csv" 42 100  "CPU"  "Fixed" $s $c
+		./benchmark6 10000 10 10 6.5 1.9921  "record.csv" 42 100  "CPU"  "STP" $s $c
+		./benchmark6 10000 10 10 6.5 1.9921  "record.csv" 42 100  "CPU"  "STDP" $s $c
+		./benchmark6 10000 10 10 6.5 1.9921  "record.csv" 42 100  "CPU"  "Homeostasis" $s $c
+		./benchmark6 10000 10 10 6.5 1.9921  "record.csv" 42 100  "CPU"  "Fixed" $s $c
+
+		#15 parameters in total.
+		#1,number of neurons in group1 | 2, number of neurons in group2
+		#3,number of neurons in input group | 4, simulate time 
+		#5, input fire rate | 6, connection weight of input to exc1
+		#7, connection weight of exc1 to exc2
+		#8, record file | 9, randseed  | 10, number of synapse per neuron
+		#11, mode for group1 | 12, mode for group2 | 13, id of core2 
+		#14, whether need weight tuning | 15, connection type
+	done
+done
+
