@@ -1413,8 +1413,8 @@ __global__ void kernel_doCurrentUpdateD2(int simTimeMs, int simTimeSec, int simT
 			while (delId < sh_delayLength[pos]) {
 				// get the post synaptic information for specific delay
 				SynInfo postInfo = runtimeDataGPU.postSynapticIds[sh_neuronOffsetTable[pos] + sh_delayIndexStart[pos] + delId];
-				int postNId = GET_CONN_NEURON_ID(postInfo); // get post-neuron id
-				int synId = GET_CONN_SYN_ID(postInfo);      // get synaptic id
+				int postNId = postInfo.nId; // get post-neuron id
+				int synId = postInfo.sId;      // get synaptic id
 
 				if (postNId < networkConfigGPU.numN) // test if post-neuron is a local neuron
 					generatePostSynapticSpike(simTime, sh_firingId[pos] /* preNId */, postNId, synId);
@@ -1518,8 +1518,8 @@ __global__ void kernel_doCurrentUpdateD1(int simTimeMs, int simTimeSec, int simT
 			while (delId < sh_delayLength[warpId]) {
 				// get the post synaptic information for specific delay
 				SynInfo postInfo = runtimeDataGPU.postSynapticIds[offset + sh_delayIndexStart[warpId] + delId];
-				int postNId = GET_CONN_NEURON_ID(postInfo); // get post-neuron id
-				int synId = GET_CONN_SYN_ID(postInfo);      // get synaptic id
+				int postNId = postInfo.nId; // get post-neuron id
+				int synId = postInfo.sId;      // get synaptic id
 
 				if (postNId < networkConfigGPU.numN) // test if post-neuron is a local neuron
 					generatePostSynapticSpike(simTime, sh_firingId[warpId] /* preNId */, postNId, synId);
