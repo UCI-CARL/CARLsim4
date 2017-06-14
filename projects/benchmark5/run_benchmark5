@@ -1,5 +1,8 @@
 #!/bin/bash
-
+#$ -N Benchmark5
+#$ -q drg
+#$ -pe openmp 64-64
+#$ -m beas
 
 echo "8000" >> "record.csv"
 ./benchmark5 12000 3000 100 10 10 6.5 0.95  5.05  "record.csv" 42 100
