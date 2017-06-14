@@ -377,10 +377,10 @@ void SNN::copyExtFiringTable(int netId) {
 			// get synaptic info...
 			SynInfo postInfo = runtimeData[netId].postSynapticIds[offset + idx_d];
 
-			int postNId = GET_CONN_NEURON_ID(postInfo);
+			int postNId = postInfo.nId;
 			assert(postNId < networkConfigs[netId].numNAssigned);
 
-			int synId = GET_CONN_SYN_ID(postInfo);
+			int synId = postInfo.sId;
 			assert(synId < (runtimeData[netId].Npre[postNId]));
 
 			if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron
@@ -441,10 +441,10 @@ void SNN::copyExtFiringTable(int netId) {
 				// get synaptic info...
 				SynInfo postInfo = runtimeData[netId].postSynapticIds[offset + idx_d];
 
-				int postNId = GET_CONN_NEURON_ID(postInfo);
+				int postNId = postInfo.nId;
 				assert(postNId < networkConfigs[netId].numNAssigned);
 
-				int synId = GET_CONN_SYN_ID(postInfo);
+				int synId = postInfo.sId;
 				assert(synId < (runtimeData[netId].Npre[postNId]));
 
 				if (postNId < networkConfigs[netId].numN) // test if post-neuron is a local neuron

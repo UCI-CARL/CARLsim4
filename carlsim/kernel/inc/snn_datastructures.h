@@ -87,7 +87,8 @@ typedef struct DelayInfo_s {
 } DelayInfo;
 
 typedef struct SynInfo_s {
-	int	gsId; //!< group id and synapse id
+	int	gId; //!< group id and synapse id
+	int sId;
 	int nId; //!< neuron id
 } SynInfo;
 

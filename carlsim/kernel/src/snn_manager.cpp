@@ -5454,7 +5454,9 @@ inline SynInfo SNN::SET_CONN_ID(int nId, int sId, int grpId) {
 	SynInfo synInfo;
 	//p.postId = (((sid)<<CONN_SYN_NEURON_BITS)+((nid)&CONN_SYN_NEURON_MASK));
 	//p.grpId  = grpId;
-	synInfo.gsId = ((grpId << NUM_SYNAPSE_BITS) | sId);
+	//synInfo.gsId = ((grpId << NUM_SYNAPSE_BITS) | sId);
+	synInfo.gId = grpId;
+	synInfo.sId = sId;
 	synInfo.nId = nId;
 
 	return synInfo;
@@ -5608,8 +5610,8 @@ std::vector< std::vector<float> > SNN::getWeightMatrix2D(short int connId) {
 				continue;
 
 			// find pre-neuron ID and update ConnectionMonitor container
-			int lNIdPre = GET_CONN_NEURON_ID(managerRuntimeData.preSynapticIds[pos_ij]);
-			int lGrpIdPre = GET_CONN_GRP_ID(managerRuntimeData.preSynapticIds[pos_ij]);
+			int lNIdPre = managerRuntimeData.preSynapticIds[pos_ij].nId;
+			int lGrpIdPre = managerRuntimeData.preSynapticIds[pos_ij].gId;
 			wtConnId[lNIdPre - groupConfigs[netIdPost][lGrpIdPre].lStartN][lNIdPost - groupConfigs[netIdPost][lGrpIdPost].lStartN] =
 				fabs(managerRuntimeData.wt[pos_ij]);
 		}
