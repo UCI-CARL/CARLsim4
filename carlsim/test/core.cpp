@@ -642,7 +642,7 @@ TEST(Core, synapseIdOverflow) {
 
 	CARLsim sim("Core.synapseIdOverflow", HYBRID_MODE, SILENT, 0, 42);
 
-	int gExc = sim.createGroup("exc", 80000, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc = sim.createGroup("exc", 65536, EXCITATORY_NEURON, 0, CPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 	int gInput = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, 0, CPU_CORES);
 
