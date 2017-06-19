@@ -93,4 +93,6 @@
 #define UNKNOWN_LOGGER_ERROR				0x8001
 #define NO_LOGGER_DIR_ERROR					0x8002
 
+#define ID_OVERFLOW_ERROR					0x8003
+
 #endif
