@@ -928,6 +928,7 @@ private:
 	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) { assert(false); }
 	void copySpikeTables(int netId, cudaMemcpyKind kind) { assert(false); }
+	void copyNeuronStateInfo(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyTimeTable(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyExtFiringTable(int netId, cudaMemcpyKind kind) { assert(false); }
 #endif
