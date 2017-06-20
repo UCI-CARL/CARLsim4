@@ -87,7 +87,7 @@ __device__ unsigned int	spikeCountD1SecGPU;
 __device__ unsigned int spikeCountD2GPU;
 __device__ unsigned int spikeCountD1GPU;
 
-__device__ unsigned int rec_buffer_index;
+__device__ unsigned int recBufferIdx;
 
 __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
@@ -223,7 +223,7 @@ __global__ void kernel_initGPUMemory() {
 		spikeCountD2GPU = 0;
 		spikeCountD1GPU = 0;
 
-		rec_buffer_index = 0;
+		recBufferIdx = 0;
 
 		secD2fireCntTest = 0;
 		secD1fireCntTest = 0;
@@ -1050,13 +1050,14 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			runtimeDataGPU.current[nid] = 0.0f;
 		}
 
+		// FIXME: bug, race condition
 		// record neuron state
-		runtimeDataGPU.vrec_buffer[rec_buffer_index] = v;
-		runtimeDataGPU.urec_buffer[rec_buffer_index] = u;
-		runtimeDataGPU.Irec_buffer[rec_buffer_index] = totalCurrent;
-		runtimeDataGPU.nId_buffer[rec_buffer_index] = nid;
-		runtimeDataGPU.nId_buffer[rec_buffer_index] = grpId;
-		rec_buffer_index++;
+		runtimeDataGPU.nVBuffer[recBufferIdx] = v;
+		runtimeDataGPU.nUBuffer[recBufferIdx] = u;
+		runtimeDataGPU.nIBuffer[recBufferIdx] = totalCurrent;
+		runtimeDataGPU.nIdBuffer[recBufferIdx] = nid;
+		runtimeDataGPU.grpIdBuffer[recBufferIdx] = grpId;
+		recBufferIdx++;
 	}
 
 	runtimeDataGPU.nextVoltage[nid] = v_next;
@@ -3321,23 +3322,23 @@ void SNN::copyNeuronStateInfo(int netId, cudaMemcpyKind kind) {
 	int length = LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups;
 	if (kind == cudaMemcpyHostToDevice)
 	{
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->vrec_buffer, sizeof(float) * length));
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->urec_buffer, sizeof(float) * length));
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Irec_buffer, sizeof(float) * length));
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nId_buffer, sizeof(int) * length));
-		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->grpId_buffer, sizeof(int) * length));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nVBuffer, sizeof(float) * length));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nUBuffer, sizeof(float) * length));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nIBuffer, sizeof(float) * length));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nIdBuffer, sizeof(int) * length));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->grpIdBuffer, sizeof(int) * length));
 	}
 	else if (kind == cudaMemcpyDeviceToHost)
 	{
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.vrec_buffer, runtimeData[netId].vrec_buffer, sizeof(float) * length, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.urec_buffer, runtimeData[netId].urec_buffer, sizeof(float) * length, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.Irec_buffer, runtimeData[netId].Irec_buffer, sizeof(float) * length, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.nId_buffer, runtimeData[netId].nId_buffer, sizeof(int) * length, kind));
-		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.grpId_buffer, runtimeData[netId].grpId_buffer, sizeof(int) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.nVBuffer, runtimeData[netId].nVBuffer, sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.nUBuffer, runtimeData[netId].nUBuffer, sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.nIBuffer, runtimeData[netId].nIBuffer, sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.nIdBuffer, runtimeData[netId].nIdBuffer, sizeof(int) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(managerRuntimeData.grpIdBuffer, runtimeData[netId].grpIdBuffer, sizeof(int) * length, kind));
 
-		// reset rec_buffer_index on gpu side
+		// reset recBufferIdx on gpu side
 		int zero = 0;
-		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(rec_buffer_index, &zero, sizeof(int), 0, cudaMemcpyHostToDevice));
+		CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(recBufferIdx, &zero, sizeof(int), 0, cudaMemcpyHostToDevice));
 	}
 }
 

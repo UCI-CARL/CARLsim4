@@ -1186,22 +1186,6 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 		// also inform the grp that it is being monitored...
 		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
 
-		//KERNEL_INFO("A new neuron monitor has been built for netId: %i; lGrpId: %i\n", netId, lGrpId);
-		groupConfigs[netId][lGrpId].neuronMonitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
-		if (groupConfigs[netId][lGrpId].neuronMonitorId >= 0)
-		{
-			groupConfigs[netId][lGrpId].vrec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
-			//printf("Vrec_buffer at index 0 directly after initialization is: %f", groupConfigs[netId][lGrpId].vrec_buffer[0]);
-			groupConfigs[netId][lGrpId].urec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
-			groupConfigs[netId][lGrpId].Irec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000];
-			memset(groupConfigs[netId][lGrpId].vrec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
-			//printf("Vrec_buffer at index 0 directly after memset is: %f", groupConfigs[netId][lGrpId].vrec_buffer[0]);
-			memset(groupConfigs[netId][lGrpId].urec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
-			memset(groupConfigs[netId][lGrpId].Irec_buffer, 0, sizeof(float)*LARGE_NEURON_MON_GRP_SIZE * 1000);
-		}
-
-		//KERNEL_INFO("The value of vrec_buffer at index 0 is: %f\n", groupConfigs[netId][lGrpId].vrec_buffer[0]);
-
 		numNeuronMonitor++;
 		KERNEL_INFO("NeuronMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 
@@ -2673,16 +2657,16 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.totalCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
 
-	managerRuntimeData.vrec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.urec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.Irec_buffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.nId_buffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.grpId_buffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	memset(managerRuntimeData.vrec_buffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.urec_buffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.Irec_buffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.nId_buffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.grpId_buffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	managerRuntimeData.nVBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
+	managerRuntimeData.nUBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
+	managerRuntimeData.nIBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
+	managerRuntimeData.nIdBuffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
+	managerRuntimeData.grpIdBuffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
+	memset(managerRuntimeData.nVBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	memset(managerRuntimeData.nUBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	memset(managerRuntimeData.nIBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	memset(managerRuntimeData.nIdBuffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	memset(managerRuntimeData.grpIdBuffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2891,9 +2875,6 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].compCouplingDown = groupConfigMap[gGrpId].compCouplingDown;
 			memset(&groupConfigs[netId][lGrpId].compNeighbors, 0, sizeof(groupConfigs[netId][lGrpId].compNeighbors[0])*MAX_NUM_COMP_CONN);
 			memset(&groupConfigs[netId][lGrpId].compCoupling, 0, sizeof(groupConfigs[netId][lGrpId].compCoupling[0])*MAX_NUM_COMP_CONN);
-
-			groupConfigs[netId][lGrpId].neuronMonitorId = grpIt->neuronMonitorId;
-			groupConfigs[netId][lGrpId].rec_buffer_index = 0;
 
 			//!< homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
@@ -4507,11 +4488,11 @@ void SNN::retrieveNeuronStateInfo(int netId, int lGrpId)
 	//printf("numNeurons in the network is: %i\n", numNeurons);
 	for (int i = 0; i < LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups; i++)
 	{
-		//if(managerRuntimeData.vrec_buffer[i] != 0)
-		//	printf("Voltage retrieved from GPU is: %f\n", managerRuntimeData.vrec_buffer[i]);
+		//if(managerRuntimeData.nVBuffer[i] != 0)
+		//	printf("Voltage retrieved from GPU is: %f\n", managerRuntimeData.nVBuffer[i]);
 		//printf("The value of i in retrieveNeuronStateInfo is: %i\n", i);
-		int nId = managerRuntimeData.nId_buffer[i];
-		int grpId = managerRuntimeData.grpId_buffer[i];
+		int nId = managerRuntimeData.nIdBuffer[i];
+		int grpId = managerRuntimeData.grpIdBuffer[i];
 		if (i%numNeurons_total == 0)
 			j++;
 		//printf("The value of j in retrieveNeuronStateInfo is: %i\n", j);
@@ -4528,9 +4509,9 @@ void SNN::retrieveNeuronStateInfo(int netId, int lGrpId)
 
 			// find the 0-indexed neuron id
 			int lrnId = nId - groupConfigs[netId][lGrpId].lStartN;
-			groupConfigs[netId][lGrpId].vrec_buffer[j*numNeurons + lrnId] = managerRuntimeData.vrec_buffer[i];
-			groupConfigs[netId][lGrpId].urec_buffer[j*numNeurons + lrnId] = managerRuntimeData.urec_buffer[i];
-			groupConfigs[netId][lGrpId].Irec_buffer[j*numNeurons + lrnId] = managerRuntimeData.Irec_buffer[i];
+			groupConfigs[netId][lGrpId].nVBuffer[j*numNeurons + lrnId] = managerRuntimeData.nVBuffer[i];
+			groupConfigs[netId][lGrpId].nUBuffer[j*numNeurons + lrnId] = managerRuntimeData.nUBuffer[i];
+			groupConfigs[netId][lGrpId].nIBuffer[j*numNeurons + lrnId] = managerRuntimeData.nIBuffer[i];
 		}
 	}
 	printf("Finished retrieveNeuronStateInfo!");
@@ -5655,15 +5636,15 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
 	if (managerRuntimeData.totalCurrent != NULL) delete[] managerRuntimeData.totalCurrent;
 	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
-	if (managerRuntimeData.vrec_buffer != NULL) delete[] managerRuntimeData.vrec_buffer;
-	if (managerRuntimeData.urec_buffer != NULL) delete[] managerRuntimeData.urec_buffer;
-	if (managerRuntimeData.Irec_buffer != NULL) delete[] managerRuntimeData.Irec_buffer;
-	if (managerRuntimeData.nId_buffer != NULL) delete[] managerRuntimeData.nId_buffer;
-	if (managerRuntimeData.grpId_buffer != NULL) delete[] managerRuntimeData.grpId_buffer;
+	if (managerRuntimeData.nVBuffer != NULL) delete[] managerRuntimeData.nVBuffer;
+	if (managerRuntimeData.nUBuffer != NULL) delete[] managerRuntimeData.nUBuffer;
+	if (managerRuntimeData.nIBuffer != NULL) delete[] managerRuntimeData.nIBuffer;
+	if (managerRuntimeData.nIdBuffer != NULL) delete[] managerRuntimeData.nIdBuffer;
+	if (managerRuntimeData.grpIdBuffer != NULL) delete[] managerRuntimeData.grpIdBuffer;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
 	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.totalCurrent = NULL; managerRuntimeData.curSpike = NULL;
-	managerRuntimeData.vrec_buffer = NULL; managerRuntimeData.urec_buffer = NULL; managerRuntimeData.Irec_buffer = NULL;
-	managerRuntimeData.nId_buffer = NULL; managerRuntimeData.grpId_buffer = NULL;
+	managerRuntimeData.nVBuffer = NULL; managerRuntimeData.nUBuffer = NULL; managerRuntimeData.nIBuffer = NULL;
+	managerRuntimeData.nIdBuffer = NULL; managerRuntimeData.grpIdBuffer = NULL;
 
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
@@ -6366,7 +6347,7 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		//printf("The local group id is: %i\n", lGrpId);
 		//printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
 		//printf("The local group's lEndN is: %i\n", groupConfigs[netId][lGrpId].lEndN);
-		//printf("RecBuffer index is: %i\n", groupConfigs[netId][lGrpId].rec_buffer_index);
+		//printf("RecBuffer index is: %i\n", groupConfigs[netId][lGrpId].recBufferIdx);
 
 		// don't continue if no spike monitor enabled for this group
 		if (monitorId < 0) return;
@@ -6446,9 +6427,9 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 				assert(nId >= 0);
 
 
-				v = groupConfigs[netId][lGrpId].vrec_buffer[adjustedTime*numNIds + nId];
-				u = groupConfigs[netId][lGrpId].urec_buffer[adjustedTime*numNIds + nId];
-				I = groupConfigs[netId][lGrpId].Irec_buffer[adjustedTime*numNIds + nId];
+				v = groupConfigs[netId][lGrpId].nVBuffer[adjustedTime*numNIds + nId];
+				u = groupConfigs[netId][lGrpId].nUBuffer[adjustedTime*numNIds + nId];
+				I = groupConfigs[netId][lGrpId].nIBuffer[adjustedTime*numNIds + nId];
 
 				//printf("Voltage recorded is: %f\n", v);
 
@@ -6474,10 +6455,10 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		if (nrnFileId != NULL) // flush spike file
 			fflush(nrnFileId);
 
-		// reset rec_buffer_index & all the buffers
-		groupConfigs[netId][lGrpId].rec_buffer_index = 0;
+		// reset recBufferIdx & all the buffers
+		groupConfigs[netId][lGrpId].recBufferIdx = 0;
 
-		// update the rec_buffer_index on gpu
+		// update the recBufferIdx on gpu
 		// this is done within copyNeuronStateInfo
 	}
 }
