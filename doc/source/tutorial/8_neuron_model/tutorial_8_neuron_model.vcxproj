@@ -30,10 +30,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main_random_spnet.cpp" />
+    <ClCompile Include="src\main_neuron_model.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{AC28A77C-1D49-4060-93B7-20B48BC7B872}</ProjectGuid>
+    <ProjectGuid>{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}</ProjectGuid>
     <RootNamespace>random</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
