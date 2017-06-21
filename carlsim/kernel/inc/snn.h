@@ -880,6 +880,7 @@ private:
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
 	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
@@ -893,7 +894,6 @@ private:
 		unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 		unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2);
 	void copySpikeTables(int netId, cudaMemcpyKind kind);
-	void copyNeuronStateInfo(int netId, cudaMemcpyKind kind);
 	void copyTimeTable(int netId, cudaMemcpyKind kind);
 	void copyExtFiringTable(int netId, cudaMemcpyKind kind);
 #else
@@ -915,6 +915,7 @@ private:
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) { assert(false); }
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
@@ -928,7 +929,6 @@ private:
 	unsigned int* spikeCountD1, unsigned int* spikeCountD2,
 	unsigned int* spikeCountExtD1, unsigned int* spikeCountExtD2) { assert(false); }
 	void copySpikeTables(int netId, cudaMemcpyKind kind) { assert(false); }
-	void copyNeuronStateInfo(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyTimeTable(int netId, cudaMemcpyKind kind) { assert(false); }
 	void copyExtFiringTable(int netId, cudaMemcpyKind kind) { assert(false); }
 #endif

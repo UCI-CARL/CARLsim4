@@ -3312,13 +3312,27 @@ void SNN::copySpikeTables(int netId, cudaMemcpyKind kind) {
 }
 
 /*!
-* \brief This function fetch neuron state information in the local network specified by netId
+* \brief This function fetch neuron state buffer in the local network specified by netId
 *
-* \param[in] netId the id of local network of which neuron state information is copied to group configs
+* This function:
+* (allocate and) copy 
+*
+* This funcion is called by copyNeuronState()
+*
+* \param[in] netId the id of a local network, which is the same as the device (GPU) id
+* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+* \param[in] dest pointer to runtime data desitnation
+* \param[in] src pointer to runtime data source
+* \param[in] kind the direction of copy
+* \param[in] allocateMem a flag indicates whether allocating memory space before copying
+*
+* \sa copyNeuronState
+* \since v4.0
 */
-void SNN::copyNeuronStateInfo(int netId, cudaMemcpyKind kind) {
+void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
+	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId, 0); // check that the destination pointer is properly allocated..
 
-	RuntimeData* dest = &runtimeData[netId];
 	int length = LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups;
 	if (kind == cudaMemcpyHostToDevice)
 	{
@@ -3514,9 +3528,8 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize (copy from managerRuntimeData) runtimeData[0].gGABAa, runtimeData[0].gGABAb, runtimeData[0].gAMPA, runtimeData[0].gNMDA
 	// initialize (copy from SNN) runtimeData[0].Izh_a, runtimeData[0].Izh_b, runtimeData[0].Izh_c, runtimeData[0].Izh_d
 	// initialize (copy form SNN) runtimeData[0].baseFiring, runtimeData[0].baseFiringInv
+	// initialize 
 	copyNeuronState(netId, ALL, &runtimeData[netId], cudaMemcpyHostToDevice, true);
-
-	copyNeuronStateInfo(netId, cudaMemcpyHostToDevice);
 
 	// copy STP state, considered as neuron state
 	if (sim_with_stp) {
