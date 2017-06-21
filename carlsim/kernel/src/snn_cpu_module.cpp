@@ -1071,12 +1071,12 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						//KERNEL_INFO("Reached inside the neuron state recording code in global state update!");
 						//KERNEL_INFO("Rec buffer index value is: %i\n", groupConfigs[netId][lGrpId].recBufferIdx);
 						//KERNEL_INFO("netId is: %i; lGrpId is: %i\n", netId, lGrpId);
-						runtimeData[netId].nVBuffer[runtimeData[netId].recBufferIdx] = v;
-						runtimeData[netId].nUBuffer[runtimeData[netId].recBufferIdx] = u;
-						runtimeData[netId].nIBuffer[runtimeData[netId].recBufferIdx] = totalCurrent;
-						runtimeData[netId].nIdBuffer[runtimeData[netId].recBufferIdx] = lNId;
-						runtimeData[netId].grpIdBuffer[runtimeData[netId].recBufferIdx] = lGrpId;
-						runtimeData[netId].recBufferIdx++;
+						if (lNId < MAX_NEURON_MON_GRP_SZIE) {
+							int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs;
+							runtimeData[netId].nVBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = v;
+							runtimeData[netId].nUBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = u;
+							runtimeData[netId].nIBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = totalCurrent;
+						}
 						//KERNEL_INFO("Finished executing the neuron state recording code in global state update!");
 					}
 				}
@@ -1311,6 +1311,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	// initialize (copy from managerRuntimeData) runtimeData[0].gGABAa, runtimeData[0].gGABAb, runtimeData[0].gAMPA, runtimeData[0].gNMDA
 	// initialize (copy from SNN) runtimeData[0].Izh_a, runtimeData[0].Izh_b, runtimeData[0].Izh_c, runtimeData[0].Izh_d
 	// initialize (copy form SNN) runtimeData[0].baseFiring, runtimeData[0].baseFiringInv
+	// initialize (copy from SNN) runtimeData[0].n(V,U,I)Buffer[]
 	copyNeuronState(netId, ALL, &runtimeData[netId], true);
 
 	// copy STP state, considered as neuron state
@@ -1630,6 +1631,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 
 	copyNeuronParameters(netId, lGrpId, dest, allocateMem);
 
+	if (networkConfigs[netId].sim_with_nm)
+		copyNeuronStateBuffer(netId, lGrpId, dest, &managerRuntimeData, allocateMem);
+
 	if (sim_with_homeostasis) {
 		//Included to enable homeostasis in CPU_MODE.
 		// Avg. Firing...
@@ -1818,6 +1822,51 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 			dest->gGABAb = new float[length];
 		memcpy(&dest->gGABAb[ptrPos + destOffset], &src->gGABAb[ptrPos], sizeof(float) * length);
 	}
+}
+
+/*!
+* \brief This function fetch neuron state buffer in the local network specified by netId
+*
+* This function:
+* (allocate and) copy
+*
+* This funcion is called by copyNeuronState()
+*
+* \param[in] netId the id of a local network, which is the same as the Core (CPU) id
+* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+* \param[in] dest pointer to runtime data desitnation
+* \param[in] src pointer to runtime data source
+* \param[in] allocateMem a flag indicates whether allocating memory space before copying
+*
+* \sa copyNeuronState
+* \since v4.0
+*/
+void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
+	int ptrPos, length;
+
+	if (lGrpId == ALL) {
+		ptrPos = 0;
+		length = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000;
+	}
+	else {
+		ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
+		length = MAX_NEURON_MON_GRP_SZIE * 1000;
+	}
+	assert(length <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
+	assert(length > 0);
+
+	// neuron information
+	assert(src->nVBuffer != NULL);
+	if (allocateMem) dest->nVBuffer = new float[length];
+	memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
+
+	assert(src->nUBuffer != NULL);
+	if (allocateMem) dest->nUBuffer = new float[length];
+	memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
+
+	assert(src->nIBuffer != NULL);
+	if (allocateMem) dest->nIBuffer = new float[length];
+	memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
 }
 
 /*!
@@ -2402,6 +2451,12 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].grp5HTBuffer;
 	delete [] runtimeData[netId].grpAChBuffer;
 	delete [] runtimeData[netId].grpNEBuffer;
+
+	if (networkConfigs[netId].sim_with_nm) {
+		delete[] runtimeData[netId].nVBuffer;
+		delete[] runtimeData[netId].nUBuffer;
+		delete[] runtimeData[netId].nIBuffer;
+	}
 
 	delete [] runtimeData[netId].grpIds;
 

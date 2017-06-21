@@ -1143,11 +1143,12 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 
 // record neuron state information, return a NeuronInfo object
 NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
-	// check if group has more than 100 neurons, if so raise an error
-	assert(getGroupNumNeurons(gGrpId) <= 100);
 	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
 	int netId = groupConfigMDMap[gGrpId].netId;
 
+	if (getGroupNumNeurons(gGrpId) > 128) {
+		KERNEL_WARN("Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor");
+	}
 	//printf("The global group id is: %i\n", gGrpId);
 	//printf("The local group id is: %i\n", lGrpId);
 	//printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
@@ -1164,9 +1165,7 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 
 		KERNEL_INFO("NeuronMonitor updated for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 		return nrnMonObj;
-	}
-	else {
-
+	} else {
 		// create new NeuronMonitorCore object in any case and initialize analysis components
 		// nrnMonObj destructor (see below) will deallocate it
 		NeuronMonitorCore* nrnMonCoreObj = new NeuronMonitorCore(this, numNeuronMonitor, gGrpId);
@@ -2657,16 +2656,12 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.totalCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
 
-	managerRuntimeData.nVBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.nUBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.nIBuffer = new float[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.nIdBuffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	managerRuntimeData.grpIdBuffer = new int[LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups];
-	memset(managerRuntimeData.nVBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.nUBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.nIBuffer, 0, sizeof(float) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.nIdBuffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
-	memset(managerRuntimeData.grpIdBuffer, 0, sizeof(int) * LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups);
+	managerRuntimeData.nVBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups]; // 1 second v buffer
+	managerRuntimeData.nUBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	managerRuntimeData.nIBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	memset(managerRuntimeData.nVBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nUBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nIBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2954,6 +2949,13 @@ void SNN::generateRuntimeNetworkConfigs() {
 			networkConfigs[netId].sim_with_stdp = sim_with_stdp;
 			networkConfigs[netId].sim_with_stp = sim_with_stp;
 			networkConfigs[netId].sim_in_testing = sim_in_testing;
+
+			// search for active neuron monitor
+			networkConfigs[netId].sim_with_nm = false;
+			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->netId == netId && grpIt->neuronMonitorId >= 0)
+					networkConfigs[netId].sim_with_nm = true;
+			}
 
 			// stdp, da-stdp configurations
 			networkConfigs[netId].stdpScaleFactor = stdpScaleFactor_;
@@ -4486,7 +4488,7 @@ void SNN::retrieveNeuronStateInfo(int netId, int lGrpId)
 	int j = 0;
 	int numNeurons_total = networkConfigs[netId].numN;
 	//printf("numNeurons in the network is: %i\n", numNeurons);
-	for (int i = 0; i < LARGE_NEURON_MON_GRP_SIZE * 1000 * numGroups; i++)
+	for (int i = 0; i < MAX_NEURON_MON_GRP_SZIE * 1000 * numGroups; i++)
 	{
 		//if(managerRuntimeData.nVBuffer[i] != 0)
 		//	printf("Voltage retrieved from GPU is: %f\n", managerRuntimeData.nVBuffer[i]);
@@ -4499,7 +4501,7 @@ void SNN::retrieveNeuronStateInfo(int netId, int lGrpId)
 		// if this is a group of interest
 		if (grpId == lGrpId)
 		{
-			if (j*(numNeurons_total +1) >= LARGE_NEURON_MON_GRP_SIZE * 1000)
+			if (j*(numNeurons_total +1) >= MAX_NEURON_MON_GRP_SZIE * 1000)
 			{
 				//printf("Reached break statement in retrieveNeuronStateInfo!");
 				break;
@@ -5639,13 +5641,9 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.nVBuffer != NULL) delete[] managerRuntimeData.nVBuffer;
 	if (managerRuntimeData.nUBuffer != NULL) delete[] managerRuntimeData.nUBuffer;
 	if (managerRuntimeData.nIBuffer != NULL) delete[] managerRuntimeData.nIBuffer;
-	if (managerRuntimeData.nIdBuffer != NULL) delete[] managerRuntimeData.nIdBuffer;
-	if (managerRuntimeData.grpIdBuffer != NULL) delete[] managerRuntimeData.grpIdBuffer;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
 	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.totalCurrent = NULL; managerRuntimeData.curSpike = NULL;
 	managerRuntimeData.nVBuffer = NULL; managerRuntimeData.nUBuffer = NULL; managerRuntimeData.nIBuffer = NULL;
-	managerRuntimeData.nIdBuffer = NULL; managerRuntimeData.grpIdBuffer = NULL;
-
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
@@ -6454,12 +6452,6 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 
 		if (nrnFileId != NULL) // flush spike file
 			fflush(nrnFileId);
-
-		// reset recBufferIdx & all the buffers
-		groupConfigs[netId][lGrpId].recBufferIdx = 0;
-
-		// update the recBufferIdx on gpu
-		// this is done within copyNeuronStateInfo
 	}
 }
 

@@ -566,10 +566,6 @@ typedef struct RuntimeData_s {
 	float* nVBuffer;
 	float* nUBuffer;
 	float* nIBuffer;
-	int* nIdBuffer;
-	int* grpIdBuffer;
-
-	int recBufferIdx;
 
 	unsigned int* spikeGenBits;
 #ifndef __NO_CUDA__
@@ -581,7 +577,7 @@ typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
 							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
-							  simNumStepsPerMs(2), timeStep(0.5)
+							  simNumStepsPerMs(2), timeStep(0.5f)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -650,6 +646,10 @@ typedef struct NetworkConfigRT_s  {
 	bool sim_with_homeostasis;
 	bool sim_with_stp;
 	bool sim_in_testing;
+	
+	// please note that spike monitor and connection monitor don't need this flag because no extra buffer is required
+	// for neuron monitor, the kernel allocates extra buffers to store v, u, i values of each monitored neuron
+	bool sim_with_nm; // simulation with neuron monitor
 
 	// stdp, da-stdp configurations
 	float stdpScaleFactor;

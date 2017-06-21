@@ -531,7 +531,7 @@ public:
 	// get functions for GroupInfo
 	int getGroupStartNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gStartN; }
 	int getGroupEndNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gEndN; }
-	int getGroupNumNeurons(int grpId) { return groupConfigMap[grpId].numN; }
+	int getGroupNumNeurons(int gGrpId) { return groupConfigMap[gGrpId].numN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -1000,7 +1000,8 @@ private:
 	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
-	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);	
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
