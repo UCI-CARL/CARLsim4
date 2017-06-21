@@ -1918,6 +1918,13 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		assert(dest->Izh_vr == NULL);
 		assert(dest->Izh_vt == NULL);
 		assert(dest->Izh_vpeak == NULL);
+		assert(dest->lif_tau_m == NULL);
+		assert(dest->lif_tau_ref == NULL);
+		assert(dest->lif_tau_ref_c == NULL);
+		assert(dest->lif_vTh == NULL);
+		assert(dest->lif_vReset == NULL);
+		assert(dest->lif_gain == NULL);
+		assert(dest->lif_bias == NULL);
 	}
 
 	if(lGrpId == ALL) {
@@ -1964,6 +1971,35 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 	if(allocateMem)
 		dest->Izh_vpeak = new float[length];
 	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
+
+	//LIF neuron
+	if(allocateMem)
+		dest->lif_tau_m = new int[length];
+	memcpy(&dest->lif_tau_m[ptrPos], &(managerRuntimeData.lif_tau_m[ptrPos]), sizeof(int) * length);
+
+	if(allocateMem)
+		dest->lif_tau_ref = new int[length];
+	memcpy(&dest->lif_tau_ref[ptrPos], &(managerRuntimeData.lif_tau_ref[ptrPos]), sizeof(int) * length);
+
+	if(allocateMem)
+		dest->lif_tau_ref_c = new int[length];
+	memcpy(&dest->lif_tau_ref_c[ptrPos], &(managerRuntimeData.lif_tau_ref_c[ptrPos]), sizeof(int) * length);
+
+	if(allocateMem)
+		dest->lif_vTh = new float[length];
+	memcpy(&dest->lif_vTh[ptrPos], &(managerRuntimeData.lif_vTh[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->lif_vReset = new float[length];
+	memcpy(&dest->lif_vReset[ptrPos], &(managerRuntimeData.lif_vReset[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->lif_gain = new float[length];
+	memcpy(&dest->lif_gain[ptrPos], &(managerRuntimeData.lif_gain[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->lif_bias = new float[length];
+	memcpy(&dest->lif_bias[ptrPos], &(managerRuntimeData.lif_bias[ptrPos]), sizeof(float) * length);
 
 	// pre-compute baseFiringInv for fast computation on CPU cores
 	if (sim_with_homeostasis) {
@@ -2442,6 +2478,15 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].Izh_vr;
 	delete [] runtimeData[netId].Izh_vt;
 	delete [] runtimeData[netId].Izh_vpeak;
+
+	delete [] runtimeData[netId].lif_tau_m;
+	delete [] runtimeData[netId].lif_tau_ref;
+	delete [] runtimeData[netId].lif_tau_ref_c;
+	delete [] runtimeData[netId].lif_vTh;
+	delete [] runtimeData[netId].lif_vReset;
+	delete [] runtimeData[netId].lif_gain;
+	delete [] runtimeData[netId].lif_bias;
+
 	delete [] runtimeData[netId].gAMPA;
 	if (sim_with_NMDA_rise) {
 		delete [] runtimeData[netId].gNMDA_r;
