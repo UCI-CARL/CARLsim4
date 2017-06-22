@@ -174,6 +174,7 @@ public:
 		UserErrors::assertTrue(std::find(connComp_[grpId1].begin(), connComp_[grpId1].end(), grpId2) ==
 			connComp_[grpId1].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
 			grpId1str.str() + " and " + grpId2str.str());
+
 		UserErrors::assertTrue(std::find(connComp_[grpId2].begin(), connComp_[grpId2].end(), grpId1) ==
 			connComp_[grpId2].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
 			grpId1str.str() + " and " + grpId2str.str());
@@ -382,6 +383,18 @@ public:
 
 		int grpId = snn_->createGroupLIF(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
+
+		int partitionOffset = 0;
+		if (preferredBackend == CPU_CORES)
+			partitionOffset = MAX_NUM_CUDA_DEVICES;
+		else if (preferredBackend == GPU_CORES)
+			partitionOffset = 0;
+		int prefPartition = preferredPartition + partitionOffset;
+		groupPrefNetIds_.insert(std::pair<int, int>(grpId, prefPartition));
+
+		// extend 2D connection matrices to number of groups
+		connSyn_.resize(grpIds_.size());
+		connComp_.resize(grpIds_.size());
 
 		return grpId;
 	}
