@@ -87,6 +87,8 @@ __device__ unsigned int	spikeCountD1SecGPU;
 __device__ unsigned int spikeCountD2GPU;
 __device__ unsigned int spikeCountD1GPU;
 
+__device__ unsigned int recBufferIdx;
+
 __device__ unsigned int	secD2fireCntTest;
 __device__ unsigned int	secD1fireCntTest;
 
@@ -220,6 +222,8 @@ __global__ void kernel_initGPUMemory() {
 		spikeCountD1SecGPU = 0;
 		spikeCountD2GPU = 0;
 		spikeCountD1GPU = 0;
+
+		recBufferIdx = 0;
 
 		secD2fireCntTest = 0;
 		secD1fireCntTest = 0;
@@ -591,7 +595,7 @@ __device__ void updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsi
  *             cumulativePre, Npre_plastic, (R)synSpikeTime, (W)lastSpikeTime, (W)wtChange,
  *             avgFiring
  */
-__global__ 	void kernel_findFiring (int simTime) {
+__global__ 	void kernel_findFiring (int simTimeMs, int simTime) {
 	__shared__ volatile unsigned int fireCnt;
 	__shared__ volatile unsigned int fireCntTest;
 	__shared__ volatile unsigned int fireCntD1;
@@ -634,10 +638,17 @@ __global__ 	void kernel_findFiring (int simTime) {
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeDataGPU.lastSpikeTime[lNId] = simTime;
-			} else {
+			} else { // Regular neuron
 				if (runtimeDataGPU.curSpike[lNId]) {
 					runtimeDataGPU.curSpike[lNId] = false;
 					needToWrite = true;
+				}
+
+				// log v, u value if any active neuron monitor is presented
+				if (networkConfigGPU.sim_with_nm && lNId - groupConfigsGPU[lGrpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+					int idxBase = networkConfigGPU.numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+					runtimeDataGPU.nVBuffer[idxBase + lNId - groupConfigsGPU[lGrpId].lStartN] = runtimeDataGPU.voltage[lNId];
+					runtimeDataGPU.nUBuffer[idxBase + lNId - groupConfigsGPU[lGrpId].lStartN] = runtimeDataGPU.recovery[lNId];
 				}
 			}
 		}
@@ -898,7 +909,7 @@ __device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, 
 * \param[in] nid The neuron id to be updated
 * \param[in] grpId The group id of the neuron
 */
-__device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
+__device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIteration) {
 	float v = runtimeDataGPU.voltage[nid];
 	float v_next = runtimeDataGPU.nextVoltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
@@ -1045,6 +1056,12 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
 			runtimeDataGPU.current[nid] = 0.0f;
 		}
+
+		// log i value if any active neuron monitor is presented
+		if (networkConfigGPU.sim_with_nm && nid - groupConfigsGPU[grpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+			int idxBase = networkConfigGPU.numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + grpId * MAX_NEURON_MON_GRP_SZIE;
+			runtimeDataGPU.nIBuffer[idxBase + nid - groupConfigsGPU[grpId].lStartN] = totalCurrent;
+		}
 	}
 
 	runtimeDataGPU.nextVoltage[nid] = v_next;
@@ -1063,7 +1080,7 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
  *             current, extCurrent, Izh_a, Izh_b
  * glb access:
  */
-__global__ void kernel_neuronStateUpdate(bool lastIteration) {
+__global__ void kernel_neuronStateUpdate(int simTimeMs, bool lastIteration) {
 	const int totBuffers = loadBufferCount;
 
 	// update neuron state
@@ -1081,7 +1098,7 @@ __global__ void kernel_neuronStateUpdate(bool lastIteration) {
 			if (IS_REGULAR_NEURON(nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois)) {
 				// P7
 				// update neuron state here....
-				updateNeuronState(nid, grpId, lastIteration);
+				updateNeuronState(nid, grpId, simTimeMs, lastIteration);
 
 				// P8
 				if (groupConfigsGPU[grpId].WithHomeostasis)
@@ -2142,6 +2159,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 
 	copyNeuronParameters(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
+	if (networkConfigs[netId].sim_with_nm)
+		copyNeuronStateBuffer(netId, lGrpId, dest, &managerRuntimeData, cudaMemcpyHostToDevice, allocateMem);
+
 	if (sim_with_homeostasis) {
 		//Included to enable homeostasis in GPU_MODE.
 		// Avg. Firing...
@@ -2466,7 +2486,7 @@ void SNN::copyNetworkConfig(int netId, cudaMemcpyKind kind) {
  *
  * \since v4.0
  */
-void SNN::copyGroupConfigs(int netId) {
+void SNN::copyGroupConfigs(int netId){
 	checkAndSetGPUDevice(netId);
 	CUDA_CHECK_ERRORS(cudaMemcpyToSymbol(groupConfigsGPU, groupConfigs[netId], (networkConfigs[netId].numGroupsAssigned) * sizeof(GroupConfigRT), 0, cudaMemcpyHostToDevice));
 }
@@ -2746,7 +2766,7 @@ void SNN::findFiring_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 
-	kernel_findFiring<<<NUM_BLOCKS, NUM_THREADS>>>(simTime);
+	kernel_findFiring<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
 }
 
@@ -2833,6 +2853,12 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grp5HTBuffer) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpAChBuffer) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpNEBuffer) );
+
+	if (networkConfigs[netId].sim_with_nm) {
+		CUDA_CHECK_ERRORS(cudaFree(runtimeData[netId].nVBuffer));
+		CUDA_CHECK_ERRORS(cudaFree(runtimeData[netId].nUBuffer));
+		CUDA_CHECK_ERRORS(cudaFree(runtimeData[netId].nIBuffer));
+	}
 
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].grpIds) );
 
@@ -2930,7 +2956,7 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 		if (j == networkConfigs[netId].simNumStepsPerMs)
 			lastIteration = true;
 		// update all neuron state (i.e., voltage and recovery), including homeostasis
-		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > (lastIteration);
+		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > (simTimeMs, lastIteration);
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 		// the above kernel should end with a syncthread statement to be on the safe side
@@ -3298,6 +3324,54 @@ void SNN::copySpikeTables(int netId, cudaMemcpyKind kind) {
 	CUDA_CHECK_ERRORS(cudaMemcpyFromSymbol(managerRuntimeData.timeTableD1, timeTableD1GPU, sizeof(int)*(1000 + glbNetworkConfig.maxDelay + 1), 0, cudaMemcpyDeviceToHost));
 }
 
+/*!
+* \brief This function fetch neuron state buffer in the local network specified by netId
+*
+* This function:
+* (allocate and) copy 
+*
+* This funcion is called by copyNeuronState()
+*
+* \param[in] netId the id of a local network, which is the same as the device (GPU) id
+* \param[in] lGrpId the local group id in a local network, which specifiy the group(s) to be copied
+* \param[in] dest pointer to runtime data desitnation
+* \param[in] src pointer to runtime data source
+* \param[in] kind the direction of copy
+* \param[in] allocateMem a flag indicates whether allocating memory space before copying
+*
+* \sa copyNeuronState
+* \since v4.0
+*/
+void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
+	checkAndSetGPUDevice(netId);
+	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId, 0); // check that the destination pointer is properly allocated..
+
+	int ptrPos, length;
+	
+	if (lGrpId == ALL) {
+		ptrPos = 0;
+		length = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000;
+	} else {
+		ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
+		length = MAX_NEURON_MON_GRP_SZIE * 1000;
+	}
+	assert(length <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
+	assert(length > 0);
+	
+	// neuron information
+	assert(src->nVBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nVBuffer, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length, kind));
+
+	assert(src->nUBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nUBuffer, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length, kind));
+
+	assert(src->nIBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nIBuffer, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length, kind));
+}
+
 void SNN::copyTimeTable(int netId, cudaMemcpyKind kind) {
 	assert(netId < CPU_RUNTIME_BASE);
 	checkAndSetGPUDevice(netId);
@@ -3470,6 +3544,7 @@ void SNN::allocateSNN_GPU(int netId) {
 	// initialize (copy from managerRuntimeData) runtimeData[0].gGABAa, runtimeData[0].gGABAb, runtimeData[0].gAMPA, runtimeData[0].gNMDA
 	// initialize (copy from SNN) runtimeData[0].Izh_a, runtimeData[0].Izh_b, runtimeData[0].Izh_c, runtimeData[0].Izh_d
 	// initialize (copy form SNN) runtimeData[0].baseFiring, runtimeData[0].baseFiringInv
+	// initialize (copy from SNN) runtimeData[0].n(V,U,I)Buffer[]
 	copyNeuronState(netId, ALL, &runtimeData[netId], cudaMemcpyHostToDevice, true);
 
 	// copy STP state, considered as neuron state

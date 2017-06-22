@@ -56,6 +56,8 @@
 #include <spike_monitor_core.h>
 #include <group_monitor.h>
 #include <group_monitor_core.h>
+#include <neuron_monitor.h>
+#include <neuron_monitor_core.h>
 
 #include <spike_buffer.h>
 #include <error_code.h>
@@ -836,10 +838,13 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	CUDA_START_TIMER(timer);
 #endif
 
+	//KERNEL_INFO("Reached the advSimStep loop!");
+
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i = 0; i < runDurationMs; i++) {
 		advSimStep();
+		//KERNEL_INFO("Executed an advSimStep!");
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
@@ -862,12 +867,17 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
 			}
+			if (numNeuronMonitor) {
+				updateNeuronMonitor();
+			}
 			
 			shiftSpikeTables();
 		}
 
 		fetchNeuronSpikeCount(ALL);
 	}
+
+	//KERNEL_INFO("Updated monitors!");
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
@@ -1209,6 +1219,53 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 		KERNEL_INFO("SpikeMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 
 		return spkMonObj;
+	}
+}
+
+// record neuron state information, return a NeuronInfo object
+NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
+	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+	int netId = groupConfigMDMap[gGrpId].netId;
+
+	if (getGroupNumNeurons(gGrpId) > 128) {
+		KERNEL_WARN("Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor");
+	}
+
+	// check whether group already has a SpikeMonitor
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		// in this case, return the current object and update fid
+		NeuronMonitor* nrnMonObj = getNeuronMonitor(gGrpId);
+
+		// update spike file ID
+		NeuronMonitorCore* nrnMonCoreObj = getNeuronMonitorCore(gGrpId);
+		nrnMonCoreObj->setNeuronFileId(fid);
+
+		KERNEL_INFO("NeuronMonitor updated for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+		return nrnMonObj;
+	} else {
+		// create new NeuronMonitorCore object in any case and initialize analysis components
+		// nrnMonObj destructor (see below) will deallocate it
+		NeuronMonitorCore* nrnMonCoreObj = new NeuronMonitorCore(this, numNeuronMonitor, gGrpId);
+		neuronMonCoreList[numNeuronMonitor] = nrnMonCoreObj;
+
+		// assign neuron state file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
+		// spkMonCoreObj destructor will fclose it
+		nrnMonCoreObj->setNeuronFileId(fid);
+
+		// create a new NeuronMonitor object for the user-interface
+		// SNN::deleteObjects will deallocate it
+		NeuronMonitor* nrnMonObj = new NeuronMonitor(nrnMonCoreObj);
+		neuronMonList[numNeuronMonitor] = nrnMonObj;
+
+		// also inform the grp that it is being monitored...
+		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
+
+		numNeuronMonitor++;
+		KERNEL_INFO("NeuronMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+
+		return nrnMonObj;
 	}
 }
 
@@ -1845,6 +1902,29 @@ SpikeMonitorCore* SNN::getSpikeMonitorCore(int gGrpId) {
 	}
 }
 
+// returns pointer to existing NeuronMonitor object, NULL else
+NeuronMonitor* SNN::getNeuronMonitor(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
+NeuronMonitorCore* SNN::getNeuronMonitorCore(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonCoreList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
 RangeWeight SNN::getWeightRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
 
@@ -1976,6 +2056,7 @@ void SNN::SNNinit() {
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
+	numNeuronMonitor = 0;
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
 
@@ -2046,9 +2127,15 @@ void SNN::SNNinit() {
 void SNN::advSimStep() {
 	doSTPUpdateAndDecayCond();
 
+	//KERNEL_INFO("STPUpdate!");
+
 	spikeGeneratorUpdate();
 
+	//KERNEL_INFO("spikeGeneratorUpdate!");
+
 	findFiring();
+
+	//KERNEL_INFO("Find firing!");
 
 	updateTimingTable();
 
@@ -2056,7 +2143,11 @@ void SNN::advSimStep() {
 
 	doCurrentUpdate();
 
+	//KERNEL_INFO("doCurrentUpdate!");
+
 	globalStateUpdate();
+
+	//KERNEL_INFO("globalStateUpdate!");
 
 	clearExtFiringTable();
 }
@@ -2630,6 +2721,7 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.lif_bias      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.totalCurrent = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
 	memset(managerRuntimeData.voltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.nextVoltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
@@ -2652,7 +2744,15 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.lif_bias, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.totalCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
+
+	managerRuntimeData.nVBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups]; // 1 second v buffer
+	managerRuntimeData.nUBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	managerRuntimeData.nIBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	memset(managerRuntimeData.nVBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nUBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nIBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2941,6 +3041,13 @@ void SNN::generateRuntimeNetworkConfigs() {
 			networkConfigs[netId].sim_with_stdp = sim_with_stdp;
 			networkConfigs[netId].sim_with_stp = sim_with_stp;
 			networkConfigs[netId].sim_in_testing = sim_in_testing;
+
+			// search for active neuron monitor
+			networkConfigs[netId].sim_with_nm = false;
+			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->netId == netId && grpIt->neuronMonitorId >= 0)
+					networkConfigs[netId].sim_with_nm = true;
+			}
 
 			// stdp, da-stdp configurations
 			networkConfigs[netId].stdpScaleFactor = stdpScaleFactor_;
@@ -4459,6 +4566,13 @@ void SNN::fetchSpikeTables(int netId) {
 		copySpikeTables(netId);
 }
 
+void SNN::fetchNeuronStateBuffer(int netId, int lGrpId) {
+	if (netId < CPU_RUNTIME_BASE)
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
+	else
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false);
+}
+
 void SNN::fetchExtFiringTable(int netId) {
 	assert(netId < MAX_NET_PER_SNN);
 	
@@ -5553,6 +5667,13 @@ void SNN::resetMonitors(bool deallocate) {
 		spikeMonList[i]=NULL;
 	}
 
+	// delete all NeuronMonitor objects
+	// don't kill NeuronMonitorCore objects, they will get killed automatically
+	for (int i = 0; i<numNeuronMonitor; i++) {
+		if (neuronMonList[i] != NULL && deallocate) delete neuronMonList[i];
+		neuronMonList[i] = NULL;
+	}
+
 	// delete all GroupMonitor objects
 	// don't kill GroupMonitorCore objects, they will get killed automatically
 	for (int i=0; i<numGroupMonitor; i++) {
@@ -5608,9 +5729,14 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
 	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.totalCurrent != NULL) delete[] managerRuntimeData.totalCurrent;
 	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
+	if (managerRuntimeData.nVBuffer != NULL) delete[] managerRuntimeData.nVBuffer;
+	if (managerRuntimeData.nUBuffer != NULL) delete[] managerRuntimeData.nUBuffer;
+	if (managerRuntimeData.nIBuffer != NULL) delete[] managerRuntimeData.nIBuffer;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
-	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.curSpike = NULL;
+	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.totalCurrent = NULL; managerRuntimeData.curSpike = NULL;
+	managerRuntimeData.nVBuffer = NULL; managerRuntimeData.nUBuffer = NULL; managerRuntimeData.nIBuffer = NULL;
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
@@ -6297,6 +6423,129 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 
 		if (spkFileId!=NULL) // flush spike file
 			fflush(spkFileId);
+	}
+}
+
+// FIXME: modify this for multi-GPUs
+void SNN::updateNeuronMonitor(int gGrpId) {
+	// don't continue if no neuron monitors in the network
+	if (!numNeuronMonitor)
+		return;
+
+	//printf("The global group id is: %i\n", gGrpId);
+
+	if (gGrpId == ALL) {
+		for (int gGrpId = 0; gGrpId < numGroups; gGrpId++)
+			updateNeuronMonitor(gGrpId);
+	}
+	else {
+		//printf("UpdateNeuronMonitor is being executed!\n");
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+		// update spike monitor of a specific group
+		// find index in spike monitor arrays
+		int monitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
+
+		// don't continue if no spike monitor enabled for this group
+		if (monitorId < 0) return;
+
+		// find last update time for this group
+		NeuronMonitorCore* nrnMonObj = neuronMonCoreList[monitorId];
+		long int lastUpdate = nrnMonObj->getLastUpdated();
+
+		// don't continue if time interval is zero (nothing to update)
+		if (((long int)getSimTime()) - lastUpdate <= 0)
+			return;
+
+		if (((long int)getSimTime()) - lastUpdate > 1000)
+			KERNEL_ERROR("updateNeuronMonitor(grpId=%d) must be called at least once every second", gGrpId);
+
+		// AER buffer max size warning here.
+		// Because of C++ short-circuit evaluation, the last condition should not be evaluated
+		// if the previous conditions are false.
+		
+		/*if (nrnMonObj->getAccumTime() > LONG_NEURON_MON_DURATION \
+			&& this->getGroupNumNeurons(gGrpId) > LARGE_NEURON_MON_GRP_SIZE \
+			&& nrnMonObj->isBufferBig()) {
+			// change this warning message to correct message
+			KERNEL_WARN("updateNeuronMonitor(grpId=%d) is becoming very large. (>%lu MB)", gGrpId, (long int)MAX_NEURON_MON_BUFFER_SIZE / 1024);// make this better
+			KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.", nrnMonObj->getAccumTime() / (1000 * 60), this->getGroupNumNeurons(gGrpId));
+		}*/
+
+		// copy the neuron information to manager runtime
+		fetchNeuronStateBuffer(netId, lGrpId);
+		
+		// find the time interval in which to update neuron state info
+		// usually, we call updateNeuronMonitor once every second, so the time interval is [0,1000)
+		// however, updateNeuronMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// [0,t), [t,1000), and even [t1, t2)
+		int numMsMin = lastUpdate % 1000; // lower bound is given by last time we called update
+		int numMsMax = getSimTimeMs(); // upper bound is given by current time
+		if (numMsMax == 0)
+			numMsMax = 1000; // special case: full second
+		assert(numMsMin < numMsMax);
+
+		// current time is last completed second in milliseconds (plus t to be added below)
+		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+		int currentTimeSec = getSimTimeSec();
+		if (!getSimTimeMs())
+			currentTimeSec--;
+
+		// save current time as last update time
+		nrnMonObj->setLastUpdated((long int)getSimTime());
+
+		// prepare fast access
+		FILE* nrnFileId = neuronMonCoreList[monitorId]->getNeuronFileId();
+		bool writeNeuronStateToFile = nrnFileId != NULL;
+		bool writeNeuronStateToArray = nrnMonObj->isRecording();
+
+		// Read one neuron state value at a time from the buffer and put the neuron state values to an appopriate monitor buffer.
+		// Later the user may need need to dump these neuron state values to an output file
+		//printf("The numMsMin is: %i; and numMsMax is: %i\n", numMsMin, numMsMax);
+		for (int t = numMsMin; t < numMsMax; t++) {
+			//printf("The lStartN is: %i; and lEndN is: %i\n", groupConfigs[netId][lGrpId].lStartN, groupConfigs[netId][lGrpId].lEndN);
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) { 
+				float v, u, I;
+
+				// make sure neuron belongs to currently relevant group
+				int this_grpId = managerRuntimeData.grpIds[lNId];
+				if (this_grpId != lGrpId)
+					continue;
+
+				// adjust nid to be 0-indexed for each group
+				// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
+				// indexed from 0..9, no matter what their real nid is
+				int nId = lNId - groupConfigs[netId][lGrpId].lStartN;
+				assert(nId >= 0);
+
+				int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+				v = managerRuntimeData.nVBuffer[idxBase + nId];
+				u = managerRuntimeData.nUBuffer[idxBase + nId];
+				I = managerRuntimeData.nIBuffer[idxBase + nId];
+
+				//printf("Voltage recorded is: %f\n", v);
+
+				// current time is last completed second plus whatever is leftover in t
+				int time = currentTimeSec * 1000 + t;
+
+				// WRITE TO A TEXT FILE INSTEAD OF BINARY
+				if (writeNeuronStateToFile) {
+					int cnt;
+					cnt = fwrite(&nId, sizeof(int), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&time, sizeof(int), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&v, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&u, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&I, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+				}
+
+				if (writeNeuronStateToArray) {
+					nrnMonObj->pushNeuronState(nId, v, u, I);
+				}
+			}
+		}
+
+		if (nrnFileId != NULL) // flush spike file
+			fflush(nrnFileId);
 	}
 }
 

@@ -333,7 +333,7 @@ typedef struct GroupConfigMD_s {
 						lGrpId(-1), lStartN(-1), lEndN(-1),
 					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
 						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
-						spikeMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
+						spikeMonitorId(-1), neuronMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
 	{}
 
 	int gGrpId;
@@ -351,6 +351,7 @@ typedef struct GroupConfigMD_s {
 	bool fixedInputWts;
 	bool hasExternalConnect;
 	int spikeMonitorId;
+	int neuronMonitorId;
 	int groupMonitorId;
 	float refractPeriod;
 	int currTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
@@ -476,6 +477,7 @@ typedef struct RuntimeData_s {
 	float* Izh_c;
 	float* Izh_d;
 	float* current;
+	float* totalCurrent;
 	float* extCurrent;
 	
 	int* lif_tau_m; //!< parameters for a LIF spiking group
@@ -580,6 +582,11 @@ typedef struct RuntimeData_s {
 	float* grpAChBuffer;
 	float* grpNEBuffer;
 
+	// neuron monitor assistive buffers
+	float* nVBuffer;
+	float* nUBuffer;
+	float* nIBuffer;
+
 	unsigned int* spikeGenBits;
 #ifndef __NO_CUDA__
 	curandGenerator_t gpuRandGen;
@@ -590,7 +597,7 @@ typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
 							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
-							  simNumStepsPerMs(2), timeStep(0.5)
+							  simNumStepsPerMs(2), timeStep(0.5f)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -659,6 +666,10 @@ typedef struct NetworkConfigRT_s  {
 	bool sim_with_homeostasis;
 	bool sim_with_stp;
 	bool sim_in_testing;
+	
+	// please note that spike monitor and connection monitor don't need this flag because no extra buffer is required
+	// for neuron monitor, the kernel allocates extra buffers to store v, u, i values of each monitored neuron
+	bool sim_with_nm; // simulation with neuron monitor
 
 	// stdp, da-stdp configurations
 	float stdpScaleFactor;

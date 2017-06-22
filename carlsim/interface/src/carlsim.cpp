@@ -1130,6 +1130,44 @@ public:
 		return snn_->setSpikeMonitor(grpId, fid);
 	}
 
+	// set neuron monitor for group and write neuron state values (voltage, recovery, and total current values) to file
+	NeuronMonitor* setNeuronMonitor(int grpId, const std::string& fileName) {
+		std::string funcName = "setNeuronMonitor(\"" + getGroupName(grpId) + "\",\"" + fileName + "\")";
+		UserErrors::assertTrue(grpId != ALL, UserErrors::ALL_NOT_ALLOWED, funcName, "grpId");		// grpId can't be ALL
+		UserErrors::assertTrue(grpId >= 0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "grpId"); // grpId can't be negative
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE,
+			UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG or SETUP.");
+
+		FILE* fid;
+		std::string fileNameLower = fileName;
+		std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
+		if (fileNameLower == "null") {
+			// user does not want a binary file created
+			fid = NULL;
+		}
+		else {
+			// try to open spike file
+			if (fileNameLower == "default") {
+				std::string fileNameDefault = "results/nrnstate_" + snn_->getGroupName(grpId) + ".dat";
+				fid = fopen(fileNameDefault.c_str(), "wb");
+				if (fid == NULL) {
+					std::string fileError = " Make sure results/ exists.";
+					UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileNameDefault, fileError);
+				}
+			}
+			else {
+				fid = fopen(fileName.c_str(), "wb");
+				if (fid == NULL) {
+					std::string fileError = " Double-check file permissions and make sure directory exists.";
+					UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+				}
+			}
+		}
+
+		// return NeuronMonitor object
+		return snn_->setNeuronMonitor(grpId, fid);
+	}
+
 	// assign spike rate to poisson group
 	void setSpikeRate(int grpId, PoissonRate* spikeRate, int refPeriod) {
 		std::string funcName = "setSpikeRate()";
@@ -1943,6 +1981,11 @@ void CARLsim::setSpikeGenerator(int grpId, SpikeGenerator* spikeGenFunc) {
 // Sets a Spike Monitor for a groups, prints spikes to binary file
 SpikeMonitor* CARLsim::setSpikeMonitor(int grpId, const std::string& fileName) {
 	return _impl->setSpikeMonitor(grpId, fileName);
+}
+
+// Sets a Neuron Monitor for a groups, prints neuron state values (voltage, recovery, and total current values) to binary file
+NeuronMonitor* CARLsim::setNeuronMonitor(int grpId, const std::string& fileName) {
+	return _impl->setNeuronMonitor(grpId, fileName);
 }
 
 // Sets a spike rate

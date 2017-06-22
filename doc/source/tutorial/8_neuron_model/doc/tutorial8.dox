@@ -1,0 +1,349 @@
+/*!
+
+\page tut2_random_spnet Tutorial 2: 80-20 Random Spiking Network
+\tableofcontents
+
+\author Michael Beyeler
+\see \ref ch5s2_spike_timing_dependent_plasticity
+\see \ref ch9_matlab_oat
+\see <a href="http://izhikevich.org/publications/spnet.htm" target="_blank"><b>Polychronization: Computation with Spikes</b></a> (Izhikevich, 2006)
+
+In this tutorial we will implement an 80-20 random spiking neural network with synapses of varying axonal
+delay that are subject to spike-timing dependent plasticity (STDP).
+We follow the MATLAB implementation <tt>spnet.m</tt>, which can be obtained from
+<a href="http://izhikevich.org/publications/spnet.htm" target="_blank">Izhikevich's Website</a>.
+In addition, we will use various functions from the MATLAB Offline Analysis Toolbox (OAT) to visualize network activity
+and weight changes.
+
+
+At the end of the tutorial, you will know how to:
+- set up a 80-20 network of Izhikevich spiking neurons
+- inject current into the network
+- set up E-STDP and I-STDP for specific groups
+- run a network in CUBA mode
+- use a NetworkMonitor to visualize network activity (OAT)
+- use a ConnectionMonitor to visualize weight changes (OAT)
+
+This tutorial assumes you know how to:
+- run a simple CARLsim program (see \ref tut1_basic_concepts)
+
+The source code of this tutorial can be found in <tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/2_random_spnet</tt>.
+
+
+\section tut2s1_8020_networks 2.1 80-20 Networks
+
+80-20 networks get their name from the ratio of excitatory (80%) to inhibitory (20%) neurons in the network,
+which is thought to preserve a ratio found in the mammalian cortex (Braitenberg & Schuz, 1991), although these
+numbers might not be exact.
+
+Such networks are supposed to exhibit sleeplike oscillations, gamma (40 Hz) rhythms,
+conversion of firing rates to spike timings, and other interesting regimes.
+
+
+\section tut2s2_network_setup 2.2 Network Setup
+
+As always, the first step in setting up a CARLsim program is to include the <tt>libCARLsim</tt> library
+and to instantiate the main simulation object:
+\code
+#include <carlsim.h>
+#include <vector>
+
+int main(int argc, const char* argv[]) {
+	CARLsim sim("spnet", GPU_MODE, USER);
+\endcode
+
+
+\subsection tut2s2s1_config 2.2.1 CONFIG State
+
+From then on, the simulation is in ::CONFIG_STATE, allowing the properties of the neural network to be specified.
+In this tutorial, we consider a network of 800 excitatory (regular spiking; RS)
+and 200 inhibitory neurons (fast spiking; FS) (see \ref ch3s1s1_izhikevich_neurons).
+Each neuron shall have roughly 100 incoming synapses (<tt>nSynPerNeur</tt>) with axonal delays
+between 1ms and 20ms (<tt>maxDelay</tt>).
+We first set a number of parameters:
+\code
+	int nNeur = 1000;			// number of neurons
+	int nNeurExc = 0.8*nNeur;	// number of excitatory neurons
+	int nNeurInh = 0.2*nNeur;	// number of inhibitory neurons
+	int nSynPerNeur = 100;  	// number of synpases per neuron
+	int maxDelay = 20;      	// maximal conduction delay
+\endcode
+and then create the groups of regular spiking and fast spiking neurons with appropriate Izhikevich parameters
+a, b, c, and d:
+\code
+	// create 80-20 network with 80% RS and 20% FS neurons
+	int gExc = sim.createGroup("exc", nNeurExc, EXCITATORY_NEURON);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON);
+	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
+\endcode
+
+The network considered here is sparse with 10% probability of connection between any two neurons
+(the probability is found by dividing the number of synpases per neuron by the number of neurons):
+\code
+	float pConn = nSynPerNeur*1.0f/nNeur; // connection probability
+\endcode
+
+We also set the synaptic weight magnitudes to be <tt>6.0f</tt> for excitatory synapses and
+<tt>5.0f</tt> for inhibitory synapses, and make sure weight magnitudes never get larger than <tt>10.0f</tt>:
+\code
+	// specify connectivity
+	float wtExc = 6.0f;                   // synaptic weight magnitude if pre is exc
+	float wtInh = 5.0f;                   // synaptic weight magnitude if pre is inh (no negative sign)
+	float wtMax = 10.0f;                  // maximum synaptic weight magnitude
+\endcode
+
+Then the synaptic connections can be specified.
+Groups are connected with the <tt>"random"</tt> primitive type of CARLsim::connect that sparsely connects groups
+with a fixed connection probability. Weights are initialized to <tt>wtExc</tt> and <tt>wtInh</tt> for excitatory
+and inhibitory synapses, respectively.
+Note that the weight of inhibitory synapses in ::RangeWeight is to be understood as a weight <i>magnitude</i>,
+and therefore does <i>not</i> have a negative sign.
+Weights are bounded by the interval <tt>[0, wtMax]</tt>.
+Axonal delays are uniformly distributed in the range <tt>[1, 20] ms</tt>.
+Connections should not be further confined to a spatial receptive field, which is denoted by <tt>RadiusRF(-1)</tt>.
+::SYN_PLASTIC denotes that the synapses will be subject to plasticity.
+All of this is accomplished with the following code snippet:
+\code
+	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
+	// every neuron in gExc should receive ~nSynPerNeur synapses
+	sim.connect(gExc, gExc, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	sim.connect(gInh, gExc, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+
+	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms, no plasticity
+	// every neuron in gInh should receive ~nSynPerNeur synapses
+	sim.connect(gExc, gInh, "random", RangeWeight(wtExc), pConn*nNeur/nNeurExc);
+\endcode
+
+What remains to be done is to enable STDP on the connections above.
+STDP is enabled post-synaptically: Setting E-STDP will enable STDP on all incoming excitatory synapses (where the
+pre-synaptic group is excitatory), whereas setting I-STDP will enable STDP on all incoming inhibitory synapses
+(where the pre-synaptic group is inhibitory).
+We enable both types on post-synaptic group <tt>gExc</tt>
+(but <i>not</i> <tt>gInh</tt> on to be consistent with the original MATLAB code)
+and set the shape of the STDP curve to the standard exponential curve (see \ref ch5s2s2_stdp_types):
+\code
+	// enable STDP on all incoming synapses to gExc
+	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
+	sim.setESTDP(gExc, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	sim.setISTDP(gExc, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+\endcode
+Note the sign of the alpha variables. "Standard" E-STDP implies positive weight changes for pre-before-post
+events (<tt>alphaPlus</tt>) and negative weight changes for post-before-pre (<tt>-alphaMinus</tt>).
+With I-STDP the logic is inverted.
+
+Finally, we disable synaptic conductances so that the network is run in CUBA mode (see \ref ch3s2s1_cuba):
+\code
+	// run CUBA mode
+	sim.setConductances(false);
+\endcode
+
+
+\subsection tut2s2s2_setup 2.2.2 SETUP State
+
+Once the spiking network has been specified, the function CARLsim::setupNetwork optimizes the network state for the
+chosen back-end (CPU or GPU) and moves the simulation into ::SETUP_STATE:
+\code
+	// ---------------- SETUP STATE -------------------
+	sim.setupNetwork();
+\endcode
+
+In this state, we specify a number of SpikeMonitor and ConnectionMonitor objects to record network activity and
+synaptic weights to a <tt>"DEFAULT"</tt> binary file (see \ref ch7_monitoring):
+\code
+	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	SpikeMonitor* SMinh = sim.setSpikeMonitor(gInh, "DEFAULT");
+	sim.setConnectionMonitor(gExc, gExc, "DEFAULT");
+	sim.setConnectionMonitor(gInh, gExc, "DEFAULT");
+\endcode
+This will dump all spikes of group <tt>gExc</tt> (in AER format) to a binary with default file name
+<tt>"results/spk_exc.dat"</tt>, where <tt>"exc"</tt> is the name that was assigned to the group <tt>gExc</tt>
+in the call to CARLsim::createGroup above. The same is true for group <tt>gInh</tt>.
+Analogously, two weight files <tt>"results/conn_exc_exc.dat"</tt> and <tt>"results/conn_inh_exc.dat"</tt> will
+be created that contain snapshots of the synaptic weights taken every 10,000ms.
+
+
+\subsection tut2s2s3_run 2.2.3 RUN State
+
+The first call to CARLsim::runNetwork will take the simulation into ::RUN_STATE.
+The simulation will be repeatedly run (or "stepped") for 1ms, up to the point at which a total of 10,000ms are simulated.
+
+The main simulation loop is encapsulated by a pair of SpikeMonitor::startRecording and SpikeMonitor::stopRecording
+calls, which instruct the SpikeMonitor objects to keep track of all spikes emitted by the neurons in their monitored
+group (see \ref ch7s1s2s1_start_stop_recording):
+\code
+	// ---------------- RUN STATE -------------------
+	SMexc->startRecording();
+	SMinh->startRecording();
+	for (int t=0; t<10000; t++) {
+		// main simulation loop
+		// etc.
+	}
+	SMexc->stopRecording();
+	SMinh->stopRecording();
+\endcode
+
+After (or during) the simulation these objects could be queried for more detailed spike metrics
+(see \ref ch7s1s2s3_spike_metrics), but for the sake of simplicity we will only print a condensed version of
+spike statistics at the end:
+\code
+	// print firing stats (but not the exact spike times)
+	SMexc->print(false);
+	SMinh->print(false);
+\endcode
+
+Finally, the main simulation loop consists of repeatedly stepping the model for 1ms.
+At every step we randomly choose a single neuron in the network to receive an external (thalamic) input current
+of <tt>20.0f</tt>.
+To achieve this, we maintain a vector of external currents for every neuron in the group, initialized to zero:
+\code
+		// random thalamic input to a single neuron from either gExc or gInh
+		std::vector<float> thalamCurrExc(nNeurExc, 0.0f);
+		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
+\endcode
+Then, a neuron ID is chosen randomly, and the corresponding input current for the identified neuron is adjusted:
+\code
+		int randNeurId = round( drand48()*(nNeur-1) );
+		float thCurr = 20.0f;
+		if (randNeurId < nNeurExc) {
+			// neurId belongs to gExc
+			thalamCurrExc[randNeurId] = thCurr;
+		} else {
+			// neurId belongs to gInh
+			thalamCurrInh[randNeurId - nNeurExc] = thCurr;
+		}
+\endcode
+Finally, the resulting vectors are applied to both groups.
+Note that we explicitly set the unaffected input currents to zero every time step. This is because otherwise the
+non-zero input current from previous iterations will keep getting applied until manually reset to zero:
+\code
+		sim.setExternalCurrent(gExc, thalamCurrExc);
+		sim.setExternalCurrent(gInh, thalamCurrInh);
+\endcode
+
+After that is accomplished, the model is stepped for 1ms while explicitly disabling printing the run summary
+at the end:
+\code
+		// run for 1 ms, don't generate run stats
+		sim.runNetwork(0,1,false);
+\endcode
+
+
+\section tut2s3_network_output 2.3. Network Output
+
+After navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/2_random_spnet</tt>, the network can be
+compiled and run with the following commands (on Unix):
+\code
+$ make
+$ ./random_spnet
+\endcode
+On Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
+project directory and choosing "Build project".
+
+Some of the CARLsim output is shown below:
+\code
+* ****************      Initializing GPU Simulation      *************************
+  GPU Memory Management: (Total 2.999 GB)
+  Data			Size		Total Used	Total Available
+  Init:			2.999 GB	0.221 GB	2.779 GB
+  Ntw Params:	0.000 GB	0.221 GB	2.779 GB
+  Static Load:	0.001 GB	0.222 GB	2.778 GB
+  Group Id:		0.000 GB	0.222 GB	2.778 GB
+  Conn Info:	0.004 GB	0.226 GB	2.774 GB
+  State Info:	0.004 GB	0.229 GB	2.770 GB
+
+  SpikeMonitor set for group 0 (exc)
+  SpikeMonitor set for group 1 (inh)
+  ConnectionMonitor 0 set for Connection 0: 0(exc) => 0(exc)
+  ConnectionMonitor 1 set for Connection 1: 1(inh) => 0(exc)
+  (t=10.000s) SpikeMonitor for group exc(0) has 31890 spikes in 10000 ms (3.99 +/- 0.97 Hz)
+  (t=10.000s) SpikeMonitor for group inh(1) has 46688 spikes in 10000 ms (23.34 +/- 3.00 Hz)
+
+
+* *******************      GPU Simulation Summary      ***************************
+  Network Parameters: 	numNeurons = 1000 (numNExcReg:numNInhReg = 80.0:20.0)
+						numSynapses = 100436
+						maxDelay = 20
+  Simulation Mode:		CUBA
+  Random Seed:			1425923871
+  Timing:				Model Simulation Time = 10 sec
+						Actual Execution Time = 2.92 sec
+  Average Firing Rate:	2+ms delay = 9.961 Hz
+						1ms delay = 0.000 Hz
+						Overall = 7.968 Hz
+  Overall Firing Count:	2+ms delay = 79685
+						1ms delay = 0
+						Total = 79685
+* ********************************************************************************
+\endcode
+
+Since the network was run in ::GPU_MODE, the simulation will print a summary of the GPU memory
+management. This indicates the amount of GPU memory that each important data structure occupies.
+The above was generated on a GTX 780 with 3GB of GPU memory.
+
+Both SpikeMonitor objects produced one line of output each at the end of the simulation via
+SpikeMonitor::print.
+This line includes the number of spikes each group emitted over the time course of 10,000ms,
+with corresponding mean firing rate (in Hz) and standard deviation given in parentheses.
+
+At the end of the simulation, a summary is printed that confirms the 80-20 ratio of
+excitatory to inhibitory neurons.
+A total number of 100,436 synapses were created, confirming the attempted number of (roughly)
+100 synapses per neuron.
+The network was simulated for 10 seconds, yet its execution took only 2.92 seconds of wall-clock time,
+which means the network was run 3.42 times faster than real-time.
+
+
+
+\section tut2s4_network_activity 2.4. Visualizing Network Activity and Weight Changes
+
+In order to plot network activity and observe weight changes in the network, we will make use of the
+MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat).
+
+The Tutorial subdirectory <tt>"scripts/"</tt> provides a MATLAB script <tt>"scripts/demoOAT.m"</tt> to
+demonstrate the usage of the OAT.
+The script looks like this:
+\code
+% OAT demo
+
+% first, init OAT by adding path
+initOAT
+
+% second, open a NetworkMonitor on the simulation file
+% and plot the activity of the network
+NM = NetworkMonitor('../results/sim_spnet.dat')
+NM.plot
+
+% third, observe weight changes in the network
+CM0 = ConnectionMonitor('exc','exc','../results')
+CM0.plot('histogram')
+
+CM1 = ConnectionMonitor('inh','exc','../results')
+CM1.plot('histogram')
+\endcode
+
+After adding the location of the OAT source code to the MATLAB path, a NetworkMonitor is opened on the
+simulation file <tt>"../results/sim_spnet.dat"</tt>, which was automatically created during the CARLsim
+simulation (note that the string "spnet" corresponds to the name given to the network in the CARLsim constructor).
+
+Calling the <tt>plot</tt> method will then visualize network activity using default settings and a plot type
+that depends on the spatial structure of the neuron groups.
+Since the network does not have any particular spatial structure, the default plot type is a raster plot,
+shown in frames of 1000ms, as seen in Fig. 1 below.
+
+\image html 2_nm_raster.jpg "Fig. 1. NetworkMonitor output for groups 'exc' and 'inh' (raster plot)"
+
+Fig. 2 shows the temporal evolution of weights from the recurrent excitatory connection on <tt>gExc</tt>.
+At the beginning of the experiment (leftmost panel), all weights are initialized to <tt>6.0f</tt>.
+Over time, these values start to diverge, but stay confined in the range <tt>[0.0f, 10.0f]</tt>.
+
+\image html 2_cm_hist.jpg "Fig. 2. ConnectionMonitor output for the connection 'exc'=>'exc' (histogram)"
+
+Similar behavior can be observed on the connection from <tt>gInh</tt> to <tt>gExc</tt>.
+
+It would also be possible to open a ConnectionMonitor on the fixed connection from <tt>gExc</tt> to <tt>gInh</tt>,
+but the expected output would be similar to the leftmost panel of Fig. 2, showing all weights initialized to
+<tt>5.0f</tt>, with no weight changes to report over time.
+
+*/

@@ -1,4 +1,4 @@
-/* * Copyright (c) 2015 Regents of the University of California. All rights reserved.
+/* * Copyright (c) 2016 Regents of the University of California. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions
@@ -35,75 +35,70 @@
 * (MB) Michael Beyeler <mbeyeler@uci.edu>,
 * (KDC) Kristofor Carlson <kdcarlso@uci.edu>
 * (TSC) Ting-Shuo Chou <tingshuc@uci.edu>
+* (HK) Hirak J Kashyap <kashyaph@uci.edu>
+*
+* CARLsim v1.0: JM, MDR
+* CARLsim v2.0/v2.1/v2.2: JM, MDR, MA, MB, KDC
+* CARLsim3: MB, KDC, TSC
+* CARLsim4: TSC, HK
 *
 * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-* Ver 5/22/2015
+* Ver 12/31/2016
 */
 
-// include CARLsim user interface
 #include <carlsim.h>
+#include <vector>
+#include <cmath>
+#include <cstdlib>
 
-#define N_EXC 1
+#define ONE_NEURON 1
 
-int main() {
-	// create a network on GPU
-	int randSeed = 42;
-	CARLsim sim("test kernel", CPU_MODE, USER, 0, randSeed);
+int main(int argc, const char* argv[]) {
+	// ---------------- CONFIG STATE -------------------
+	CARLsim sim("spnet", HYBRID_MODE, USER, 0, 42);
 
-	// configure the network
-	int gExc = sim.createGroup("exc", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
+	float wtExc = 40.0f;
 
-	// 4 parameter version
-	//sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	// create 
+	int gExc = sim.createGroup("exc", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	// test
+	int gInput = sim.createSpikeGeneratorGroup("input", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
 
-	// 9 parameter version
-	sim.setNeuronParameters(gExc, 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f); //RS
-																									  // set up a dummy (connection probability of 0) connection
-	int gInput = sim.createSpikeGeneratorGroup("input", N_EXC, EXCITATORY_NEURON, 0, CPU_CORES);
-	sim.connect(gInput, gExc, "one-to-one", RangeWeight(30.0f), 0.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
+	// every neuron in gExc should receive ~nSynPerNeur synapses
+	sim.connect(gInput, gExc, "full", RangeWeight(wtExc), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
+	// run CUBA mode
 	sim.setConductances(false);
 
-	//FORWARD_EULER
-	//RUNGE_KUTTA4
-	sim.setIntegrationMethod(FORWARD_EULER, 10.0f);
+	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	NeuronMonitor* NMexc = sim.setNeuronMonitor(gExc, "DEFAULT");
 
-	// build the network
+	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
 
-	// set some monitors
-	SpikeMonitor* smExc = sim.setSpikeMonitor(gExc, "NULL");
-	//SpikeMonitor* smInput = sim.setSpikeMonitor(gInput, "NULL");
+	// ---------------- RUN STATE -------------------
+	SMexc->startRecording();
+	NMexc->startRecording();
 
-	NeuronMonitor* nmExc = sim.setNeuronMonitor(gExc, "NULL");
+	// random thalamic input to a single neuron from either gExc or gInh
+	std::vector<float> thalamCurrExc(ONE_NEURON, 10.0f);
+	sim.setExternalCurrent(gExc, thalamCurrExc);
 
-	//setup some baseline input
+	//for (int t = 0; t < 500; t++) {
 
-	//PoissonRate in(N_EXC);
-	//in.setRates(1.0f);
-	//sim.setSpikeRate(gInput, &in);
+	
+	
+		// run for 1 ms, don't generate run stats
+		sim.runNetwork(0,200,false);
+	//}
+	SMexc->stopRecording();
+	NMexc->stopRecording();
 
-	//smInput->startRecording();
-	smExc->startRecording();
-	nmExc->startRecording();
-
-	for (int t = 0; t < 1; t++) {
-		sim.runNetwork(0, 100, true);
-		sim.setExternalCurrent(gExc, 70);
-		sim.runNetwork(0, 900, true);
-	}
-
-	//smInput->stopRecording();
-	smExc->stopRecording();
-	nmExc->stopRecording();
-
-	smExc->print(true);
-	nmExc->print();
-	//Expected Spike Times (4 param; extCurrent = 5; Euler; 2 steps / ms): 108 196 293 390 487 584 681 778 875 972
-	//Expected Spike Times (9 param; extCurrent = 70): 
-	//smInput->print(false);
+	// print firing stats (but not the exact spike times)
+	SMexc->print(false);
+	NMexc->print();
 
 	return 0;
 }
