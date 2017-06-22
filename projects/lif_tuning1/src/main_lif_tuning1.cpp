@@ -79,7 +79,7 @@ int main() {
 	fflush(stdout);
 	sim.connect(gSingleLIF, gDummyLIF, "full", RangeWeight(0.05), 1.0f, RangeDelay(1));
 	sim.setConductances(false);
-	// sim.setIntegrationMethod(FORWARD_EULER, 2);
+	sim.setIntegrationMethod(FORWARD_EULER, 2);
 
 	// ---------------- SETUP STATE -------------------
 	// build the network
@@ -88,6 +88,7 @@ int main() {
 
 	// set some monitors
 	sim.setSpikeMonitor(gSingleLIF,"DEFAULT");
+	//sim.setSpikeMonitor(gDummyLIF,"DEFAULT");
 
 	// ---------------- RUN STATE -------------------
 	watch.lap("runNetwork");
@@ -95,7 +96,7 @@ int main() {
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 	for (int i=0; i<10; i++) {
-		std::vector<float> current(1, 5.0f);
+		std::vector<float> current(1, (float)i*0.1f);
 		sim.setExternalCurrent(gSingleLIF, current);
 		sim.runNetwork(1,0);
 	}
