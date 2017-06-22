@@ -287,9 +287,9 @@ void NeuronMonitorCore::print() {
 		for (int j=0; j<nV; j++) {
 			char volts[10];
 #if defined(WIN32) || defined(WIN64)
-			_snprintf(volts, 10, "%4.4f", vectorV_[i][j]);
+			_snprintf(volts, 10, "%4.4f ", vectorV_[i][j]);
 #else
-			snprintf(volts, 10, "%4.4f", vectorV_[i][j]);
+			snprintf(volts, 10, "%4.4f ", vectorV_[i][j]);
 #endif
 			strcat(buffer, volts);
 			if (j%dispVoltsPerRow == dispVoltsPerRow-1 && j<nV-1) {

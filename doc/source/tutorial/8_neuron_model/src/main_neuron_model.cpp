@@ -72,11 +72,11 @@ int main(int argc, const char* argv[]) {
 	// run CUBA mode
 	sim.setConductances(false);
 
-	// ---------------- SETUP STATE -------------------
-	sim.setupNetwork();
-
 	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
 	NeuronMonitor* NMexc = sim.setNeuronMonitor(gExc, "DEFAULT");
+
+	// ---------------- SETUP STATE -------------------
+	sim.setupNetwork();
 
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();

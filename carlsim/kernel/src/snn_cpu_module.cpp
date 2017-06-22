@@ -536,9 +536,18 @@ void SNN::copyExtFiringTable(int netId) {
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeData[netId].lastSpikeTime[lNId] = simTime;
-			} else if (runtimeData[netId].curSpike[lNId]) {
-				runtimeData[netId].curSpike[lNId] = false;
-				needToWrite = true;
+			} else { // Regular neuron
+				if (runtimeData[netId].curSpike[lNId]) {
+					runtimeData[netId].curSpike[lNId] = false;
+					needToWrite = true;
+				}
+
+				// log v, u value if any active neuron monitor is presented
+				if (networkConfigs[netId].sim_with_nm && lNId - groupConfigs[netId][lGrpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+					int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+					runtimeData[netId].nVBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN] = runtimeData[netId].voltage[lNId];
+					runtimeData[netId].nUBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN] = runtimeData[netId].recovery[lNId];
+				}
 			}
 
 			// his flag is set if with_stdp is set and also grpType is set to have GROUP_SYN_FIXED
@@ -894,8 +903,6 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-			bool recordNeuronState = (groupConfigs[netId][lGrpId].neuronMonitorId >= 0);
-
 			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
 				if (groupConfigs[netId][lGrpId].WithHomeostasis & (lastIter)) {
 					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
@@ -1065,19 +1072,10 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					if (groupConfigs[netId][lGrpId].WithHomeostasis)
 						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
 
-					//KERNEL_INFO("Reached the neuron state recording code in global state update!");
-					if (recordNeuronState)
-					{
-						//KERNEL_INFO("Reached inside the neuron state recording code in global state update!");
-						//KERNEL_INFO("Rec buffer index value is: %i\n", groupConfigs[netId][lGrpId].recBufferIdx);
-						//KERNEL_INFO("netId is: %i; lGrpId is: %i\n", netId, lGrpId);
-						if (lNId < MAX_NEURON_MON_GRP_SZIE) {
-							int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs;
-							runtimeData[netId].nVBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = v;
-							runtimeData[netId].nUBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = u;
-							runtimeData[netId].nIBuffer[idxBase + lGrpId * MAX_NEURON_MON_GRP_SZIE + lNId] = totalCurrent;
-						}
-						//KERNEL_INFO("Finished executing the neuron state recording code in global state update!");
+					// log i value if any active neuron monitor is presented
+					if (networkConfigs[netId].sim_with_nm && lNId - groupConfigs[netId][lGrpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+						int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+						runtimeData[netId].nIBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN] = totalCurrent;
 					}
 				}
 			} // end StartN...EndN

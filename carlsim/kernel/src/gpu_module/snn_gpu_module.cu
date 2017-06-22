@@ -595,7 +595,7 @@ __device__ void updateLTP(int* fireTablePtr, short int* fireGrpId, volatile unsi
  *             cumulativePre, Npre_plastic, (R)synSpikeTime, (W)lastSpikeTime, (W)wtChange,
  *             avgFiring
  */
-__global__ 	void kernel_findFiring (int simTime) {
+__global__ 	void kernel_findFiring (int simTimeMs, int simTime) {
 	__shared__ volatile unsigned int fireCnt;
 	__shared__ volatile unsigned int fireCntTest;
 	__shared__ volatile unsigned int fireCntD1;
@@ -638,10 +638,17 @@ __global__ 	void kernel_findFiring (int simTime) {
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeDataGPU.lastSpikeTime[lNId] = simTime;
-			} else {
+			} else { // Regular neuron
 				if (runtimeDataGPU.curSpike[lNId]) {
 					runtimeDataGPU.curSpike[lNId] = false;
 					needToWrite = true;
+				}
+
+				// log v, u value if any active neuron monitor is presented
+				if (networkConfigGPU.sim_with_nm && lNId - groupConfigsGPU[lGrpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+					int idxBase = networkConfigGPU.numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+					runtimeDataGPU.nVBuffer[idxBase + lNId - groupConfigsGPU[lGrpId].lStartN] = runtimeDataGPU.voltage[lNId];
+					runtimeDataGPU.nUBuffer[idxBase + lNId - groupConfigsGPU[lGrpId].lStartN] = runtimeDataGPU.recovery[lNId];
 				}
 			}
 		}
@@ -902,7 +909,7 @@ __device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, 
 * \param[in] nid The neuron id to be updated
 * \param[in] grpId The group id of the neuron
 */
-__device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
+__device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIteration) {
 	float v = runtimeDataGPU.voltage[nid];
 	float v_next = runtimeDataGPU.nextVoltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
@@ -1050,11 +1057,11 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			runtimeDataGPU.current[nid] = 0.0f;
 		}
 
-		// FIXME: bug, race condition
-		// record neuron state
-		runtimeDataGPU.nVBuffer[recBufferIdx] = v;
-		runtimeDataGPU.nUBuffer[recBufferIdx] = u;
-		runtimeDataGPU.nIBuffer[recBufferIdx] = totalCurrent;
+		// log i value if any active neuron monitor is presented
+		if (networkConfigGPU.sim_with_nm && nid - groupConfigsGPU[grpId].lStartN < MAX_NEURON_MON_GRP_SZIE) {
+			int idxBase = networkConfigGPU.numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + grpId * MAX_NEURON_MON_GRP_SZIE;
+			runtimeDataGPU.nIBuffer[idxBase + nid - groupConfigsGPU[grpId].lStartN] = totalCurrent;
+		}
 	}
 
 	runtimeDataGPU.nextVoltage[nid] = v_next;
@@ -1073,7 +1080,7 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
  *             current, extCurrent, Izh_a, Izh_b
  * glb access:
  */
-__global__ void kernel_neuronStateUpdate(bool lastIteration) {
+__global__ void kernel_neuronStateUpdate(int simTimeMs, bool lastIteration) {
 	const int totBuffers = loadBufferCount;
 
 	// update neuron state
@@ -1091,7 +1098,7 @@ __global__ void kernel_neuronStateUpdate(bool lastIteration) {
 			if (IS_REGULAR_NEURON(nid, networkConfigGPU.numNReg, networkConfigGPU.numNPois)) {
 				// P7
 				// update neuron state here....
-				updateNeuronState(nid, grpId, lastIteration);
+				updateNeuronState(nid, grpId, simTimeMs, lastIteration);
 
 				// P8
 				if (groupConfigsGPU[grpId].WithHomeostasis)
@@ -2759,7 +2766,7 @@ void SNN::findFiring_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 
-	kernel_findFiring<<<NUM_BLOCKS, NUM_THREADS>>>(simTime);
+	kernel_findFiring<<<NUM_BLOCKS, NUM_THREADS>>>(simTimeMs, simTime);
 	CUDA_GET_LAST_ERROR("findFiring kernel failed\n");
 }
 
@@ -2949,7 +2956,7 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 		if (j == networkConfigs[netId].simNumStepsPerMs)
 			lastIteration = true;
 		// update all neuron state (i.e., voltage and recovery), including homeostasis
-		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > (lastIteration);
+		kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > (simTimeMs, lastIteration);
 		CUDA_GET_LAST_ERROR("Kernel execution failed");
 
 		// the above kernel should end with a syncthread statement to be on the safe side

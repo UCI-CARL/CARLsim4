@@ -1149,10 +1149,6 @@ NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
 	if (getGroupNumNeurons(gGrpId) > 128) {
 		KERNEL_WARN("Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor");
 	}
-	//printf("The global group id is: %i\n", gGrpId);
-	//printf("The local group id is: %i\n", lGrpId);
-	//printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
-	//printf("The local group's lEndN is: %i\n", groupConfigs[netId][lGrpId].lEndN);
 
 	// check whether group already has a SpikeMonitor
 	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
@@ -4474,49 +4470,11 @@ void SNN::fetchSpikeTables(int netId) {
 		copySpikeTables(netId);
 }
 
-void SNN::fetchNeuronStateInfo(int netId, int lGrpId) {
+void SNN::fetchNeuronStateBuffer(int netId, int lGrpId) {
 	if (netId < CPU_RUNTIME_BASE)
-	{
-		copyNeuronStateInfo(netId, cudaMemcpyDeviceToHost);
-		retrieveNeuronStateInfo(netId, lGrpId);
-	}
-}
-
-void SNN::retrieveNeuronStateInfo(int netId, int lGrpId)
-{
-	// extract neuron state info from the managerRunTimeData vrec/urec/Irec buffers into groupConfigs vrec/urec/Irec buffers
-	int j = 0;
-	int numNeurons_total = networkConfigs[netId].numN;
-	//printf("numNeurons in the network is: %i\n", numNeurons);
-	for (int i = 0; i < MAX_NEURON_MON_GRP_SZIE * 1000 * numGroups; i++)
-	{
-		//if(managerRuntimeData.nVBuffer[i] != 0)
-		//	printf("Voltage retrieved from GPU is: %f\n", managerRuntimeData.nVBuffer[i]);
-		//printf("The value of i in retrieveNeuronStateInfo is: %i\n", i);
-		int nId = managerRuntimeData.nIdBuffer[i];
-		int grpId = managerRuntimeData.grpIdBuffer[i];
-		if (i%numNeurons_total == 0)
-			j++;
-		//printf("The value of j in retrieveNeuronStateInfo is: %i\n", j);
-		// if this is a group of interest
-		if (grpId == lGrpId)
-		{
-			if (j*(numNeurons_total +1) >= MAX_NEURON_MON_GRP_SZIE * 1000)
-			{
-				//printf("Reached break statement in retrieveNeuronStateInfo!");
-				break;
-			}
-
-			int numNeurons = groupConfigs[netId][lGrpId].numN;
-
-			// find the 0-indexed neuron id
-			int lrnId = nId - groupConfigs[netId][lGrpId].lStartN;
-			groupConfigs[netId][lGrpId].nVBuffer[j*numNeurons + lrnId] = managerRuntimeData.nVBuffer[i];
-			groupConfigs[netId][lGrpId].nUBuffer[j*numNeurons + lrnId] = managerRuntimeData.nUBuffer[i];
-			groupConfigs[netId][lGrpId].nIBuffer[j*numNeurons + lrnId] = managerRuntimeData.nIBuffer[i];
-		}
-	}
-	printf("Finished retrieveNeuronStateInfo!");
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
+	else
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchExtFiringTable(int netId) {
@@ -6342,11 +6300,6 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		// find index in spike monitor arrays
 		int monitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
 
-		//printf("The local group id is: %i\n", lGrpId);
-		//printf("The global group's lEndN is: %i\n", groupConfigMDMap[gGrpId].lEndN);
-		//printf("The local group's lEndN is: %i\n", groupConfigs[netId][lGrpId].lEndN);
-		//printf("RecBuffer index is: %i\n", groupConfigs[netId][lGrpId].recBufferIdx);
-
 		// don't continue if no spike monitor enabled for this group
 		if (monitorId < 0) return;
 
@@ -6373,8 +6326,8 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 			KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.", nrnMonObj->getAccumTime() / (1000 * 60), this->getGroupNumNeurons(gGrpId));
 		}*/
 
-		// copy the neuron firing information to groupConfigs
-		fetchNeuronStateInfo(netId, lGrpId);
+		// copy the neuron information to manager runtime
+		fetchNeuronStateBuffer(netId, lGrpId);
 		
 		// find the time interval in which to update neuron state info
 		// usually, we call updateNeuronMonitor once every second, so the time interval is [0,1000)
@@ -6405,13 +6358,8 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		//printf("The numMsMin is: %i; and numMsMax is: %i\n", numMsMin, numMsMax);
 		for (int t = numMsMin; t < numMsMax; t++) {
 			//printf("The lStartN is: %i; and lEndN is: %i\n", groupConfigs[netId][lGrpId].lStartN, groupConfigs[netId][lGrpId].lEndN);
-			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
-			{ 
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) { 
 				float v, u, I;
-				int numNIds = groupConfigs[netId][lGrpId].lEndN - groupConfigs[netId][lGrpId].lStartN + 1;
-
-				//0-indexed time
-				int adjustedTime = t - numMsMin;
 
 				// make sure neuron belongs to currently relevant group
 				int this_grpId = managerRuntimeData.grpIds[lNId];
@@ -6424,10 +6372,10 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 				int nId = lNId - groupConfigs[netId][lGrpId].lStartN;
 				assert(nId >= 0);
 
-
-				v = groupConfigs[netId][lGrpId].nVBuffer[adjustedTime*numNIds + nId];
-				u = groupConfigs[netId][lGrpId].nUBuffer[adjustedTime*numNIds + nId];
-				I = groupConfigs[netId][lGrpId].nIBuffer[adjustedTime*numNIds + nId];
+				int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+				v = managerRuntimeData.nVBuffer[idxBase + nId];
+				u = managerRuntimeData.nUBuffer[idxBase + nId];
+				I = managerRuntimeData.nIBuffer[idxBase + nId];
 
 				//printf("Voltage recorded is: %f\n", v);
 
