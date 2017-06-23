@@ -1,0 +1,64 @@
+parent.0 =                              @ec.simple.SimpleEvolutionState simple.params
+
+# Modifications to the Simple EA boiler plate
+# =========================
+eval =					ecjapp.eval.SimpleGroupedEvaluator
+generations =				50
+pop.subpop.0.size =	 10
+#evalthreads =				4
+#seed.0 =				time
+#seed.1 =				time
+#seed.2 =				time
+#seed.3 =				time
+
+# Set up our evolutionary algorithm
+# =========================
+pop.subpop.0.species =                  ec.vector.FloatVectorSpecies
+pop.subpop.0.species.pipe =             ec.vector.breed.VectorMutationPipeline
+pop.subpop.0.species.pipe.likelihood =  1.0
+pop.subpop.0.species.pipe.source.0 =    ec.vector.breed.VectorCrossoverPipeline
+pop.subpop.0.species.pipe.source.0.likelihood	= 0.9
+pop.subpop.0.species.pipe.source.0.source.0 = ec.select.TournamentSelection
+#pop.subpop.0.species.pipe.source.0.source.0 = ec.es.ESSelection
+pop.subpop.0.species.pipe.source.0.source.1 = same
+select.tournament.size =                2
+pop.subpop.0.species.ind =              ec.vector.DoubleVectorIndividual
+pop.subpop.0.species.fitness =          ec.simple.SimpleFitness
+pop.subpop.0.species.genome-size =      4
+
+pop.subpop.0.species.min-gene =         0.0005
+pop.subpop.0.species.max-gene =         0.5
+pop.subpop.0.species.mutation-type =    gauss
+pop.subpop.0.species.mutation-stdev =   0.1
+pop.subpop.0.species.mutation-bounded = true
+pop.subpop.0.species.mutation-prob =    0.4
+pop.subpop.0.species.crossover-likelihood =0.4
+#pop.subpop.0.species.crossover-prob=   0.9
+pop.subpop.0.species.crossover-type =   two
+
+
+# breed options
+breed =              ec.es.MuPlusLambdaBreeder
+breed.elite.0 = 1
+breed.reevaluate-elites.0 = false
+
+# evolution strategies options
+es.mu.0 =            5
+es.lambda.0 =        5
+
+
+# Termination condition
+#quit-on-run-complete = true
+
+# Set up external fitness evaluation
+# =========================
+eval.problem.objective.idealFitnessValue = 0.333
+eval.problem =                          ecjapp.eval.problem.CommandProblem
+eval.problem.objective =                ecjapp.eval.problem.objective.StringToDoubleObjective
+eval.problem.simulationCommand =        $src/CARLsim-app/Examples/TuneFiringRatesECJ
+
+# Output statistics options
+# =========================
+#stat = ec.simple.SimpleStatistics
+#stat.do-per-generation-description = true
+#stat.do-description = true

@@ -1,0 +1,196 @@
+[INFO carlsim/kernel/src/snn_cpu.cpp:1989] *********************************************************************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1991] ********************      Welcome to CARLsim 3.1      ***************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1992] *********************************************************************************
+
+[INFO carlsim/kernel/src/snn_cpu.cpp:1994] ***************************** Configuring Network ********************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1996] Starting CARLsim simulation "SimpleCA3" in SILENT mode
+[INFO carlsim/kernel/src/snn_cpu.cpp:1997] Random number seed: 1493311085
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2003] Current local time and date: Thu Apr 27 12:38:05 2017
+
+[INFO carlsim/kernel/src/snn_cpu.cpp:420] Running COBA mode:
+[INFO carlsim/kernel/src/snn_cpu.cpp:421]   - AMPA decay time            =     5 ms
+[INFO carlsim/kernel/src/snn_cpu.cpp:422]   - NMDA rise time (disabled)  =     0 ms
+[INFO carlsim/kernel/src/snn_cpu.cpp:423]   - GABAa decay time           =     6 ms
+[INFO carlsim/kernel/src/snn_cpu.cpp:424]   - GABAb rise time (disabled) =     0 ms
+[INFO carlsim/kernel/src/snn_cpu.cpp:425]   - GABAb decay time           =   150 ms
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[0, poisson].numPostSynapses = 149, grp_Info[1, pyramidal].numPreSynapses = 30
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=0, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[1, pyramidal].numPostSynapses = 149, grp_Info[1, pyramidal].numPreSynapses = 179
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=1, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[1, pyramidal].numPostSynapses = 168, grp_Info[2, PTI].numPreSynapses = 149
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=2, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[1, pyramidal].numPostSynapses = 187, grp_Info[3, DTI].numPreSynapses = 149
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=3, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[2, PTI].numPostSynapses = 149, grp_Info[1, pyramidal].numPreSynapses = 198
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=4, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[2, PTI].numPostSynapses = 168, grp_Info[3, DTI].numPreSynapses = 168
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=5, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[3, DTI].numPostSynapses = 149, grp_Info[1, pyramidal].numPreSynapses = 217
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=6, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:187] grp_Info[3, DTI].numPostSynapses = 168, grp_Info[2, PTI].numPreSynapses = 168
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:195] CONNECT SETUP: connId=7, mulFast=1.000000, mulSlow=1.000000
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4381] Beginning reorganization of network....
+[INFO carlsim/kernel/src/snn_cpu.cpp:2432] 
+
+[INFO carlsim/kernel/src/snn_cpu.cpp:2433] ***************************** Setting up Network **********************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:2434] Number of neurons = 1100
+[INFO carlsim/kernel/src/snn_cpu.cpp:2435] Potentially maximum number of post synapses per neuron = 187
+[INFO carlsim/kernel/src/snn_cpu.cpp:2436] Potentially maximum number of pre synapses per neuron = 217
+[INFO carlsim/kernel/src/snn_cpu.cpp:2437] Max axonal delay = 1
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2393] Allocation for 1(pyramidal), St=0, End=899
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2393] Allocation for 2(PTI), St=900, End=949
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2393] Allocation for 3(DTI), St=950, End=999
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2609] Allocation for 0(poisson), St=1000, End=1099
+[INFO carlsim/kernel/src/print_snn_info.cpp:258] Group poisson(0): 
+[INFO carlsim/kernel/src/print_snn_info.cpp:261]   - Type                       =    EXCIT
+[INFO carlsim/kernel/src/print_snn_info.cpp:262]   - Size                       =      100
+[INFO carlsim/kernel/src/print_snn_info.cpp:263]   - Start Id                   =     1000
+[INFO carlsim/kernel/src/print_snn_info.cpp:264]   - End Id                     =     1099
+[INFO carlsim/kernel/src/print_snn_info.cpp:265]   - numPostSynapses            =      149
+[INFO carlsim/kernel/src/print_snn_info.cpp:266]   - numPreSynapses             =        0
+[INFO carlsim/kernel/src/print_snn_info.cpp:274]   - Refractory period          =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:258] Group pyramidal(1): 
+[INFO carlsim/kernel/src/print_snn_info.cpp:261]   - Type                       =    EXCIT
+[INFO carlsim/kernel/src/print_snn_info.cpp:262]   - Size                       =      900
+[INFO carlsim/kernel/src/print_snn_info.cpp:263]   - Start Id                   =        0
+[INFO carlsim/kernel/src/print_snn_info.cpp:264]   - End Id                     =      899
+[INFO carlsim/kernel/src/print_snn_info.cpp:265]   - numPostSynapses            =      187
+[INFO carlsim/kernel/src/print_snn_info.cpp:266]   - numPreSynapses             =      217
+[INFO carlsim/kernel/src/print_snn_info.cpp:258] Group PTI(2): 
+[INFO carlsim/kernel/src/print_snn_info.cpp:261]   - Type                       =    INHIB
+[INFO carlsim/kernel/src/print_snn_info.cpp:262]   - Size                       =       50
+[INFO carlsim/kernel/src/print_snn_info.cpp:263]   - Start Id                   =      900
+[INFO carlsim/kernel/src/print_snn_info.cpp:264]   - End Id                     =      949
+[INFO carlsim/kernel/src/print_snn_info.cpp:265]   - numPostSynapses            =      168
+[INFO carlsim/kernel/src/print_snn_info.cpp:266]   - numPreSynapses             =      168
+[INFO carlsim/kernel/src/print_snn_info.cpp:258] Group DTI(3): 
+[INFO carlsim/kernel/src/print_snn_info.cpp:261]   - Type                       =    INHIB
+[INFO carlsim/kernel/src/print_snn_info.cpp:262]   - Size                       =       50
+[INFO carlsim/kernel/src/print_snn_info.cpp:263]   - Start Id                   =      950
+[INFO carlsim/kernel/src/print_snn_info.cpp:264]   - End Id                     =      999
+[INFO carlsim/kernel/src/print_snn_info.cpp:265]   - numPostSynapses            =      168
+[INFO carlsim/kernel/src/print_snn_info.cpp:266]   - numPreSynapses             =      168
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 7: DTI(3) => PTI(2)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =        4
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =        4
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 6: DTI(3) => pyramidal(1)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =        4
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =       87
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 5: PTI(2) => DTI(3)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =        5
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =        5
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 4: PTI(2) => pyramidal(1)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =        4
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =       88
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 3: pyramidal(1) => DTI(3)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =       90
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =        5
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 2: pyramidal(1) => PTI(2)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =       88
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =        4
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 1: pyramidal(1) => pyramidal(1)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =       90
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =       90
+[INFO carlsim/kernel/src/print_snn_info.cpp:240] Connection ID 0: poisson(0) => pyramidal(1)
+[INFO carlsim/kernel/src/print_snn_info.cpp:241]   - Type                       =    FIXED
+[INFO carlsim/kernel/src/print_snn_info.cpp:242]   - Min weight                 =  0.00000
+[INFO carlsim/kernel/src/print_snn_info.cpp:243]   - Max weight                 =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:244]   - Initial weight             =  0.10000
+[INFO carlsim/kernel/src/print_snn_info.cpp:245]   - Min delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:246]   - Max delay                  =        1
+[INFO carlsim/kernel/src/print_snn_info.cpp:247]   - Radius X                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:248]   - Radius Y                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:249]   - Radius Z                   =    -1.00
+[INFO carlsim/kernel/src/print_snn_info.cpp:253]   - Avg numPreSynapses         =        9
+[INFO carlsim/kernel/src/print_snn_info.cpp:254]   - Avg numPostSynapses        =       89
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2689] ******************
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2690] CompactConnection: 
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2691] ******************
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2692] old_postCnt = 200000, new_postCnt = 108519
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:2693] old_preCnt = 212100,  new_postCnt = 108519
+[DEBUG carlsim/kernel/src/print_snn_info.cpp:50] checkNetworkBuilt()
+[DEBUG carlsim/kernel/src/print_snn_info.cpp:51] Network not yet elaborated and built...
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4800] Grp: 0:poisson s=1000 e=1099 
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4802] Grp: 0:poisson s=1000 e=1099  
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4800] Grp: 1:pyramidal s=0 e=899 
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4802] Grp: 1:pyramidal s=0 e=899  
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	3 (DTI) start=0, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	2 (PTI) start=2, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	1 (pyramidal) start=7, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	0 (poisson) start=88, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4800] Grp: 2:PTI s=900 e=949 
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4802] Grp: 2:PTI s=900 e=949  
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	3 (DTI) start=0, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	1 (pyramidal) start=8, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4800] Grp: 3:DTI s=950 e=999 
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4802] Grp: 3:DTI s=950 e=999  
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	2 (PTI) start=0, type=F maxWts = 0.100000 (**)
+[DEBUG carlsim/kernel/src/snn_cpu.cpp:4839] 	1 (pyramidal) start=6, type=F maxWts = 0.100000 (**)
+[INFO carlsim/kernel/src/snn_cpu.cpp:4414] 
+[INFO carlsim/kernel/src/snn_cpu.cpp:4416] *****************      Initializing CPU Simulation      *************************
+[INFO carlsim/kernel/src/snn_cpu.cpp:1222] SpikeMonitor set for group 1 (pyramidal)
+[INFO carlsim/kernel/src/snn_cpu.cpp:1222] SpikeMonitor set for group 2 (PTI)
+[INFO carlsim/kernel/src/snn_cpu.cpp:1222] SpikeMonitor set for group 3 (DTI)
