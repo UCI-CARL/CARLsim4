@@ -69,17 +69,19 @@ int main() {
 	Grid3D gridSingle(1,1,1); // pre is on a 1x1 grid
 	Grid3D gridDummy(1,1,1); // dummy is on a 1x1 grid
 	int gSingleLIF=sim.createGroupLIF("input", gridSingle, EXCITATORY_NEURON, 0, CPU_CORES);
-	int gDummyLIF=sim.createGroupLIF("output", gridDummy, EXCITATORY_NEURON, 1, CPU_CORES);
-	sim.setNeuronParametersLIF(gSingleLIF, 20);
-	sim.setNeuronParametersLIF(gDummyLIF, 20);
+	int gDummyLIF=sim.createGroup("output", gridDummy, EXCITATORY_NEURON, 1, CPU_CORES);
+	sim.setNeuronParametersLIF(gSingleLIF, 20, 2);
+	//sim.setNeuronParametersLIF(gDummyLIF, 20);
 	//sim.setNeuronParameters(gSingleLIF, 0.02f, 0.2f, -65.0f, 8.0f);
-	//sim.setNeuronParameters(gDummyLIF, 0.02f, 0.2f, -65.0f, 8.0f);
+	sim.setNeuronParameters(gDummyLIF, 0.02f, 0.2f, -65.0f, 8.0f);
 	printf("LIF group ID: %d", gSingleLIF);
 	printf("Dummy group ID: %d", gDummyLIF);
 	fflush(stdout);
 	sim.connect(gSingleLIF, gDummyLIF, "full", RangeWeight(0.05), 1.0f, RangeDelay(1));
 	sim.setConductances(false);
-	sim.setIntegrationMethod(FORWARD_EULER, 2);
+	sim.setIntegrationMethod(FORWARD_EULER, 3);
+
+	NeuronMonitor* nmIn = sim.setNeuronMonitor(gSingleLIF,"DEFAULT");
 
 	// ---------------- SETUP STATE -------------------
 	// build the network
@@ -95,14 +97,16 @@ int main() {
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	for (int i=0; i<10; i++) {
-		std::vector<float> current(1, (float)i*0.1f);
+	nmIn->startRecording();
+	for (int i=7; i<8; i++) {
+		std::vector<float> current(1, (float)i*0.8f);
 		sim.setExternalCurrent(gSingleLIF, current);
-		sim.runNetwork(1,0);
+		sim.runNetwork(0,100);
 	}
-
+	nmIn->stopRecording();
 	// print stopwatch summary
 	watch.stop();
+	nmIn->print();
 	
 	return 0;
 }

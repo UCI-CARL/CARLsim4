@@ -380,7 +380,7 @@ struct RangeFR {
 	RangeFR(float _minFR, float _maxFR){
 		UserErrors::assertTrue(_minFR >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "minFR");
 		UserErrors::assertTrue(_maxFR > 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "maxFR");
-		UserErrors::assertTrue(_minFR < _maxFR, UserErrors::CANNOT_BE_LARGER, "RangeFR", "minFR", "maxFR");
+		UserErrors::assertTrue(_minFR <= _maxFR, UserErrors::CANNOT_BE_LARGER, "RangeFR", "minFR", "maxFR");
 
 		minFR = _minFR;
 		maxFR = _maxFR;
@@ -400,8 +400,8 @@ struct RangeFR {
 struct RangeIntercept {
 	RangeIntercept(float _minInt, float _maxInt){
 		UserErrors::assertTrue(_minInt >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "minInt");
-		UserErrors::assertTrue(_maxInt > 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "maxInt");
-		UserErrors::assertTrue(_minInt < _maxInt, UserErrors::CANNOT_BE_LARGER, "RangeIntercept", "minInt", "maxInt");
+		UserErrors::assertTrue(_maxInt >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "maxInt");
+		UserErrors::assertTrue(_minInt <= _maxInt, UserErrors::CANNOT_BE_LARGER, "RangeIntercept", "minInt", "maxInt");
 
 		minInt = _minInt;
 		maxInt = _maxInt;

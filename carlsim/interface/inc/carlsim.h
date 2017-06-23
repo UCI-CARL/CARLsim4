@@ -588,7 +588,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 */
 	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, 
-		const RangeFR& rangeFR=RangeFR(200.0f, 400.0f), const RangeIntercept& rangeInt=RangeIntercept(0.0f, 0.99f));
+		const RangeFR& rangeFR=RangeFR(200.0f, 200.0f), const RangeIntercept& rangeInt=RangeIntercept(0.1f, 0.1f));
     
    /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.

@@ -576,9 +576,9 @@ void SNN::setNeuronParametersLIF(int gGrpId, int tau_m, int tau_ref, float vTh, 
 {
 	assert(gGrpId >= -1);
 	assert(tau_m >= 0); assert(tau_ref >= 0); assert(vReset < vTh); assert(minFR >= 0.0f);
-	assert(maxFR > 0.0f); assert(minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minFR < maxFR);
+	assert(maxFR > 0.0f); assert(minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minFR <= maxFR);
 	assert(maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minInt >= 0.0f);
-	assert(maxInt >= 0.0f); assert(minInt < maxInt); assert(maxInt < 1.0f);
+	assert(maxInt >= 0.0f); assert(minInt <= maxInt); assert(maxInt < 1.0f);
 
 	if (gGrpId == ALL) { // shortcut for all groups
 		for(int grpId = 0; grpId < numGroups; grpId++) {

@@ -628,12 +628,12 @@ public:
 		UserErrors::assertTrue(rangeFR.minFR >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.minFR");
 		UserErrors::assertTrue(rangeFR.maxFR > 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.maxFR");
 		UserErrors::assertTrue(rangeFR.minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
-		UserErrors::assertTrue(rangeFR.minFR < rangeFR.maxFR , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
+		UserErrors::assertTrue(rangeFR.minFR <= rangeFR.maxFR , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
 		UserErrors::assertTrue(rangeFR.maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.maxFR");
 
 		UserErrors::assertTrue(rangeInt.minInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.minInt");
 		UserErrors::assertTrue(rangeInt.maxInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.maxInt");
-		UserErrors::assertTrue(rangeInt.minInt < rangeInt.maxInt , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.minInt");
+		UserErrors::assertTrue(rangeInt.minInt <= rangeInt.maxInt , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.minInt");
 		UserErrors::assertTrue(rangeInt.maxInt < 1.0f , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.maxInt");
 
 		// wrapper identical to core func
