@@ -913,6 +913,8 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 	float a = runtimeDataGPU.Izh_a[nid];
 	float b = runtimeDataGPU.Izh_b[nid];
 
+	const float one_sixth = 1.0f / 6.0f;
+
 	float timeStep = networkConfigGPU.timeStep;
 
 	float totalCurrent = runtimeDataGPU.extCurrent[nid];
@@ -987,7 +989,6 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > 30.0f) {
@@ -1015,7 +1016,6 @@ __device__ void updateNeuronState(int nid, int grpId, bool lastIteration) {
 			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > vpeak) {
