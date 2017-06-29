@@ -81,7 +81,7 @@ int main() {
 	sim.setConductances(false);
 	sim.setIntegrationMethod(FORWARD_EULER, 3);
 
-	NeuronMonitor* nmIn = sim.setNeuronMonitor(gSingleLIF,"DEFAULT");
+//	NeuronMonitor* nmIn = sim.setNeuronMonitor(gSingleLIF,"DEFAULT");
 
 	// ---------------- SETUP STATE -------------------
 	// build the network
@@ -97,16 +97,16 @@ int main() {
 
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
-	nmIn->startRecording();
-	for (int i=7; i<8; i++) {
+//	nmIn->startRecording();
+	for (int i=0; i<10; i++) {
 		std::vector<float> current(1, (float)i*0.8f);
 		sim.setExternalCurrent(gSingleLIF, current);
 		sim.runNetwork(0,100);
 	}
-	nmIn->stopRecording();
+//	nmIn->stopRecording();
 	// print stopwatch summary
 	watch.stop();
-	nmIn->print();
+//	nmIn->print();
 	
 	return 0;
 }
