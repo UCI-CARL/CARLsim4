@@ -888,6 +888,9 @@ __device__ inline float dudtIzhikevich9(float volt, float recov, float voltRest,
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
+__device__ inline float dvdtLIF(float volt, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep=1.0f){
+	return ((-volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
+}
 
 __device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, float const1 = 0.0f) {
 	float compCurrent = 0.0f;
@@ -923,6 +926,15 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 	float vpeak = runtimeDataGPU.Izh_vpeak[nid];
 	float a = runtimeDataGPU.Izh_a[nid];
 	float b = runtimeDataGPU.Izh_b[nid];
+	
+	// pre-load LIF parameters
+	int lif_tau_m = runtimeDataGPU.lif_tau_m[nid];
+	int lif_tau_ref = runtimeDataGPU.lif_tau_ref[nid];
+	int lif_tau_ref_c = runtimeDataGPU.lif_tau_ref_c[nid];
+	float lif_vTh = runtimeDataGPU.lif_vTh[nid];
+	float lif_vReset = runtimeDataGPU.lif_vReset[nid];
+	float lif_gain = runtimeDataGPU.lif_gain[nid];
+	float lif_bias = runtimeDataGPU.lif_bias[nid]
 
 	float timeStep = networkConfigGPU.timeStep;
 
@@ -949,7 +961,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 
 	switch (networkConfigGPU.simIntegrationMethod) {
 	case FORWARD_EULER:
-		if (!groupConfigsGPU[grpId].withParamModel_9)
+		if (!groupConfigsGPU[grpId].withParamModel_9 && !groupConfigsGPU[grpId].isLIF)
 		{	// 4-param Izhikevich
 			// update vpos and upos for the current neuron
 
@@ -961,7 +973,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 				u += runtimeDataGPU.Izh_d[nid];
 			}
 		}
-		else
+		else if(!groupConfigsGPU[grpId].isLIF)
 		{	// 9-param Izhikevich
 			// update vpos and upos for the current neuron
 			v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
@@ -971,18 +983,42 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 				u += runtimeDataGPU.Izh_d[nid];
 			}
 		}
+		else{
+			 if (lif_tau_ref_c > 0){
+                         	if(j == 1){
+                                	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+                                }
+                         }
+                         else{
+                         	v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+                                if (v_next > lif_vTh) {
+					//KERNEL_INFO("\n LIF spike detected\t");
+                                        runtimeDataGPU.curSpike[nid] = true;
+                                        v_next = lif_vReset;
+                                        runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref;
+                                }
+                         }
 
-		if (v_next < -90.0f) v_next = -90.0f;
-
-		if (!groupConfigsGPU[grpId].withParamModel_9)
-		{
-			u += dudtIzhikevich4(v_next, u, a, b, timeStep);
 		}
-		else
-		{
-			u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+
+		if (groupConfigsGPU[grpId].isLIF){
+                	if (v_next < lif_vReset) v_next = lif_vReset;
+                }
+                else{
+
+			if (v_next < -90.0f) v_next = -90.0f;
+
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{
+				u += dudtIzhikevich4(v_next, u, a, b, timeStep);
+			}
+			else
+			{
+				u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+			}
 		}
 		break;
+
 	case RUNGE_KUTTA4:
 		if (!groupConfigsGPU[grpId].withParamModel_9) {
 			// 4-param Izhikevich
