@@ -1048,14 +1048,15 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						}
 					}
 					break;
+				
 				case RUNGE_KUTTA4:
 
-					if (groupConfigs[netId][lGrpId].isLIF){
-						KERNEL_ERROR("RK4 integration is not supported in a simulation with LIF neurons!");
-						exitSimulation(1);
-					}
+				//	if (groupConfigs[netId][lGrpId].isLIF){
+				//		KERNEL_ERROR("RK4 integration is not supported in a simulation with LIF neurons!");
+				//		exitSimulation(1);
+				//	}
 
-					if (!groupConfigs[netId][lGrpId].withParamModel_9) {
+					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF) {
 						// 4-param Izhikevich
 						float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 						float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
@@ -1081,7 +1082,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 					}
-					else {
+					else if(!groupConfigs[netId][lGrpId].isLIF){
 						// 9-param Izhikevich
 						float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
 							timeStep);
@@ -1111,7 +1112,23 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						if (v_next < -90.0f) v_next = -90.0f;
 
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
-
+					}
+					else{
+						if (lif_tau_ref_c > 0){
+							if(j == 1){
+								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
+							}
+						}
+						else{
+							v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+							if (v_next > lif_vTh) {
+//								KERNEL_INFO("\n LIF spike detected\t");
+								runtimeData[netId].curSpike[lNId] = true;
+								v_next = lif_vReset;
+								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+							}
+						}
+						if (v_next < lif_vReset) v_next = lif_vReset;
 					}
 					break;
 				case UNKNOWN_INTEGRATION:

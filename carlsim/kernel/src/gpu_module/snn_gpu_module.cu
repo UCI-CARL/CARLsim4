@@ -992,7 +992,6 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
                          else{
                          	v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
                                 if (v_next > lif_vTh) {
-					//KERNEL_INFO("\n LIF spike detected\t");
                                         runtimeDataGPU.curSpike[nid] = true;
                                         v_next = lif_vReset;
                                         runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref;
@@ -1020,7 +1019,8 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 		break;
 
 	case RUNGE_KUTTA4:
-		if (!groupConfigsGPU[grpId].withParamModel_9) {
+
+		if (!groupConfigsGPU[grpId].withParamModel_9 && !groupConfigsGPU[grpId].isLIF) {
 			// 4-param Izhikevich
 			float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 			float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
@@ -1048,7 +1048,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 
 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 		}
-		else {
+		else if(!groupConfigsGPU[grpId].isLIF){
 			// 9-param Izhikevich
 			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
@@ -1075,6 +1075,24 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			if (v_next < -90.0f) v_next = -90.0f;
 
 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+		}
+		
+		else{
+			// LIF integration is always FORWARD_EULER
+			 if (lif_tau_ref_c > 0){
+                         	if(j == 1){
+                                	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+                                }
+                         }
+                         else{
+                         	v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+                                if (v_next > lif_vTh) {
+                                        runtimeDataGPU.curSpike[nid] = true;
+                                        v_next = lif_vReset;
+                                        runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref;
+                                }
+                         }
+			if (v_next < lif_vReset) v_next = lif_vReset;
 		}
 		break;
 	case UNKNOWN_INTEGRATION:
