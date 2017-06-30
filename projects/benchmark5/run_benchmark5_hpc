@@ -1,0 +1,17 @@
+#!/bin/bash
+#$ -N Benchmark5
+#$ -q gpu
+#$ -l gpu=4
+#$ -pe gpu-node-cores 24
+#$ -m beas
+
+echo "2000" >> "record.csv" 
+./benchmark5 2000  500 2000 10 20  260.0  1.69  30.0  "record.csv" 42 100 
+
+
+
+
+#1. number of neurons in exc group; 2. number of neurons in inh group; 3. number of input neurons
+#4. simulate time; 5. input  fire rates; 6. weight from input to exc; 7. weight from exc to inh
+#8. weight from inh to exc; 9. recordfile; 10. randseed; 11. number of synapse per neuron
+#In this project, we just increase the size of group which means only first two parameters need to be changed
