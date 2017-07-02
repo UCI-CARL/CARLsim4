@@ -1010,15 +1010,18 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						if (lif_tau_ref_c > 0){
 							if(j == 1){
 								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
+								v_next = lif_vReset;
 							}
 						}
 						else{
-							v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							if (v_next > lif_vTh) {
 //								KERNEL_INFO("\n LIF spike detected\t");
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
 								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+							}
+							else{
+								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
 						}
 						// KERNEL_INFO("v: %f", v);
@@ -1114,18 +1117,22 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 					}
 					else{
+						//LIF integration is always FORWARD_EULER
 						if (lif_tau_ref_c > 0){
 							if(j == 1){
 								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
+								v_next = lif_vReset;
 							}
 						}
 						else{
-							v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							if (v_next > lif_vTh) {
 //								KERNEL_INFO("\n LIF spike detected\t");
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
 								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+							}
+							else{
+								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
 						}
 						if (v_next < lif_vReset) v_next = lif_vReset;

@@ -987,10 +987,10 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			 if (lif_tau_ref_c > 0){
                          	if(lastIteration){
                                 	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+					v_next = lif_vReset;
                                 }
                          }
                          else{
-                         	v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
                                 if (v_next > lif_vTh) {
                                         runtimeDataGPU.curSpike[nid] = true;
                                         v_next = lif_vReset;
@@ -1001,6 +1001,9 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 						runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref+1;
 					}
                                 }
+				else{
+					v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+				}
                          }
 
 		}
@@ -1087,10 +1090,10 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			 if (lif_tau_ref_c > 0){
                          	if(lastIteration){
                                 	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+					v_next = lif_vReset;
                                 }
                          }
                          else{
-                         	v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
                                 if (v_next > lif_vTh) {
                                         runtimeDataGPU.curSpike[nid] = true;
                                         v_next = lif_vReset;
@@ -1101,6 +1104,9 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 						runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref+1;
 					}
                                 }
+				else{
+					v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+				}
                          }
 			if (v_next < lif_vReset) v_next = lif_vReset;
 		}

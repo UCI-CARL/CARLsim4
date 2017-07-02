@@ -98,10 +98,10 @@ int main() {
 	// run for a total of 10 seconds
 	// at the end of each runNetwork call, SpikeMonitor stats will be printed
 //	nmIn->startRecording();
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<=10; i++) {
 		std::vector<float> current(1, (float)i*0.8f);
 		sim.setExternalCurrent(gSingleLIF, current);
-		sim.runNetwork(0,100);
+		sim.runNetwork(10,0);
 	}
 //	nmIn->stopRecording();
 	// print stopwatch summary
