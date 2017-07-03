@@ -970,11 +970,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				switch (networkConfigs[netId].simIntegrationMethod) {
 				case FORWARD_EULER:
 					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF)
-					{	// 4-param Izhikevich
-//						KERNEL_INFO("\n inside 4 param integration\t");
-//						if (groupConfigs[netId][lGrpId].isLIF){
-//							KERNEL_INFO("Confirmed LIF\n");
-//						}
+					{	
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 						if (v_next > 30.0f) {
@@ -985,11 +981,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						}
 					}
 					else if (!groupConfigs[netId][lGrpId].isLIF)
-					{	// 9-param Izhikevich
-//						KERNEL_INFO("\n inside 9 param integration\t");
-//						if (groupConfigs[netId][lGrpId].isLIF){
-//							KERNEL_INFO("Confirmed LIF\n");
-//						}
+					{	
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 						if (v_next > vpeak) {
@@ -1001,38 +993,28 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					}
 
 					else{
-						// LIF neuron
-						// update vpos for the current neuron
-//						KERNEL_INFO("\n inside LIF integration\t");
-//						if (groupConfigs[netId][lGrpId].isLIF){
-//							KERNEL_INFO("Confirmed LIF\n");
-//						}
 						if (lif_tau_ref_c > 0){
-							if(j == 1){
+							if(lastIter){
 								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
 								v_next = lif_vReset;
 							}
 						}
 						else{
 							if (v_next > lif_vTh) {
-//								KERNEL_INFO("\n LIF spike detected\t");
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
-								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+								
+								if(lastIter){
+                                        				runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+								}
+								else{
+									runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref + 1;
+								}
 							}
 							else{
 								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
-						}
-						// KERNEL_INFO("v: %f", v);
-						// KERNEL_INFO("v_next: %f", v_next);
-						// KERNEL_INFO("lif_gain: %f", lif_gain);
-						// KERNEL_INFO("lif_bias: %f", lif_bias);
-						// KERNEL_INFO("lif_tau_m: %d", lif_tau_m);
-						// KERNEL_INFO("lif_tau_ref: %d", lif_tau_ref);
-						// KERNEL_INFO("lif_tau_ref_c: %d", lif_tau_ref_c);
-						// KERNEL_INFO("total_current: %f", totalCurrent);
-						// KERNEL_INFO("time step: %f", timeStep);
+						}						
 					}
 
 					if (groupConfigs[netId][lGrpId].isLIF){
@@ -1053,11 +1035,6 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					break;
 				
 				case RUNGE_KUTTA4:
-
-				//	if (groupConfigs[netId][lGrpId].isLIF){
-				//		KERNEL_ERROR("RK4 integration is not supported in a simulation with LIF neurons!");
-				//		exitSimulation(1);
-				//	}
 
 					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF) {
 						// 4-param Izhikevich
@@ -1119,17 +1096,22 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 					else{
 						//LIF integration is always FORWARD_EULER
 						if (lif_tau_ref_c > 0){
-							if(j == 1){
+							if(lastIter){
 								runtimeData[netId].lif_tau_ref_c[lNId] -= 1;
 								v_next = lif_vReset;
 							}
 						}
 						else{
 							if (v_next > lif_vTh) {
-//								KERNEL_INFO("\n LIF spike detected\t");
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
-								runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+								
+								if(lastIter){
+                                        				runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
+								}
+								else{
+									runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref + 1;
+								}
 							}
 							else{
 								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);

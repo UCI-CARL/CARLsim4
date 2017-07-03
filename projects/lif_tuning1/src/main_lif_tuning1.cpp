@@ -79,7 +79,7 @@ int main() {
 	fflush(stdout);
 	sim.connect(gSingleLIF, gDummyLIF, "full", RangeWeight(0.05), 1.0f, RangeDelay(1));
 	sim.setConductances(false);
-	sim.setIntegrationMethod(FORWARD_EULER, 3);
+	sim.setIntegrationMethod(FORWARD_EULER, 1);
 
 //	NeuronMonitor* nmIn = sim.setNeuronMonitor(gSingleLIF,"DEFAULT");
 
