@@ -571,28 +571,23 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 
 
 // set LIF parameters for the group
-void SNN::setNeuronParametersLIF(int gGrpId, int tau_m, int tau_ref, float vTh, float vReset, 
-	float minFR, float maxFR, float minInt, float maxInt)
+void SNN::setNeuronParametersLIF(int gGrpId, int tau_m, int tau_ref, float vTh, float vReset, double minRmem, double maxRmem)
 {
 	assert(gGrpId >= -1);
-	assert(tau_m >= 0); assert(tau_ref >= 0); assert(vReset < vTh); assert(minFR >= 0.0f);
-	assert(maxFR > 0.0f); assert(minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minFR <= maxFR);
-	assert(maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f)); assert(minInt >= 0.0f);
-	assert(maxInt >= 0.0f); assert(minInt <= maxInt); assert(maxInt < 1.0f);
+	assert(tau_m >= 0); assert(tau_ref >= 0); assert(vReset < vTh);
+	assert(minRmem >= 0.0f); assert(minRmem <= maxRmem);
 
 	if (gGrpId == ALL) { // shortcut for all groups
 		for(int grpId = 0; grpId < numGroups; grpId++) {
-			setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, minFR, maxFR, minInt, maxInt);
+			setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, minRmem, maxRmem);
 		}
 	} else {
 		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m = tau_m;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref = tau_ref;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh = vTh;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset = vReset;
-		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR = minFR;
-		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR = maxFR;
-		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt = minInt;
-		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt = maxInt;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem = minRmem;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxRmem = maxRmem;
 		groupConfigMap[gGrpId].withParamModel_9 = 0;
 		groupConfigMap[gGrpId].isLIF = 1;
 	}
@@ -5595,31 +5590,11 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	
 	// calculate gain and bias for the lif neuron
 	if (groupConfigs[netId][lGrpId].isLIF){
-		float maxFiringRateRange = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxFR - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR;
-		float xInterceptRange = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxInt - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt;
-
-		if (maxFiringRateRange <= 0.000f && xInterceptRange <= 0.000f){
-			managerRuntimeData.lif_gain[lNId] = 1.0f;
-			managerRuntimeData.lif_bias[lNId] = 0.0f;	
-		}
-		else{
-			float rate = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minFR + maxFiringRateRange * (float)drand48();
-			float intercept = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minInt + xInterceptRange * (float)drand48();
-
-			float inv_tau_ref = 999999.9f;
-			if (groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref > 0){
-				inv_tau_ref = 1.0f /((float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref);
-			}
-			
-			if (rate > inv_tau_ref){
-				KERNEL_ERROR("Maximum firing rate of each LIF neuron must be less than the inverse of the refractory period (%f)", inv_tau_ref);
-				exitSimulation(1);		
-			}
-
-			float x = 1.0f / (1 - exp(((float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref - (1 / rate)) / (float) groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m));
-			managerRuntimeData.lif_gain[lNId] = (1.0f - x) / (intercept - 1.0f);
-			managerRuntimeData.lif_bias[lNId] = 1.0f - managerRuntimeData.lif_gain[lNId] * intercept;
-		}
+		// gain an bias of the LIF neuron is calculated based on Membrane resistance
+		float rmRange = (float)(groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxRmem - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem);
+		float minRmem = (float)groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem;
+		managerRuntimeData.lif_bias[lNId] = 0.0f;
+		managerRuntimeData.lif_gain[lNId] = minRmem + rmRange * (float)drand48();
 	}
 
 	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].isLIF ? managerRuntimeData.lif_vReset[lNId] : (groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId]);

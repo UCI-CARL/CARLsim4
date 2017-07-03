@@ -613,8 +613,7 @@ public:
 	}
 
 	// set neuron parameters for LIF spiking neuron
-	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, 
-		const RangeFR& rangeFR, const RangeIntercept& rangeInt)
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, const RangeRmem& rMem)
 	{
 		std::string funcName = "setNeuronParametersLIF(\"" + getGroupName(grpId) + "\")";
 		UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
@@ -625,19 +624,11 @@ public:
 
 		UserErrors::assertTrue(vReset < vTh , UserErrors::CANNOT_BE_LARGER, funcName, "vReset");
 
-		UserErrors::assertTrue(rangeFR.minFR >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.minFR");
-		UserErrors::assertTrue(rangeFR.maxFR > 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeFR.maxFR");
-		UserErrors::assertTrue(rangeFR.minFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
-		UserErrors::assertTrue(rangeFR.minFR <= rangeFR.maxFR , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.minFR");
-		UserErrors::assertTrue(rangeFR.maxFR < (tau_ref>=1?(1000.0f/tau_ref):1000.0f) , UserErrors::CANNOT_BE_LARGER, funcName, "rangeFR.maxFR");
-
-		UserErrors::assertTrue(rangeInt.minInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.minInt");
-		UserErrors::assertTrue(rangeInt.maxInt >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeInt.maxInt");
-		UserErrors::assertTrue(rangeInt.minInt <= rangeInt.maxInt , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.minInt");
-		UserErrors::assertTrue(rangeInt.maxInt < 1.0f , UserErrors::CANNOT_BE_LARGER, funcName, "rangeInt.maxInt");
+		UserErrors::assertTrue(rMem.minRmem >= 0.0f , UserErrors::CANNOT_BE_NEGATIVE, funcName, "rangeRmem.minRmem");
+		UserErrors::assertTrue(rMem.minRmem <= rMem.maxRmem , UserErrors::CANNOT_BE_LARGER, funcName, "rangeRmem.minRmem");
 
 		// wrapper identical to core func
-		snn_->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR.minFR, rangeFR.maxFR, rangeInt.minInt, rangeInt.maxInt);
+		snn_->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset,rMem.minRmem, rMem.maxRmem);
 	}
 
 	// set parameters for each neuronmodulator
@@ -1846,10 +1837,9 @@ void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float 
 		izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
 }
 
-void CARLsim::setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, 
-	const RangeFR& rangeFR, const RangeIntercept& rangeInt)
+void CARLsim::setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, const RangeRmem& rMem)
 {
-	_impl->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rangeFR, rangeInt);
+	_impl->setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, rMem);
 }
 
 void CARLsim::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, 

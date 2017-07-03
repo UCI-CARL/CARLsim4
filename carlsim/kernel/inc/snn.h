@@ -268,14 +268,11 @@ public:
 	 * \param[in] tau_ref absolute refractory period in ms
 	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
 	 * \param[in] vReset Membrane potential resets to this value immediately after spike
-	 * \param[in] minFR minimum firing rate for constant input current=1
-	 * \param[in] maxFR maximum firing rate for constant input current=1
-	 * \param[in] minInt minimum X-intercept of the tuning curves of the neurons
-	 * \param[in] maxInt maximum X-intercept of the tuning curves of the neurons
+	 * \param[in] minRmem minimum membrane resistance
+	 * \param[in] maxRmem maximum membrane resistance
 	 * 
 	 */
-	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, 
-		float minFR, float maxFR, float minInt, float maxInt);
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, double minRmem, double maxRmem);
 
 	//! Sets the Izhikevich parameters C, k, vr, vt, a, b, vpeak, c, and d of a neuron group.
 	/*!

@@ -373,46 +373,31 @@ struct RadiusRF {
 };
 
 /*!
- * \brief Struct defines the minimum and maximum limits of the LIF neuron firing range
+ * \brief Struct defines the minimum and maximum membrane resisatnces of the LIF neuron group
  *
  */
-struct RangeFR {
-	RangeFR(float _minFR, float _maxFR){
-		UserErrors::assertTrue(_minFR >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "minFR");
-		UserErrors::assertTrue(_maxFR > 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeFR", "maxFR");
-		UserErrors::assertTrue(_minFR <= _maxFR, UserErrors::CANNOT_BE_LARGER, "RangeFR", "minFR", "maxFR");
-
-		minFR = _minFR;
-		maxFR = _maxFR;
+struct RangeRmem{
+	RangeRmem(double _rMem){
+		// same membrane resistance for all neurons in the group
+		UserErrors::assertTrue(_rMem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "rMem");
+		minRmem = _rMem;
+		maxRmem = _rMem;
 	}
 
-	friend std::ostream& operator<<(std::ostream &strm, const RangeFR &r) {
-        return strm << "RangeFR=[" << r.minFR << "," << r.maxFR << "]";
-    }
-
-	float minFR, maxFR;
-};
-
-/*!
- * \brief Struct defines the minimum and maximum x-intercepts of the LIF neuron tuning curve
- *
- */
-struct RangeIntercept {
-	RangeIntercept(float _minInt, float _maxInt){
-		UserErrors::assertTrue(_minInt >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "minInt");
-		UserErrors::assertTrue(_maxInt >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeIntercept", "maxInt");
-		UserErrors::assertTrue(_minInt <= _maxInt, UserErrors::CANNOT_BE_LARGER, "RangeIntercept", "minInt", "maxInt");
-
-		minInt = _minInt;
-		maxInt = _maxInt;
+	RangeRmem(double _minRmem, double _maxRmem){
+		// membrane resistances of the  neuron group varies uniformly between a maximum and a minimum value
+		UserErrors::assertTrue(_minRmem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "minRmem");
+		UserErrors::assertTrue(_minRmem <= _maxRmem, UserErrors::CANNOT_BE_LARGER, "RangeRmem", "minRmem", "maxRmem");
+		minRmem = _minRmem;
+		maxRmem = _maxRmem;
 	}
 
-	friend std::ostream& operator<<(std::ostream &strm, const RangeIntercept &r) {
-        return strm << "RangeIntercept=[" << r.minInt << "," << r.maxInt << "]";
+	friend std::ostream& operator<<(std::ostream &strm, const RangeRmem &rMem) {
+        return strm << "RangeRmem=[" << rMem.minRmem << "," << rMem.maxRmem << "]";
     }
-
-	float minInt, maxInt;
+	double minRmem, maxRmem;	
 };
+
 
 /*!
  * \brief A struct for retrieving STDP related information of a group

@@ -188,8 +188,8 @@ typedef struct NeuralDynamicsConfig_s {
 							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
 							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
 							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), lif_tau_m(-1), 
-							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minFR(0.0f),
-							   lif_maxFR(0.0f), lif_minInt(0.0f), lif_maxInt(0.0f)
+							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minRmem(1.0f),
+							   lif_maxRmem(1.0f)
 	{}
 	float 		Izh_C;
 	float 		Izh_C_sd;
@@ -213,11 +213,8 @@ typedef struct NeuralDynamicsConfig_s {
 	int 		lif_tau_ref;
 	float 		lif_vTh;
 	float 		lif_vReset;
-	float 		lif_minFR;
-	float 		lif_maxFR;
-	float 		lif_minInt;
-	float 		lif_maxInt;
-
+	double		lif_minRmem;
+	double		lif_maxRmem;
 } NeuralDynamicsConfig;
 
 //!< long-term plasiticity configurations

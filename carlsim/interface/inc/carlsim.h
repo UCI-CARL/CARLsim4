@@ -580,15 +580,10 @@ public:
 	 * \param[in] tau_ref absolute refractory period in ms
 	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
 	 * \param[in] vReset Membrane potential resets to this value immediately after spike
-	 * \param[in] rangeFR uniform firing rate distribution range (in Hz) for constant input current=1 (min, max).
-	 *				Must be smaller than (1000/tau_ref) and positive.
-	 * \param[in] rangeInt uniform Intercept distribution of the tuning curves of the neurons (min, max).
-	 *				Must be in the range 0 to <1.
-	 * 
+	 * \param[in] rMem Range of total membrane resistance of the neuron group, uniformly distributed or fixed for the whole group
 	 * \STATE ::CONFIG_STATE
 	 */
-	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, 
-		const RangeFR& rangeFR=RangeFR(200.0f, 200.0f), const RangeIntercept& rangeInt=RangeIntercept(0.1f, 0.1f));
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, const RangeRmem& rMem = RangeRmem(1.0f));
     
    /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.
