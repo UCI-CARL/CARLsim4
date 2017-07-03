@@ -878,8 +878,8 @@ float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float
 
 // single integration step for voltage equation of LIF neurons
 inline
-float dvdtLIF(float volt, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep = 1.0f) {
-	return ((-volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
+float dvdtLIF(float volt, float lif_vReset, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep = 1.0f) {
+	return ((lif_vReset -volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
 }
 
 float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, float const1) {
@@ -1012,7 +1012,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 								}
 							}
 							else{
-								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+								v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
 						}						
 					}
@@ -1114,7 +1114,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 								}
 							}
 							else{
-								v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+								v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
 						}
 						if (v_next < lif_vReset) v_next = lif_vReset;

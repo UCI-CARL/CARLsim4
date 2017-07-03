@@ -69,9 +69,9 @@ int main() {
 	Grid3D gridSingle(1,1,1); // pre is on a 1x1 grid
 	Grid3D gridDummy(1,1,1); // dummy is on a 1x1 grid
 	int gSingleLIF=sim.createGroupLIF("input", gridSingle, EXCITATORY_NEURON, 0, GPU_CORES);
-	int gDummyLIF=sim.createGroup("output", gridDummy, EXCITATORY_NEURON, 0, GPU_CORES);
-	//sim.setNeuronParametersLIF(gSingleLIF, 10, 2, -50.0f, -65.0f, RangeRmem(10.0f));
-	sim.setNeuronParametersLIF(gSingleLIF, 20, 2, 1.0f, 0.0f, RangeRmem(1.0f));
+	int gDummyLIF=sim.createGroup("output", gridDummy, EXCITATORY_NEURON, 1, CPU_CORES);
+	sim.setNeuronParametersLIF(gSingleLIF, 20, 2, 1.0f, 0.0f, RangeRmem(1.5f));
+	//sim.setNeuronParametersLIF(gSingleLIF, 10, 2, -50.0f, -65.0f, RangeRmem(5.0f));
 	//sim.setNeuronParametersLIF(gDummyLIF, 20);
 	//sim.setNeuronParameters(gSingleLIF, 0.02f, 0.2f, -65.0f, 8.0f);
 	sim.setNeuronParameters(gDummyLIF, 0.02f, 0.2f, -65.0f, 8.0f);

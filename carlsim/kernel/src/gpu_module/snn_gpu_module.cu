@@ -888,8 +888,8 @@ __device__ inline float dudtIzhikevich9(float volt, float recov, float voltRest,
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
-__device__ inline float dvdtLIF(float volt, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep=1.0f){
-	return ((-volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
+__device__ inline float dvdtLIF(float volt, float lif_vReset, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep=1.0f){
+	return ((lif_vReset -volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
 }
 
 __device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, float const1 = 0.0f) {
@@ -1002,7 +1002,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 					}
                                 }
 				else{
-					v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+					v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 				}
                          }
 
@@ -1105,7 +1105,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 					}
                                 }
 				else{
-					v_next = v + dvdtLIF(v, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+					v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 				}
                          }
 			if (v_next < lif_vReset) v_next = lif_vReset;
