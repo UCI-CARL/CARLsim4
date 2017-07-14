@@ -388,6 +388,13 @@ void SNN::setHomeoBaseFiringRate(int gGrpId, float baseFiring, float baseFiringS
 }
 
 
+void SNN::setIntegrationMethod(integrationMethod_t method, int numStepsPerMs) {
+	assert(numStepsPerMs >= 1 && numStepsPerMs <= 100);
+	glbNetworkConfig.simIntegrationMethod = method;
+	glbNetworkConfig.simNumStepsPerMs = numStepsPerMs;
+	glbNetworkConfig.timeStep = 1.0f / numStepsPerMs;
+}
+
 // set Izhikevich parameters for group
 void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 								float izh_c, float izh_c_sd, float izh_d, float izh_d_sd)
@@ -408,6 +415,50 @@ void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c_sd = izh_c_sd;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d = izh_d;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd = izh_d_sd;
+		groupConfigMap[gGrpId].withParamModel_9 = 0;
+	}
+}
+
+// set (9) Izhikevich parameters for group
+void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+	float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+	float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+	float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+	float izh_d, float izh_d_sd)
+{
+	assert(gGrpId >= -1);
+	assert(izh_C_sd >= 0); assert(izh_k_sd >= 0); assert(izh_vr_sd >= 0);
+	assert(izh_vt_sd >= 0); assert(izh_a_sd >= 0); assert(izh_b_sd >= 0); assert(izh_vpeak_sd >= 0);
+	assert(izh_c_sd >= 0); assert(izh_d_sd >= 0);
+
+	if (gGrpId == ALL) { // shortcut for all groups
+		for (int grpId = 0; grpId<numGroups; grpId++) {
+			setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
+				izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd,
+				izh_d, izh_d_sd);
+		}
+	}
+	else {
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a = izh_a;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a_sd = izh_a_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_b = izh_b;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_b_sd = izh_b_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c = izh_c;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c_sd = izh_c_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d = izh_d;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd = izh_d_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_C = izh_C;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_C_sd = izh_C_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_k = izh_k;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_k_sd = izh_k_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr = izh_vr;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr_sd = izh_vr_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt = izh_vt;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd = izh_vt_sd;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
+		groupConfigMap[gGrpId].withParamModel_9 = 1;
+		KERNEL_INFO("Set a nine parameter group!");
 	}
 }
 
@@ -2422,21 +2473,35 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.spikeCountExtRxD2 = 0;
 
 	managerRuntimeData.voltage    = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.nextVoltage = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.recovery   = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_a      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_b      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_c      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_d      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_C	  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_k	  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_vr	  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_vt	  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
 	memset(managerRuntimeData.voltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.nextVoltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.recovery, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_a, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_b, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_c, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_d, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_C, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_k, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_vr, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_vt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2673,6 +2738,8 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
 			}
+			groupConfigs[netId][lGrpId].withParamModel_9 = groupConfigMap[gGrpId].withParamModel_9;
+
 		}
 
 		// FIXME: How does networkConfigs[netId].numGroups be availabe at this time?! Bug?!
@@ -2731,6 +2798,10 @@ void SNN::generateRuntimeNetworkConfigs() {
 			networkConfigs[netId].rGABAb = rGABAb;
 			networkConfigs[netId].dGABAb = dGABAb;
 			networkConfigs[netId].sGABAb = sGABAb;
+
+			networkConfigs[netId].simIntegrationMethod = glbNetworkConfig.simIntegrationMethod;
+			networkConfigs[netId].simNumStepsPerMs = glbNetworkConfig.simNumStepsPerMs;
+			networkConfigs[netId].timeStep = glbNetworkConfig.timeStep;
 
 			// configurations for boundries of neural types
 			findNumN(netId, networkConfigs[netId].numN, networkConfigs[netId].numNExternal, networkConfigs[netId].numNAssigned,
@@ -5148,10 +5219,14 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.Izh_b[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_b + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_b_sd * (float)drand48();
 	managerRuntimeData.Izh_c[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_c_sd * (float)drand48();
 	managerRuntimeData.Izh_d[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd * (float)drand48();
+	managerRuntimeData.Izh_C[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_C + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_C_sd * (float)drand48();
+	managerRuntimeData.Izh_k[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_k + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_k_sd * (float)drand48();
+	managerRuntimeData.Izh_vr[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr_sd * (float)drand48();
+	managerRuntimeData.Izh_vt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd * (float)drand48();
+	managerRuntimeData.Izh_vpeak[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd * (float)drand48();
 
-	managerRuntimeData.voltage[lNId] = managerRuntimeData.Izh_c[lNId];	// initial values for new_v
-	managerRuntimeData.recovery[lNId] = managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId]; // initial values for u
-
+	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId];
+	managerRuntimeData.recovery[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? 0.0f : managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId];
 
  	if (groupConfigs[netId][lGrpId].WithHomeostasis) {
 		// set the baseFiring with some standard deviation.
@@ -5246,16 +5321,25 @@ void SNN::deleteManagerRuntimeData() {
 	// -------------- DEALLOCATE CORE OBJECTS ---------------------- //
 
 	if (managerRuntimeData.voltage!=NULL) delete[] managerRuntimeData.voltage;
+	if (managerRuntimeData.nextVoltage != NULL) delete[] managerRuntimeData.nextVoltage;
 	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
 	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
+	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.curSpike = NULL;
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
 	if (managerRuntimeData.Izh_c!=NULL) delete[] managerRuntimeData.Izh_c;
 	if (managerRuntimeData.Izh_d!=NULL) delete[] managerRuntimeData.Izh_d;
+	if (managerRuntimeData.Izh_C!=NULL) delete[] managerRuntimeData.Izh_C;
+	if (managerRuntimeData.Izh_k!=NULL) delete[] managerRuntimeData.Izh_k;
+	if (managerRuntimeData.Izh_vr!=NULL) delete[] managerRuntimeData.Izh_vr;
+	if (managerRuntimeData.Izh_vt!=NULL) delete[] managerRuntimeData.Izh_vt;
+	if (managerRuntimeData.Izh_vpeak!=NULL) delete[] managerRuntimeData.Izh_vpeak;
 	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
+	managerRuntimeData.Izh_C = NULL; managerRuntimeData.Izh_k = NULL; managerRuntimeData.Izh_vr = NULL; managerRuntimeData.Izh_vt = NULL; managerRuntimeData.Izh_vpeak = NULL;
 
 	if (managerRuntimeData.Npre!=NULL) delete[] managerRuntimeData.Npre;
 	if (managerRuntimeData.Npre_plastic!=NULL) delete[] managerRuntimeData.Npre_plastic;

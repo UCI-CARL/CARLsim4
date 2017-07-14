@@ -215,6 +215,8 @@ public:
 	//! Sets homeostatic target firing rate (enforced through homeostatic synaptic scaling)
 	void setHomeoBaseFiringRate(int groupId, float baseFiring, float baseFiringSD);
 
+	//! Sets the integration method and the number of integration steps per 1ms simulation time step
+	void setIntegrationMethod(integrationMethod_t method, int numStepsPerMs);
 
 	//! Sets the Izhikevich parameters a, b, c, and d of a neuron group.
 	/*!
@@ -231,6 +233,36 @@ public:
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
+
+	//! Sets the Izhikevich parameters C, k, vr, vt, a, b, vpeak, c, and d of a neuron group.
+	/*!
+	* \brief Parameter values for each neuron are given by a normal distribution with mean _C, _k, _vr, _vt, _a, _b, _vpeak, _c, and _d
+	* and standard deviation _C_sd, _k_sd, _vr_sd, _vt_sd, _a_sd, _b_sd, _vpeak_sd, _c_sd, and _d_sd, respectively
+	* \param _groupId the symbolic name of a group
+	* \param _C  the mean value of izhikevich parameter C
+	* \param _C_sd the standart deviation value of izhikevich parameter C
+	* \param _k  the mean value of izhikevich parameter k
+	* \param _k_sd the standart deviation value of izhikevich parameter k
+	* \param _vr  the mean value of izhikevich parameter vr
+	* \param _vr_sd the standart deviation value of izhikevich parameter vr
+	* \param _vt  the mean value of izhikevich parameter vt
+	* \param _vt_sd the standart deviation value of izhikevich parameter vt
+	* \param _a  the mean value of izhikevich parameter a
+	* \param _a_sd the standard deviation value of izhikevich parameter a
+	* \param _b  the mean value of izhikevich parameter b
+	* \param _b_sd the standard deviation value of izhikevich parameter b
+	* \param _vpeak  the mean value of izhikevich parameter vpeak
+	* \param _vpeak_sd the standart deviation value of izhikevich parameter vpeak
+	* \param _c  the mean value of izhikevich parameter c
+	* \param _c_sd the standard deviation value of izhikevich parameter c
+	* \param _d  the mean value of izhikevich parameter d
+	* \param _d_sd the standard deviation value of izhikevich parameter d
+	*/
+	void setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+		float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+		float izh_d, float izh_d_sd);
 
 	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
 	/*!
