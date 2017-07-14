@@ -43,56 +43,79 @@
 * CARLsim4: TSC, HK
 *
 * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-* Ver 12/31/2016
+* Ver 05/24/2017
 */
 
-#ifndef __ERROR_CODE_H__
-#define __ERROR_CODE_H__
+#include <neuron_monitor.h>
 
-#define NO_KERNEL_ERRORS		 			0xc00d
+#include <neuron_monitor_core.h>	// NeuronMonitor private implementation
+#include <user_errors.h>		// fancy user error messages
 
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR1  	0x61
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR2  	0x62
+#include <sstream>				// std::stringstream
+#include <algorithm>			// std::transform
 
-#define STORE_FIRING_ERROR_0 				0x54
 
-#define ERROR_FIRING_0 						0xd0d0
-#define ERROR_FIRING_1 						0xd0d1
-#define ERROR_FIRING_2 						0xd0d2
-#define ERROR_FIRING_3 						0xd0d3
+// we aren't using namespace std so pay attention!
+NeuronMonitor::NeuronMonitor(NeuronMonitorCore* neuronMonitorCorePtr){
+	// make sure the pointer is NULL
+	neuronMonitorCorePtr_ = neuronMonitorCorePtr;
+}
 
-#define GLOBAL_STATE_ERROR_0  				0xf0f0
+NeuronMonitor::~NeuronMonitor() {
+	delete neuronMonitorCorePtr_;
+}
 
-#define GLOBAL_CONDUCTANCE_ERROR_0  		0xfff0
-#define GLOBAL_CONDUCTANCE_ERROR_1			0xfff1
+void NeuronMonitor::clear(){
+	std::string funcName = "clear()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-#define STP_ERROR 							0xf000
+	neuronMonitorCorePtr_->clear();
+}
 
-#define UPDATE_WEIGHTS_ERROR1				0x80
+bool NeuronMonitor::isRecording(){
+	return neuronMonitorCorePtr_->isRecording();
+}
 
-#define CURRENT_UPDATE_ERROR1   			0x51
-#define CURRENT_UPDATE_ERROR2   			0x52
-#define CURRENT_UPDATE_ERROR3   			0x53
-#define CURRENT_UPDATE_ERROR4   			0x54
+void NeuronMonitor::startRecording() {
+	std::string funcName = "startRecording()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
 
-#define KERNEL_CURRENT_ERROR0  				0x90
-#define KERNEL_CURRENT_ERROR1  				0x91
-#define KERNEL_CURRENT_ERROR2  				0x92
+	neuronMonitorCorePtr_->startRecording();
+}
 
-#define ICURRENT_UPDATE_ERROR1   			0x51
-#define ICURRENT_UPDATE_ERROR2   			0x52
-#define ICURRENT_UPDATE_ERROR3   			0x53
-#define ICURRENT_UPDATE_ERROR4   			0x54
-#define ICURRENT_UPDATE_ERROR5   			0x55
+void NeuronMonitor::stopRecording(){
+	std::string funcName = "stopRecording()";
+	UserErrors::assertTrue(isRecording(), UserErrors::MUST_BE_ON, funcName, "Recording");
 
-#define KERNEL_INIT_ERROR0					0x71
-#define KERNEL_INIT_ERROR1					0x72
+	neuronMonitorCorePtr_->stopRecording();
+}
 
-#define POISSON_COUNT_ERROR_0				0x99
+void NeuronMonitor::setLogFile(const std::string& fileName) {
+	std::string funcName = "setLogFile";
 
-#define UNKNOWN_LOGGER_ERROR				0x8001
-#define NO_LOGGER_DIR_ERROR					0x8002
+	FILE* fid;
+	std::string fileNameLower = fileName;
+	std::transform(fileNameLower.begin(), fileNameLower.end(), fileNameLower.begin(), ::tolower);
 
-#define ID_OVERFLOW_ERROR					0x8003
+	if (fileNameLower == "null") {
+		// user does not want a binary created
+		fid = NULL;
+	} else {
+		fid = fopen(fileName.c_str(),"wb");
+		if (fid==NULL) {
+			// default case: print error and exit
+			std::string fileError = " Double-check file permissions and make sure directory exists.";
+			UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileName, fileError);
+		}
+	}
 
-#endif
+	// tell new file id to core object
+	neuronMonitorCorePtr_->setNeuronFileId(fid);
+}
+
+void NeuronMonitor::print() {
+	std::string funcName = "print()";
+	UserErrors::assertTrue(!isRecording(), UserErrors::CANNOT_BE_ON, funcName, "Recording");
+
+	neuronMonitorCorePtr_->print();
+}

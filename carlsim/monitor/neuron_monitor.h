@@ -43,56 +43,46 @@
 * CARLsim4: TSC, HK
 *
 * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-* Ver 12/31/2016
+* Ver 05/24/2017
 */
 
-#ifndef __ERROR_CODE_H__
-#define __ERROR_CODE_H__
+#ifndef _NEURON_MON_H_
+#define _NEURON_MON_H_
 
-#define NO_KERNEL_ERRORS		 			0xc00d
+#include <carlsim_datastructures.h> // NeuronMonMode
+#include <vector>					// std::vector
 
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR1  	0x61
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR2  	0x62
+class SNN; 			// forward declaration of SNN class
+class NeuronMonitorCore; // forward declaration of implementation
 
-#define STORE_FIRING_ERROR_0 				0x54
+class NeuronMonitor {
+ public:
+	/*!
+	 * \brief NeuronMonitor constructor
+	 *
+	 * Creates a new instance of the NeuronMonitor class.
+	 *
+	 */
+	NeuronMonitor(NeuronMonitorCore* neuronMonitorCorePtr);
 
-#define ERROR_FIRING_0 						0xd0d0
-#define ERROR_FIRING_1 						0xd0d1
-#define ERROR_FIRING_2 						0xd0d2
-#define ERROR_FIRING_3 						0xd0d3
+	/*!
+	 * \brief NeuronMonitor destructor.
+	 *
+	 * Cleans up all the memory upon object deletion.
+	 *
+	 */
+	~NeuronMonitor();
 
-#define GLOBAL_STATE_ERROR_0  				0xf0f0
+    void clear();
+    bool isRecording();
+    void startRecording();
+    void stopRecording();
+    void setLogFile(const std::string& logFileName);
+	void print();
 
-#define GLOBAL_CONDUCTANCE_ERROR_0  		0xfff0
-#define GLOBAL_CONDUCTANCE_ERROR_1			0xfff1
+ private:
+  //! This is a pointer to the actual implementation of the class. The user should never directly instantiate it.
+  NeuronMonitorCore* neuronMonitorCorePtr_;
 
-#define STP_ERROR 							0xf000
-
-#define UPDATE_WEIGHTS_ERROR1				0x80
-
-#define CURRENT_UPDATE_ERROR1   			0x51
-#define CURRENT_UPDATE_ERROR2   			0x52
-#define CURRENT_UPDATE_ERROR3   			0x53
-#define CURRENT_UPDATE_ERROR4   			0x54
-
-#define KERNEL_CURRENT_ERROR0  				0x90
-#define KERNEL_CURRENT_ERROR1  				0x91
-#define KERNEL_CURRENT_ERROR2  				0x92
-
-#define ICURRENT_UPDATE_ERROR1   			0x51
-#define ICURRENT_UPDATE_ERROR2   			0x52
-#define ICURRENT_UPDATE_ERROR3   			0x53
-#define ICURRENT_UPDATE_ERROR4   			0x54
-#define ICURRENT_UPDATE_ERROR5   			0x55
-
-#define KERNEL_INIT_ERROR0					0x71
-#define KERNEL_INIT_ERROR1					0x72
-
-#define POISSON_COUNT_ERROR_0				0x99
-
-#define UNKNOWN_LOGGER_ERROR				0x8001
-#define NO_LOGGER_DIR_ERROR					0x8002
-
-#define ID_OVERFLOW_ERROR					0x8003
-
+};
 #endif

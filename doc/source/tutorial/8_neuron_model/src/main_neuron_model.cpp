@@ -46,53 +46,59 @@
 * Ver 12/31/2016
 */
 
-#ifndef __ERROR_CODE_H__
-#define __ERROR_CODE_H__
+#include <carlsim.h>
+#include <vector>
+#include <cmath>
+#include <cstdlib>
 
-#define NO_KERNEL_ERRORS		 			0xc00d
+#define ONE_NEURON 1
 
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR1  	0x61
-#define NEW_FIRE_UPDATE_OVERFLOW_ERROR2  	0x62
+int main(int argc, const char* argv[]) {
+	// ---------------- CONFIG STATE -------------------
+	CARLsim sim("spnet", HYBRID_MODE, USER, 0, 42);
 
-#define STORE_FIRING_ERROR_0 				0x54
+	float wtExc = 40.0f;
 
-#define ERROR_FIRING_0 						0xd0d0
-#define ERROR_FIRING_1 						0xd0d1
-#define ERROR_FIRING_2 						0xd0d2
-#define ERROR_FIRING_3 						0xd0d3
+	// create 
+	int gExc = sim.createGroup("exc", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-#define GLOBAL_STATE_ERROR_0  				0xf0f0
+	int gInput = sim.createSpikeGeneratorGroup("input", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
 
-#define GLOBAL_CONDUCTANCE_ERROR_0  		0xfff0
-#define GLOBAL_CONDUCTANCE_ERROR_1			0xfff1
+	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
+	// every neuron in gExc should receive ~nSynPerNeur synapses
+	sim.connect(gInput, gExc, "full", RangeWeight(wtExc), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-#define STP_ERROR 							0xf000
+	// run CUBA mode
+	sim.setConductances(false);
 
-#define UPDATE_WEIGHTS_ERROR1				0x80
+	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	NeuronMonitor* NMexc = sim.setNeuronMonitor(gExc, "DEFAULT");
 
-#define CURRENT_UPDATE_ERROR1   			0x51
-#define CURRENT_UPDATE_ERROR2   			0x52
-#define CURRENT_UPDATE_ERROR3   			0x53
-#define CURRENT_UPDATE_ERROR4   			0x54
+	// ---------------- SETUP STATE -------------------
+	sim.setupNetwork();
 
-#define KERNEL_CURRENT_ERROR0  				0x90
-#define KERNEL_CURRENT_ERROR1  				0x91
-#define KERNEL_CURRENT_ERROR2  				0x92
+	// ---------------- RUN STATE -------------------
+	SMexc->startRecording();
+	NMexc->startRecording();
 
-#define ICURRENT_UPDATE_ERROR1   			0x51
-#define ICURRENT_UPDATE_ERROR2   			0x52
-#define ICURRENT_UPDATE_ERROR3   			0x53
-#define ICURRENT_UPDATE_ERROR4   			0x54
-#define ICURRENT_UPDATE_ERROR5   			0x55
+	// random thalamic input to a single neuron from either gExc or gInh
+	std::vector<float> thalamCurrExc(ONE_NEURON, 10.0f);
+	sim.setExternalCurrent(gExc, thalamCurrExc);
 
-#define KERNEL_INIT_ERROR0					0x71
-#define KERNEL_INIT_ERROR1					0x72
+	//for (int t = 0; t < 500; t++) {
 
-#define POISSON_COUNT_ERROR_0				0x99
+	
+	
+		// run for 1 ms, don't generate run stats
+		sim.runNetwork(0,200,false);
+	//}
+	SMexc->stopRecording();
+	NMexc->stopRecording();
 
-#define UNKNOWN_LOGGER_ERROR				0x8001
-#define NO_LOGGER_DIR_ERROR					0x8002
+	// print firing stats (but not the exact spike times)
+	SMexc->print(false);
+	NMexc->print();
 
-#define ID_OVERFLOW_ERROR					0x8003
-
-#endif
+	return 0;
+}
