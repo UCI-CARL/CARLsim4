@@ -492,7 +492,7 @@ void SNN::copyExtFiringTable(int netId) {
 				} else {
 					runtimeData[netId].gNMDA[lNId]   *= dNMDA;	// instantaneous rise
 				}
-						
+
 				runtimeData[netId].gGABAa[lNId] *= dGABAa;
 				if (sim_with_GABAb_rise) {
 					runtimeData[netId].gGABAb_r[lNId] *= rGABAb;	// rise
@@ -536,7 +536,8 @@ void SNN::copyExtFiringTable(int netId) {
 				// Note: valid lastSpikeTime of spike gen neurons is required by userDefinedSpikeGenerator()
 				if (needToWrite)
 					runtimeData[netId].lastSpikeTime[lNId] = simTime;
-			} else if (runtimeData[netId].voltage[lNId] >= 30.0f) {
+			} else if (runtimeData[netId].curSpike[lNId]) {
+				runtimeData[netId].curSpike[lNId] = false;
 				needToWrite = true;
 			}
 
@@ -570,7 +571,7 @@ void SNN::copyExtFiringTable(int netId) {
 				}
 
 				// update external firing table: extFiringTableEndIdxD1(W), extFiringTableEndIdxD2(W), extFiringTableD1(W), extFiringTableD2(W)
-				if (groupConfigs[netId][lGrpId].hasExternalConnect)	{
+				if (groupConfigs[netId][lGrpId].hasExternalConnect)     {
 					int extFireId = -1;
 					if (groupConfigs[netId][lGrpId].MaxDelay == 1) {
 						extFireId = runtimeData[netId].extFiringTableEndIdxD1[lGrpId]++;
@@ -586,7 +587,7 @@ void SNN::copyExtFiringTable(int netId) {
 				if (groupConfigs[netId][lGrpId].WithSTP) {
 					firingUpdateSTP(lNId, lGrpId, netId);
 				}
-												
+
 				// keep track of number spikes per neuron
 				runtimeData[netId].nSpikeCnt[lNId]++;
 
@@ -641,7 +642,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 					break;
 				}
 			} else if (groupConfigs[netId][lGrpId].WithISTDP && runtimeData[netId].maxSynWt[pos_ij] < 0) { // inhibitory synapse
-				// Handle I-STDP curve
+				// Handle I-STDP curve																				 // Handle I-STDP curve
 				switch (groupConfigs[netId][lGrpId].WithISTDPcurve) {
 				case EXP_CURVE: // exponential curve
 					if (stdp_tDiff * groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB < 25) { // LTP of inhibitory synapse, which decreases synapse weight
@@ -680,11 +681,9 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
-	runtimeData[netId].voltage[lNId] = runtimeData[netId].Izh_c[lNId];
-	runtimeData[netId].recovery[lNId] += runtimeData[netId].Izh_d[lNId];
 	if (groupConfigs[netId][lGrpId].WithSTDP)
 		runtimeData[netId].lastSpikeTime[lNId] = simTime;
-	
+
 	if (networkConfigs[netId].sim_with_homeostasis) {
 		// with homeostasis flag can be used here.
 		runtimeData[netId].avgFiring[lNId] += 1000 / (groupConfigs[netId][lGrpId].avgTimeScale * 1000);
@@ -842,6 +841,47 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 	}
 }
 
+// single integration step for voltage equation of 4-param Izhikevich
+inline
+float dvdtIzhikevich4(float volt, float recov, float totalCurrent, float timeStep = 1.0f) {
+	return (((0.04f * volt + 5.0f) * volt + 140.0f - recov + totalCurrent) * timeStep);
+}
+
+// single integration step for recovery equation of 4-param Izhikevich
+inline
+float dudtIzhikevich4(float volt, float recov, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * volt - recov) * timeStep);
+}
+
+// single integration step for voltage equation of 9-param Izhikevich
+inline
+float dvdtIzhikevich9(float volt, float recov, float invCapac, float izhK, float voltRest,
+	float voltInst, float totalCurrent, float timeStep = 1.0f)
+{
+	return ((izhK * (volt - voltRest) * (volt - voltInst) - recov + totalCurrent) * invCapac * timeStep);
+}
+
+// single integration step for recovery equation of 9-param Izhikevich
+inline
+float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
+}
+
+float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, float const1) {
+	float compCurrent = 0.0f;
+	for (int k = 0; k < groupConfigs[netid][lGrpId].numCompNeighbors; k++) {
+		// compartment connections are always one-to-one, which means that the i-th neuron in grpId connects
+		// to the i-th neuron in grpIdOther
+		int lGrpIdOther = groupConfigs[netid][lGrpId].compNeighbors[k];
+		int lneurIdOther = lneurId - groupConfigs[netid][lGrpId].lStartN + groupConfigs[netid][lGrpIdOther].lStartN;
+		compCurrent += groupConfigs[netid][lGrpId].compCoupling[k] * ((runtimeData[netid].voltage[lneurIdOther] + const1)
+			- (runtimeData[netid].voltage[lneurId] + const0));
+	}
+
+	return compCurrent;
+}
+
+
 #if defined(WIN32) || defined(WIN64)
 	void  SNN::globalStateUpdate_CPU(int netId) {
 #else // POSIX
@@ -849,73 +889,202 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 
-	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
-		if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
-			if (groupConfigs[netId][lGrpId].WithHomeostasis) {
-				for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
-					runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+	float timeStep = networkConfigs[netId].timeStep;
+	// loop that allows smaller integration time step for v's and u's
+	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
+
+		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
+		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
+			if (groupConfigs[netId][lGrpId].Type & POISSON_NEURON) {
+				if (groupConfigs[netId][lGrpId].WithHomeostasis & (lastIter)) {
+					for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
+						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+				}
+				continue;
 			}
-			continue;
-		}
 
-		for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
-			assert(lNId < networkConfigs[netId].numNReg);
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+				assert(lNId < networkConfigs[netId].numNReg);
 
-			// P7
-			// update conductances
-			float v = runtimeData[netId].voltage[lNId];
-			float u = runtimeData[netId].recovery[lNId];
-			float I_sum, NMDAtmp;
-			float gNMDA, gGABAb;
+				// P7
+				// update conductances
+				float v = runtimeData[netId].voltage[lNId];
+				float v_next = runtimeData[netId].nextVoltage[lNId];
+				float u = runtimeData[netId].recovery[lNId];
+				float I_sum, NMDAtmp;
+				float gNMDA, gGABAb;
 
-			// loop that allows smaller integration time step for v's and u's
-			for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
-				I_sum = 0.0f;
+				// pre-load izhikevich variables to avoid unnecessary memory accesses & unclutter the code.
+				float k = runtimeData[netId].Izh_k[lNId];
+				float vr = runtimeData[netId].Izh_vr[lNId];
+				float vt = runtimeData[netId].Izh_vt[lNId];
+				float inverse_C = 1.0f / runtimeData[netId].Izh_C[lNId];
+				float vpeak = runtimeData[netId].Izh_vpeak[lNId];
+				float a = runtimeData[netId].Izh_a[lNId];
+				float b = runtimeData[netId].Izh_b[lNId];
+
+
+				float totalCurrent = runtimeData[netId].extCurrent[lNId];
+
 				if (networkConfigs[netId].sim_with_conductances) {
 					NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
 					gNMDA = (networkConfigs[netId].sim_with_NMDA_rise) ? (runtimeData[netId].gNMDA_d[lNId] - runtimeData[netId].gNMDA_r[lNId]) : runtimeData[netId].gNMDA[lNId];
 					gGABAb = (networkConfigs[netId].sim_with_GABAb_rise) ? (runtimeData[netId].gGABAb_d[lNId] - runtimeData[netId].gGABAb_r[lNId]) : runtimeData[netId].gGABAb[lNId];
+
 					I_sum = -(runtimeData[netId].gAMPA[lNId] * (v - 0.0f)
 						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
 						+ runtimeData[netId].gGABAa[lNId] * (v + 70.0f)
 						+ gGABAb * (v + 90.0f));
-				} else {
-					I_sum = runtimeData[netId].current[lNId];
+
+					totalCurrent += I_sum;
+				}
+				else {
+					totalCurrent += runtimeData[netId].current[lNId];
+				}
+				if (groupConfigs[netId][lGrpId].withCompartments) {
+					totalCurrent += getCompCurrent(netId, lGrpId, lNId);
 				}
 
-				// update vpos and upos for the current neuron
-				v += ((0.04f * v + 5.0f) * v + 140.0f - u + I_sum + runtimeData[netId].extCurrent[lNId]) / COND_INTEGRATION_SCALE;
-				if (v > 30.0f) {
-					v = 30.0f; // break the loop but evaluate u[i]
-					c = COND_INTEGRATION_SCALE;
+				switch (networkConfigs[netId].simIntegrationMethod) {
+				case FORWARD_EULER:
+					if (!groupConfigs[netId][lGrpId].withParamModel_9)
+					{	// 4-param Izhikevich
+						// update vpos and upos for the current neuron
+						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						if (v_next > 30.0f) {
+							v_next = 30.0f; // break the loop but evaluate u[i]
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
+						}
+					}
+					else
+					{	// 9-param Izhikevich
+						// update vpos and upos for the current neuron
+						v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+						if (v_next > vpeak) {
+							v_next = vpeak; // break the loop but evaluate u[i]
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
+						}
+					}
+
+					if (v_next < -90.0f) v_next = -90.0f;
+
+					if (!groupConfigs[netId][lGrpId].withParamModel_9)
+					{
+						u += dudtIzhikevich4(v_next, u, a, b, timeStep);
+					}
+					else
+					{
+						u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+					}
+					break;
+				case RUNGE_KUTTA4:
+					if (!groupConfigs[netId][lGrpId].withParamModel_9) {
+						// 4-param Izhikevich
+						float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+						float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
+
+						float k2 = dvdtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, totalCurrent,
+							timeStep);
+						float l2 = dudtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, a, b, timeStep);
+
+						float k3 = dvdtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, totalCurrent,
+							timeStep);
+						float l3 = dudtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, a, b, timeStep);
+
+						float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
+						float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
+						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+						if (v_next > 30.0f) {
+							v_next = 30.0f;
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
+						}
+						if (v_next < -90.0f) v_next = -90.0f;
+
+						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+					}
+					else {
+						// 9-param Izhikevich
+						float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
+							timeStep);
+						float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+
+						float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+
+						float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+						float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+						float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+						if (v_next > vpeak) {
+							v_next = vpeak; // break the loop but evaluate u[i]
+							runtimeData[netId].curSpike[lNId] = true;
+							v_next = runtimeData[netId].Izh_c[lNId];
+							u += runtimeData[netId].Izh_d[lNId];
+						}
+
+						if (v_next < -90.0f) v_next = -90.0f;
+
+						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+
+					}
+					break;
+				case UNKNOWN_INTEGRATION:
+				default:
+					exitSimulation(1);
 				}
 
-				if (v < -90.0f) v = -90.0f;
+				runtimeData[netId].nextVoltage[lNId] = v_next;
+				runtimeData[netId].recovery[lNId] = u;
 
-				u += (runtimeData[netId].Izh_a[lNId] * (runtimeData[netId].Izh_b[lNId] * v - u) / COND_INTEGRATION_SCALE);
+				// update current & average firing rate for homeostasis once per globalStateUpdate_CPU call
+				if (lastIter)
+				{
+					if (networkConfigs[netId].sim_with_conductances) {
+						runtimeData[netId].current[lNId] = I_sum;
+					}
+					else {
+						// current must be reset here for CUBA and not STPUpdateAndDecayConductances
+						runtimeData[netId].current[lNId] = 0.0f;
+					}
+
+					// P8
+					// update average firing rate for homeostasis
+					if (groupConfigs[netId][lGrpId].WithHomeostasis)
+						runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
+				}
+			} // end StartN...EndN
+
+			  // decay dopamine concentration once per globalStateUpdate_CPU call
+			if (lastIter)
+			{
+				// P9
+				// decay dopamine concentration
+				if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
+					runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
+				}
+				runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
 			}
+		} // end numGroups
 
-			if (networkConfigs[netId].sim_with_conductances) {
-				runtimeData[netId].current[lNId] = I_sum;
-			} else {
-				// current must be reset here for CUBA and not STPUpdateAndDecayConductances
-				runtimeData[netId].current[lNId] = 0.0f;
-			}
-			runtimeData[netId].voltage[lNId] = v;
-			runtimeData[netId].recovery[lNId] = u;
-			// P8
-			// update average firing rate for homeostasis
-			if (groupConfigs[netId][lGrpId].WithHomeostasis)
-				runtimeData[netId].avgFiring[lNId] *= groupConfigs[netId][lGrpId].avgTimeScale_decay;
-		} // end StartN...EndN
+		  // Only after we are done computing nextVoltage for all neurons do we copy the new values to the voltage array.
+		  // This is crucial for GPU (asynchronous kernel launch) and in the future for a multi-threaded CARLsim version.
 
-		// P9
-		// decay dopamine concentration
-		if ((groupConfigs[netId][lGrpId].WithESTDPtype == DA_MOD || groupConfigs[netId][lGrpId].WithISTDP == DA_MOD) && runtimeData[netId].grpDA[lGrpId] > groupConfigs[netId][lGrpId].baseDP) {
-			runtimeData[netId].grpDA[lGrpId] *= groupConfigs[netId][lGrpId].decayDP;
-		}
-		runtimeData[netId].grpDABuffer[lGrpId * 1000 + simTimeMs] = runtimeData[netId].grpDA[lGrpId];
-	} // end numGroups
+		memcpy(runtimeData[netId].voltage, runtimeData[netId].nextVoltage, sizeof(float)*networkConfigs[netId].numNReg);
+
+	} // end simNumStepsPerMs loop
 }
 
 #if !defined(WIN32) && !defined(WIN64) // Linux or MAC
@@ -1116,12 +1285,12 @@ void SNN::allocateSNN_CPU(int netId) {
 	copyPostConnectionInfo(netId, ALL, &runtimeData[netId], &managerRuntimeData, true);
 	//KERNEL_INFO("Conn Info:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
-	
+
 	// initialize (copy from SNN) runtimeData[0].wt, runtimeData[0].wtChange, runtimeData[0].maxSynWt
 	copySynapseState(netId, &runtimeData[netId], &managerRuntimeData, true);
 	//KERNEL_INFO("Syn State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
-	
+
 	// copy the neuron state information to the CPU runtime
 	// initialize (copy from managerRuntimeData) runtimeData[0].recovery, runtimeData[0].voltage, runtimeData[0].current
 	// initialize (copy from managerRuntimeData) runtimeData[0].gGABAa, runtimeData[0].gGABAb, runtimeData[0].gAMPA, runtimeData[0].gNMDA
@@ -1136,7 +1305,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	}
 	//KERNEL_INFO("Neuron State:\t\t%2.3f MB\t%2.3f MB\t%2.3f MB",(float)(previous-avail)/toMB,(float)((total-avail)/toMB), (float)(avail/toMB));
 	//previous=avail;
-		
+
 	// initialize (copy from SNN) runtimeData[0].grpDA(5HT,ACh,NE)
 	// initialize (copy from SNN) runtimeData[0].grpDA(5HT,ACh,NE)Buffer[]
 	copyGroupState(netId, ALL, &runtimeData[netId], &managerRuntimeData, true);
@@ -1160,7 +1329,7 @@ void SNN::allocateSNN_CPU(int netId) {
 	KERNEL_DEBUG("Transfering group settings to CPU:");
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroupsAssigned; lGrpId++) {
 		KERNEL_DEBUG("Settings for Group %s:", groupConfigMap[groupConfigs[netId][lGrpId].gGrpId].grpName.c_str());
-		
+
 		KERNEL_DEBUG("\tType: %d",(int)groupConfigs[netId][lGrpId].Type);
 		KERNEL_DEBUG("\tNumN: %d",groupConfigs[netId][lGrpId].numN);
 		KERNEL_DEBUG("\tM: %d",groupConfigs[netId][lGrpId].numPostSynapses);
@@ -1187,7 +1356,7 @@ void SNN::allocateSNN_CPU(int netId) {
 		}
 		KERNEL_DEBUG("\tWithSTP: %d",(int)groupConfigs[netId][lGrpId].WithSTP);
 		if (groupConfigs[netId][lGrpId].WithSTP) {
-			KERNEL_DEBUG("\t\tSTP_U: %f",groupConfigs[netId][lGrpId].STP_U);
+			KERNEL_DEBUG("\t\tSTP_U: %f", groupConfigs[netId][lGrpId].STP_U);
 //				KERNEL_DEBUG("\t\tSTP_tD: %f",groupConfigs[netId][lGrpId].STP_tD);
 //				KERNEL_DEBUG("\t\tSTP_tF: %f",groupConfigs[netId][lGrpId].STP_tF);
 		}
@@ -1215,7 +1384,7 @@ void SNN::allocateSNN_CPU(int netId) {
  *
  * \sa allocateSNN_CPU
  * \since v4.0
- */
+*/
 void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	int lengthN, lengthSyn, posN, posSyn;
 
@@ -1235,7 +1404,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	// we don't need these data structures if the network doesn't have any plastic synapses at all
 	if (!sim_with_fixedwts) {
 		// presyn excitatory connections
-		if(allocateMem) 
+		if(allocateMem)
 			dest->Npre_plastic = new unsigned short[networkConfigs[netId].numNAssigned];
 		memcpy(&dest->Npre_plastic[posN], &src->Npre_plastic[posN], sizeof(short) * lengthN);
 
@@ -1252,7 +1421,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 			delete[] Npre_plasticInv;
 		}
 	}
-		
+
 	// beginning position for the pre-synaptic information
 	if(allocateMem)
 		dest->cumulativePre = new unsigned int[networkConfigs[netId].numNAssigned];
@@ -1306,13 +1475,13 @@ void SNN::copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runti
 	if(allocateMem)
 		dest->Npost = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npost[posN], &src->Npost[posN], sizeof(short) * lengthN);
-	
+
 	// beginning position for the post-synaptic information
-	if(allocateMem) 
+	if(allocateMem)
 		dest->cumulativePost = new unsigned int[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->cumulativePost[posN], &src->cumulativePost[posN], sizeof(int) * lengthN);
 
-	
+
 	// Npost, cumulativePost has been copied to destination
 	if (lGrpId == ALL) {
 		lengthSyn = networkConfigs[netId].numPostSynNet;
@@ -1404,7 +1573,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	}
 
 	assert(length <= networkConfigs[netId].numNReg);
-	
+
 	if (length == 0)
 		return;
 
@@ -1419,13 +1588,17 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 		dest->voltage = new float[length];
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
 
+	if(allocateMem)
+		dest->nextVoltage = new float[length];
+	memcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length);
+
 	//neuron input current...
 	if(allocateMem)
 		dest->current = new float[length];
 	memcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length);
 
 	if (sim_with_conductances) {
-	    //conductance information
+		//conductance information
 		copyConductanceAMPA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceNMDA(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
 		copyConductanceGABAa(netId, lGrpId, dest, &managerRuntimeData, allocateMem, 0);
@@ -1435,7 +1608,11 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
 	// do it only from host to device
 	copyExternalCurrent(netId, lGrpId, dest, allocateMem);
-	
+
+	if (allocateMem)
+		dest->curSpike = new bool[length];
+	memcpy(&dest->curSpike[ptrPos], &managerRuntimeData.curSpike[ptrPos], sizeof(bool) * length);
+
 	copyNeuronParameters(netId, lGrpId, dest, allocateMem);
 
 	if (sim_with_homeostasis) {
@@ -1465,7 +1642,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
  * \sa copyNeuronState fetchConductanceAMPA
  * \since v3.0
  */
-void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {	
+void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
 	int ptrPos, length;
@@ -1500,11 +1677,11 @@ void SNN::copyConductanceAMPA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  *
  * \sa copyNeuronState fetchConductanceNMDA
  * \since v3.0
- */
+*/
 void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset) {
 	assert(isSimulationWithCOBA());
 
@@ -1551,7 +1728,7 @@ void SNN::copyConductanceNMDA(int netId, int lGrpId, RuntimeData* dest, RuntimeD
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  *
  * \sa copyNeuronState fetchConductanceGABAa
  * \since v3.0
@@ -1590,7 +1767,7 @@ void SNN::copyConductanceGABAa(int netId, int lGrpId, RuntimeData* dest, Runtime
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  *
  * \sa copyNeuronState fetchConductanceGABAb
  * \since v3.0
@@ -1600,7 +1777,7 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 
 	int ptrPos, length;
 
-	if(lGrpId == ALL) {
+	if (lGrpId == ALL) {
 		ptrPos  = 0;
 		length  = networkConfigs[netId].numNReg;
 	} else {
@@ -1617,7 +1794,7 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 		memcpy(&dest->gGABAb_r[ptrPos], &src->gGABAb_r[ptrPos], sizeof(float) * length);
 
 		assert(src->gGABAb_d != NULL);
-		if(allocateMem) 
+		if(allocateMem)
 			dest->gGABAb_d = new float[length];
 		memcpy(&dest->gGABAb_d[ptrPos], &src->gGABAb_d[ptrPos], sizeof(float) * length);
 	} else {
@@ -1644,8 +1821,8 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
  *
  * \sa allocateSNN_CPU fetchSTPState
  * \since v3.0
- */
-void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {	
+*/
+void SNN::copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem) {
 	int posN, lengthN;
 
 	if(lGrpId == ALL) {
@@ -1693,6 +1870,11 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		assert(dest->Izh_b == NULL);
 		assert(dest->Izh_c == NULL);
 		assert(dest->Izh_d == NULL);
+		assert(dest->Izh_C == NULL);
+		assert(dest->Izh_k == NULL);
+		assert(dest->Izh_vr == NULL);
+		assert(dest->Izh_vt == NULL);
+		assert(dest->Izh_vpeak == NULL);
 	}
 
 	if(lGrpId == ALL) {
@@ -1719,6 +1901,26 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 	if(allocateMem)
 		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->Izh_C = new float[length];
+	memcpy(&dest->Izh_C[ptrPos], &(managerRuntimeData.Izh_C[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->Izh_k = new float[length];
+	memcpy(&dest->Izh_k[ptrPos], &(managerRuntimeData.Izh_k[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->Izh_vr = new float[length];
+	memcpy(&dest->Izh_vr[ptrPos], &(managerRuntimeData.Izh_vr[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->Izh_vt = new float[length];
+	memcpy(&dest->Izh_vt[ptrPos], &(managerRuntimeData.Izh_vt[ptrPos]), sizeof(float) * length);
+
+	if(allocateMem)
+		dest->Izh_vpeak = new float[length];
+	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
 
 	// pre-compute baseFiringInv for fast computation on CPU cores
 	if (sim_with_homeostasis) {
@@ -1912,7 +2114,7 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 	dest->nPoissonSpikes = 0;
 	dest->spikeCountExtRxD1 = 0;
 	dest->spikeCountExtRxD2 = 0;
-	
+
 	// time talbe
 	// Note: the GPU counterpart is not required to do this
 	if (allocateMem) {
@@ -1953,7 +2155,7 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 			if (groupConfigs[netId][lGrpId].hasExternalConnect) {
 				dest->extFiringTableD1[lGrpId] = new int[groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE];
-				memset(dest->extFiringTableD1[lGrpId], 0 , sizeof(int) * groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE);
+				memset(dest->extFiringTableD1[lGrpId], 0, sizeof(int) * groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE);
 			}
 		}
 	}
@@ -1965,7 +2167,7 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
 		for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 			if (groupConfigs[netId][lGrpId].hasExternalConnect) {
 				dest->extFiringTableD2[lGrpId] = new int[groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE];
-				memset(dest->extFiringTableD2[lGrpId], 0 , sizeof(int) * groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE);
+				memset(dest->extFiringTableD2[lGrpId], 0, sizeof(int) * groupConfigs[netId][lGrpId].numN * NEURON_MAX_FIRING_RATE);
 			}
 		}
 	}
@@ -1995,7 +2197,7 @@ void SNN::copyAuxiliaryData(int netId, int lGrpId, RuntimeData* dest, bool alloc
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  *
  * \sa copyAuxiliaryData fetchNeuronSpikeCount
  * \since v4.0
@@ -2156,9 +2358,11 @@ void SNN::copySpikeTables(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// free all pointers
 	delete [] runtimeData[netId].voltage;
+	delete [] runtimeData[netId].nextVoltage;
 	delete [] runtimeData[netId].recovery;
 	delete [] runtimeData[netId].current;
 	delete [] runtimeData[netId].extCurrent;
+	delete [] runtimeData[netId].curSpike;
 	delete [] runtimeData[netId].Npre;
 	delete [] runtimeData[netId].Npre_plastic;
 	delete [] runtimeData[netId].Npre_plasticInv;
@@ -2190,6 +2394,11 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].Izh_b;
 	delete [] runtimeData[netId].Izh_c;
 	delete [] runtimeData[netId].Izh_d;
+	delete [] runtimeData[netId].Izh_C;
+	delete [] runtimeData[netId].Izh_k;
+	delete [] runtimeData[netId].Izh_vr;
+	delete [] runtimeData[netId].Izh_vt;
+	delete [] runtimeData[netId].Izh_vpeak;
 	delete [] runtimeData[netId].gAMPA;
 	if (sim_with_NMDA_rise) {
 		delete [] runtimeData[netId].gNMDA_r;
@@ -2241,7 +2450,7 @@ void SNN::copySpikeTables(int netId) {
 		delete [] tempPtrs[i];
 	delete [] runtimeData[netId].extFiringTableD1;
 
-	delete[] tempPtrs;
+	delete [] tempPtrs;
 
 	delete [] runtimeData[netId].extFiringTableEndIdxD2;
 	delete [] runtimeData[netId].extFiringTableEndIdxD1;

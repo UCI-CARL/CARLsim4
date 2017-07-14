@@ -164,11 +164,42 @@ typedef struct ConnectConfigRT_s {
 	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
 } ConnectConfigRT;
 
+typedef struct compConnectionInfo_s {
+	int								grpSrc, grpDest;
+	short int               		connId;
+}compConnectionInfo;
+
+/*!
+* \brief The configuration of a compartmental connection
+*
+* This structure contains the configurations of compartmental connections that are created during configuration state.
+* The configurations are later processed by compileNetwork() and translated to meta data which are ready to
+* be linked.
+* \see CARLsimState
+*/
+typedef struct compConnectConfig_s {
+	int							grpSrc, grpDest;
+	short int               	connId;
+} compConnectConfig;
+
 //!< neural dynamics configuration
 typedef struct NeuralDynamicsConfig_s {
 	NeuralDynamicsConfig_s() : Izh_a(-1.0f), Izh_a_sd(-1.0f), Izh_b(-1.0f), Izh_b_sd(-1.0f),
-							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f)
+							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
+							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
+							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f)
 	{}
+	float 		Izh_C;
+	float 		Izh_C_sd;
+	float 		Izh_k;
+	float 		Izh_k_sd;
+	float 		Izh_vr;
+	float 		Izh_vr_sd;
+	float 		Izh_vt;
+	float 		Izh_vt_sd;
+	float 		Izh_vpeak;
+	float 		Izh_vpeak_sd;
 	float 		Izh_a;
 	float 		Izh_a_sd;
 	float 		Izh_b;
@@ -177,6 +208,7 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
+
 } NeuralDynamicsConfig;
 
 //!< long-term plasiticity configurations
@@ -270,6 +302,12 @@ typedef struct GroupConfig_s {
 	unsigned int type;
 	int          numN;
 	bool isSpikeGenerator;
+	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool withCompartments;
+
+	float compCouplingUp;
+	float compCouplingDown;
+
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
@@ -389,6 +427,15 @@ typedef struct GroupConfigRT_s {
 	float decay5HT;//!< decay rate for Serotonin, published by GroupConfig \sa GroupConfig
 	float decayACh;//!< decay rate for Acetylcholine, published by GroupConfig \sa GroupConfig
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
+
+	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+
+	bool withCompartments;
+	float compCouplingUp;
+	float compCouplingDown;
+	int   compNeighbors[4];
+	float compCoupling[4];
+	short numCompNeighbors;
 } GroupConfigRT;
 
 typedef struct RuntimeData_s {
@@ -405,14 +452,25 @@ typedef struct RuntimeData_s {
 	unsigned int spikeCountExtRxD2; //!< the number of external spikes with axonal delay > 1 in a simulation, used in CPU_MODE currently
 	unsigned int spikeCountExtRxD1; //!< the number of external spikes with axonal delay == 1 in a simulation, used in CPU_MODE currently
 
-	float* voltage;
+	float* voltage; //!< membrane potential for each regular neuron
+	float* nextVoltage; //!< membrane potential buffer (next/future time step) for each regular neuron
 	float* recovery;
+	float* Izh_C;
+	float* Izh_k;
+	float* Izh_vr;
+	float* Izh_vt;
+	float* Izh_vpeak;
 	float* Izh_a;
 	float* Izh_b;
 	float* Izh_c;
 	float* Izh_d;
 	float* current;
 	float* extCurrent;
+
+	//! Keeps track of all neurons that spiked at current time.
+	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
+	//! so that we don't produce more than 1 spike per ms.
+	bool* curSpike;
 
 	// conductances and stp values
 	float* gNMDA;   //!< conductance of gNMDA
@@ -463,7 +521,6 @@ typedef struct RuntimeData_s {
 	SynInfo* preSynapticIds;
 
 	DelayInfo* postDelayInfo;  	//!< delay information
-
 	unsigned int* timeTableD1; //!< firing table, only used in CPU_MODE currently
 	unsigned int* timeTableD2; //!< firing table, only used in CPU_MODE currently
 	
@@ -513,18 +570,24 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  numSynNet(0), maxDelay(-1)
+							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
+							  simNumStepsPerMs(2), timeStep(0.5)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
 	int numNExcReg;   //!< number of regular excitatory neurons in the global network
 	int numNInhReg;   //!< number of regular inhibitory neurons in the global network
 	int numNReg;      //!< number of regular (spking) neurons in the global network
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons in the global network
 	int numNInhPois;  //!< number of inhibitory poisson neurons in the global network
 	int numNPois;     //!< number of poisson neurons in the global network
 	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
+
+	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
+	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond
+	float timeStep;						      //!< inverse of simNumStepsPerMs
 } GlobalNetworkConfig;
 
 //! runtime network configuration
@@ -542,6 +605,7 @@ typedef struct NetworkConfigRT_s  {
 	int numNExcReg;   //!< number of regular excitatory neurons
 	int numNInhReg;   //!< number of regular inhibitory neurons
 	int numNReg;      //!< number of regular (spking) neurons
+	int numComp;	  //!< number of compartmental neurons
 	int numNExcPois;  //!< number of excitatory poisson neurons
 	int numNInhPois;  //!< number of inhibitory poisson neurons
 	int numNPois;     //!< number of poisson neurons
@@ -570,6 +634,7 @@ typedef struct NetworkConfigRT_s  {
 	// configurations for execution features
 	bool sim_with_fixedwts;
 	bool sim_with_conductances;
+	bool sim_with_compartments;
 	bool sim_with_stdp;
 	bool sim_with_modulated_stdp;
 	bool sim_with_homeostasis;
@@ -591,6 +656,10 @@ typedef struct NetworkConfigRT_s  {
 	double rGABAb;            //!< multiplication factor for rise time of GABAb
 	double dGABAb;            //!< multiplication factor for decay time of GABAb
 	double sGABAb;            //!< scaling factor for GABAb amplitude
+
+	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
+	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond
+	float timeStep;						      //!< inverse of simNumStepsPerMs
 } NetworkConfigRT;
 
 

@@ -156,9 +156,9 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 	CARLsim* sim = NULL;
 	const int nGrps = 6;
 	const int runDurationMs = 2000;
-	int grps[nGrps] = {-1};
-	std::string expectCond[nGrps] = {"AMPA","NMDA","AMPA+NMDA","GABAa","GABAb","GABAa+GABAb"};
-	float expectCondStd[nGrps] = {0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
+	int grps[nGrps] = { -1 };
+	std::string expectCond[nGrps] = { "AMPA","NMDA","AMPA+NMDA","GABAa","GABAb","GABAa+GABAb" };
+	float expectCondStd[nGrps] = { 0.01, 0.01, 0.01, 0.01, 0.01, 0.01 };
 
 	std::vector<float> gAMPA_CPU(runDurationMs, 0.0f);
 	std::vector<float> gNMDA_CPU(runDurationMs, 0.0f);
@@ -175,85 +175,118 @@ TEST(COBA, condSingleNeuronCPUvsGPU) {
 	float rate = 30.0f;
 	bool spikeAtZero = true;
 
-	for (int mode = 0; mode < TESTED_MODES; mode++) {
-		sim = new CARLsim("COBA.condCPUvsGPU",mode ? GPU_MODE : CPU_MODE, SILENT, 1, 42);
-		grps[0]=sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
-		grps[1]=sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
-		grps[2]=sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON, 0);
-		grps[3]=sim->createGroup("inhGABAa", Grid3D(nOutput), INHIBITORY_NEURON, 0);
-		grps[4]=sim->createGroup("inhGABAb", Grid3D(nOutput), INHIBITORY_NEURON, 0);
-		grps[5]=sim->createGroup("inhGABAa+GABAb", Grid3D(nOutput), INHIBITORY_NEURON, 0);
-		int g0=sim->createSpikeGeneratorGroup("spike0", Grid3D(nInput), EXCITATORY_NEURON, 0);
-		int g1=sim->createSpikeGeneratorGroup("spike1", Grid3D(nInput), INHIBITORY_NEURON, 0);
+	int numModes = 2;
+	int numMethods = 2; //Euler and Runge-Kutta integration methods.
 
-		sim->setNeuronParameters(grps[0], 0.02f, 0.2f, -65.0f, 8.0f); // RS
-		sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f); // RS
-		sim->setNeuronParameters(grps[2], 0.02f, 0.2f, -65.0f, 8.0f); // RS
-		sim->setNeuronParameters(grps[3], 0.1f,  0.2f, -65.0f, 2.0f); // FS
-		sim->setNeuronParameters(grps[4], 0.1f,  0.2f, -65.0f, 2.0f); // FS
-		sim->setNeuronParameters(grps[5], 0.1f,  0.2f, -65.0f, 2.0f); // FS
+	for (int hasIzh4 = 0; hasIzh4 <= 1; hasIzh4++) {
+		for (int method = 0; method < numMethods; method++) {//integration method
+			for (int mode = 0; mode<numModes; mode++) {
+				sim = new CARLsim("COBA.condCPUvsGPU", mode ? GPU_MODE : CPU_MODE, SILENT, 0, 42);
+				grps[0] = sim->createGroup("excAMPA", Grid3D(nOutput), EXCITATORY_NEURON);
+				grps[1] = sim->createGroup("excNMDA", Grid3D(nOutput), EXCITATORY_NEURON);
+				grps[2] = sim->createGroup("excAMPA+NMDA", Grid3D(nOutput), EXCITATORY_NEURON);
+				grps[3] = sim->createGroup("inhGABAa", Grid3D(nOutput), INHIBITORY_NEURON);
+				grps[4] = sim->createGroup("inhGABAb", Grid3D(nOutput), INHIBITORY_NEURON);
+				grps[5] = sim->createGroup("inhGABAa+GABAb", Grid3D(nOutput), INHIBITORY_NEURON);
+				int g0 = sim->createSpikeGeneratorGroup("spike0", Grid3D(nInput), EXCITATORY_NEURON);
+				int g1 = sim->createSpikeGeneratorGroup("spike1", Grid3D(nInput), INHIBITORY_NEURON);
 
-		// use some rise and decay
-		sim->setConductances(true, 5, 20, 150, 6, 100, 150);
+				if (hasIzh4) {
+					// 4-param model
+					sim->setNeuronParameters(grps[0], 0.02f, 0.2f, -65.0f, 8.0f); // RS
+					sim->setNeuronParameters(grps[1], 0.02f, 0.2f, -65.0f, 8.0f); // RS
+					sim->setNeuronParameters(grps[2], 0.02f, 0.2f, -65.0f, 8.0f); // RS
+					sim->setNeuronParameters(grps[3], 0.1f, 0.2f, -65.0f, 2.0f); // FS
+					sim->setNeuronParameters(grps[4], 0.1f, 0.2f, -65.0f, 2.0f); // FS
+					sim->setNeuronParameters(grps[5], 0.1f, 0.2f, -65.0f, 2.0f); // FS
+				}
+				else {
+					// 9-param model
+					// TODO: add 9-param call for regular-spiking
+					sim->setNeuronParameters(grps[0], 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f);//RS
+					sim->setNeuronParameters(grps[1], 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f);//RS
+					sim->setNeuronParameters(grps[2], 100.0f, 0.7f, -60.0f, -40.0f, 0.03f, -2.0f, 35.0f, -50.0f, 100.0f);//RS
+					sim->setNeuronParameters(grps[3], 20.0f, 1.0f, -55.0f, -40.0f, 0.15f, 8.0f, 25.0f, -55.0f, 200.0f);//FS
+					sim->setNeuronParameters(grps[4], 20.0f, 1.0f, -55.0f, -40.0f, 0.15f, 8.0f, 25.0f, -55.0f, 200.0f);//FS
+					sim->setNeuronParameters(grps[5], 20.0f, 1.0f, -55.0f, -40.0f, 0.15f, 8.0f, 25.0f, -55.0f, 200.0f);//FS
+				}
 
-		sim->connect(g0,grps[0],"full",RangeWeight(0.001),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,1.0f,0.0f);//AMPA
-		sim->connect(g0,grps[1],"full",RangeWeight(0.0005),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.0,1.0);//NMDA
-		sim->connect(g0,grps[2],"full",RangeWeight(0.0005),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.5,0.5);//AMPA+NMDA
-		sim->connect(g1,grps[3],"full",RangeWeight(0.001),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,1.0,0.0);//GABAa
-		sim->connect(g1,grps[4],"full",RangeWeight(0.0005f),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.0,1.0);//GABAb
-		sim->connect(g1,grps[5],"full",RangeWeight(0.0005f),1.0,RangeDelay(1),RadiusRF(-1),SYN_FIXED,0.5,0.5);//GABAa+b
+				if (method)
+					sim->setIntegrationMethod(FORWARD_EULER, 20);
+				else
+					sim->setIntegrationMethod(RUNGE_KUTTA4, 10);
 
-		spkGen1 = new PeriodicSpikeGenerator(rate, spikeAtZero);
-		spkGen2 = new PeriodicSpikeGenerator(rate, spikeAtZero);
-		sim->setSpikeGenerator(g0, spkGen1);
-		sim->setSpikeGenerator(g1, spkGen2);
 
-		sim->setupNetwork();
+				// use some rise and decay
+				sim->setConductances(true, 5, 20, 150, 6, 100, 150);
 
-		// run the network for 1ms, compare conductance values
-		for (int i=0; i<runDurationMs; i++) {
-			sim->runNetwork(0,1,false);
+				sim->connect(g0, grps[0], "full", RangeWeight(0.001), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 1.0f, 0.0f);//AMPA
+				sim->connect(g0, grps[1], "full", RangeWeight(0.0005), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 0.0, 1.0);//NMDA
+				sim->connect(g0, grps[2], "full", RangeWeight(0.0005), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 0.5, 0.5);//AMPA+NMDA
+				sim->connect(g1, grps[3], "full", RangeWeight(0.001), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 1.0, 0.0);//GABAa
+				sim->connect(g1, grps[4], "full", RangeWeight(0.0005f), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 0.0, 1.0);//GABAb
+				sim->connect(g1, grps[5], "full", RangeWeight(0.0005f), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED, 0.5, 0.5);//GABAa+b
 
-			for (int g=0; g<nGrps; g++) {
-				// for all groups
-				if (expectCond[g].find("AMPA")!=std::string::npos) {
-					// AMPA is active
-					std::vector<float> gAMPA  = sim->getConductanceAMPA(grps[g]);
-					if (!mode) {
-						// CPU mode: record conductance values
-						gAMPA_CPU[i] = gAMPA[0];
-					} else {
-						// GPU mode: compare values
-						EXPECT_NEAR(gAMPA_CPU[i], gAMPA[0], expectCondStd[g]);
-					}
-				} else if (expectCond[g].find("NMDA")!=std::string::npos) {
-					std::vector<float> gNMDA  = sim->getConductanceNMDA(grps[g]);
-					if (!mode) {
-						gNMDA_CPU[i] = gNMDA[0];
-					} else {
-						EXPECT_NEAR(gNMDA_CPU[i], gNMDA[0], expectCondStd[g]);
-					}
-				} else if (expectCond[g].find("GABAa")!=std::string::npos) {
-					std::vector<float> gGABAa  = sim->getConductanceGABAa(grps[g]);
-					if (!mode) {
-						gGABAa_CPU[i] = gGABAa[0];
-					} else {
-						EXPECT_NEAR(gGABAa_CPU[i], gGABAa[0], expectCondStd[g]);
-					}
-				} else if (expectCond[g].find("GABAb")!=std::string::npos) {
-					std::vector<float> gGABAb  = sim->getConductanceGABAb(grps[g]);
-					if (!mode) {
-						gGABAb_CPU[i] = gGABAb[0];
-					} else {
-						EXPECT_NEAR(gGABAb_CPU[i], gGABAb[0], expectCondStd[g]);
+				spkGen1 = new PeriodicSpikeGenerator(rate, spikeAtZero);
+				spkGen2 = new PeriodicSpikeGenerator(rate, spikeAtZero);
+				sim->setSpikeGenerator(g0, spkGen1);
+				sim->setSpikeGenerator(g1, spkGen2);
+
+				sim->setupNetwork();
+
+				// run the network for 1ms, compare conductance values
+				for (int i = 0; i<runDurationMs; i++) {
+					sim->runNetwork(0, 1, false);
+
+					for (int g = 0; g<nGrps; g++) {
+						// for all groups
+						if (expectCond[g].find("AMPA") != std::string::npos) {
+							// AMPA is active
+							std::vector<float> gAMPA = sim->getConductanceAMPA(grps[g]);
+							if (!mode) {
+								// CPU mode: record conductance values
+								gAMPA_CPU[i] = gAMPA[0];
+							}
+							else {
+								// GPU mode: compare values
+								EXPECT_NEAR(gAMPA_CPU[i], gAMPA[0], expectCondStd[g]);
+							}
+						}
+						else if (expectCond[g].find("NMDA") != std::string::npos) {
+							std::vector<float> gNMDA = sim->getConductanceNMDA(grps[g]);
+							if (!mode) {
+								gNMDA_CPU[i] = gNMDA[0];
+							}
+							else {
+								EXPECT_NEAR(gNMDA_CPU[i], gNMDA[0], expectCondStd[g]);
+							}
+						}
+						else if (expectCond[g].find("GABAa") != std::string::npos) {
+							std::vector<float> gGABAa = sim->getConductanceGABAa(grps[g]);
+							if (!mode) {
+								gGABAa_CPU[i] = gGABAa[0];
+							}
+							else {
+								EXPECT_NEAR(gGABAa_CPU[i], gGABAa[0], expectCondStd[g]);
+							}
+						}
+						else if (expectCond[g].find("GABAb") != std::string::npos) {
+							std::vector<float> gGABAb = sim->getConductanceGABAb(grps[g]);
+							if (!mode) {
+								gGABAb_CPU[i] = gGABAb[0];
+							}
+							else {
+								EXPECT_NEAR(gGABAb_CPU[i], gGABAb[0], expectCondStd[g]);
+							}
+						}
 					}
 				}
+
+				delete spkGen1, spkGen2;
+				delete sim;
 			}
 		}
-
-		delete spkGen1, spkGen2;
-		delete sim;
-	}	
+	}
 }
 #endif // !__NO_CUUDA__
 
