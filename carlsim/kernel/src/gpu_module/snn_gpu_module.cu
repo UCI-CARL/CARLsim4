@@ -637,7 +637,11 @@ __global__ 	void kernel_findFiring (int simTime) {
 				if (needToWrite)
 					runtimeDataGPU.lastSpikeTime[lNId] = simTime;
 			} else {
-				if (runtimeDataGPU.voltage[lNId] >= 30.0f) {
+				if (runtimeDataGPU.voltage[lNId] >= 30.0f  && !groupConfigsGPU[lGrpId].withParamModel_9) {
+					needToWrite = true;
+				}
+				else if (runtimeDataGPU.voltage[lNId] >= runtimeDataGPU.Izh_vpeak[lNId] && groupConfigsGPU[lGrpId].withParamModel_9)
+				{
 					needToWrite = true;
 				}
 			}
@@ -856,6 +860,28 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 	}
 }
 
+// single integration step for voltage equation of 4-param Izhikevich
+__device__ inline float dvdtIzhikevich4(float volt, float recov, float totCurrent, float timeStep = 1.0f) {
+	return (((0.04f * volt + 5.0f) * volt + 140.0f - recov + totCurrent) * timeStep);
+}
+
+// single integration step for recovery equation of 4-param Izhikevich
+__device__ inline float dudtIzhikevich4(float volt, float recov, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * volt - recov) * timeStep);
+}
+
+// single integration step for voltage equation of 9-param Izhikevich
+__device__ inline float dvdtIzhikevich9(float volt, float recov, float invCapac, float izhK, float voltRest,
+	float voltInst, float totCurrent, float timeStep = 1.0f)
+{
+	return ((izhK * (volt - voltRest) * (volt - voltInst) - recov + totCurrent) * invCapac * timeStep);
+}
+
+// single integration step for recovery equation of 9-param Izhikevich
+__device__ inline float dudtIzhikevich9(float volt, float recov, float voltRest, float izhA, float izhB, float timeStep = 1.0f) {
+	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
+}
+
 //************************ UPDATE GLOBAL STATE EVERY TIME STEP *******************************************************//
 
 /*!
@@ -866,44 +892,141 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
  */
 __device__ void updateNeuronState(int nid, int grpId) {
 	float v = runtimeDataGPU.voltage[nid];
+	float v_next = runtimeDataGPU.nextVoltage[nid];
 	float u = runtimeDataGPU.recovery[nid];
 	float I_sum, NMDAtmp;
 	float gNMDA, gGABAb;
 
-	// loop that allows smaller integration time step for v's and u's
-	for (int c = 0; c < COND_INTEGRATION_SCALE; c++) {
-		I_sum = 0.0f;
+	float k = runtimeDataGPU.Izh_k[nid];
+	float vr = runtimeDataGPU.Izh_vr[nid];
+	float vt = runtimeDataGPU.Izh_vt[nid];
+	float inverse_C = 1.0f / runtimeDataGPU.Izh_C[nid];
+	float vpeak = runtimeDataGPU.Izh_vpeak[nid];
+	float a = runtimeDataGPU.Izh_a[nid];
+	float b = runtimeDataGPU.Izh_b[nid];
+
+	float timeStep = networkConfigGPU.timeStep;
+
+	for (int j = 1; j <= networkConfigGPU.simNumStepsPerMs; j++) {
+
+		float totalCurrent = runtimeDataGPU.extCurrent[nid];
+
 		if (networkConfigGPU.sim_with_conductances) {
 			NMDAtmp = (v + 80.0f) * (v + 80.0f) / 60.0f / 60.0f;
 			gNMDA = (networkConfigGPU.sim_with_NMDA_rise) ? (runtimeDataGPU.gNMDA_d[nid] - runtimeDataGPU.gNMDA_r[nid]) : runtimeDataGPU.gNMDA[nid];
 			gGABAb = (networkConfigGPU.sim_with_GABAb_rise) ? (runtimeDataGPU.gGABAb_d[nid] - runtimeDataGPU.gGABAb_r[nid]) : runtimeDataGPU.gGABAb[nid];
+
 			I_sum = -(runtimeDataGPU.gAMPA[nid] * (v - 0.0f)
-						+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
-						+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
-						+ gGABAb * (v + 90.0f));
-		} else {
-			I_sum = runtimeDataGPU.current[nid];
+				+ gNMDA * NMDAtmp / (1.0f + NMDAtmp) * (v - 0.0f)
+				+ runtimeDataGPU.gGABAa[nid] * (v + 70.0f)
+				+ gGABAb * (v + 90.0f));
+
+			totalCurrent += I_sum;
+		}
+		else {
+			totalCurrent += runtimeDataGPU.current[nid];
 		}
 
-		// update vpos and upos for the current neuron
-		v += ((0.04f * v + 5.0f) * v + 140.0f - u + I_sum + runtimeDataGPU.extCurrent[nid]) / COND_INTEGRATION_SCALE;
-		if (v > 30.0f) { 
-			v = 30.0f; // break the loop but evaluate u[i]
-			c = COND_INTEGRATION_SCALE;
+		switch (networkConfigGPU.simIntegrationMethod) {
+		case FORWARD_EULER:
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{	// 4-param Izhikevich
+				v = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+				if (v > 30.0f) {
+					// record spike but keep integrating
+					v = 30.0f;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+			}
+			else
+			{	// 9-param Izhikevich
+				v = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				if (v > vpeak) {
+					v = vpeak;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+			}
+
+			if (v < -90.0f) v = -90.0f;
+
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{
+				u += dudtIzhikevich4(v, u, a, b, timeStep);
+			}
+			else
+			{
+				u += dudtIzhikevich9(v, u, vr, a, b, timeStep);
+			}
+			break;
+		case RUNGE_KUTTA4:
+			if (!groupConfigsGPU[grpId].withParamModel_9) {
+				// 4-param Izhikevich
+				float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
+				float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
+
+				float k2 = dvdtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, totalCurrent, timeStep);
+				float l2 = dudtIzhikevich4(v + k1 / 2.0f, u + l1 / 2.0f, a, b, timeStep);
+
+				float k3 = dvdtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, totalCurrent, timeStep);
+				float l3 = dudtIzhikevich4(v + k2 / 2.0f, u + l2 / 2.0f, a, b, timeStep);
+
+				float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
+				float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
+
+				const float one_sixth = 1.0f / 6.0f;
+				v = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+				if (v > 30.0f) {
+					// record spike but keep integrating
+					v = 30.0f;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+
+				if (v < -90.0f) v = -90.0f;
+
+				u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			}
+			else {
+				// 9-param Izhikevich
+				float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+
+				float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+
+				float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+				float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
+				float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+				const float one_sixth = 1.0f / 6.0f;
+				v = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+				if (v > vpeak) {
+					// record spike but keep integrating
+					v = vpeak;
+					j = networkConfigGPU.simNumStepsPerMs;
+				}
+
+				if (v < -90.0f) v = -90.0f;
+
+				u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+			}
+			break;
+		case UNKNOWN_INTEGRATION:
+		default:
+			// unknown integration method
+			assert(false);
 		}
-
-		if (v < -90.0f) v = -90.0f;
-
-		u += (runtimeDataGPU.Izh_a[nid] * (runtimeDataGPU.Izh_b[nid] * v - u) / COND_INTEGRATION_SCALE);
-	}
-	if(networkConfigGPU.sim_with_conductances) {
-		runtimeDataGPU.current[nid] = I_sum;
-	} else {
-		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
-		runtimeDataGPU.current[nid] = 0.0f;
 	}
 	runtimeDataGPU.voltage[nid] = v;
 	runtimeDataGPU.recovery[nid] = u;
+	if (!networkConfigGPU.sim_with_conductances)
+	{
+		// current must be reset here for CUBA and not kernel_STPUpdateAndDecayConductances
+		runtimeDataGPU.current[nid] = 0.0f;
+	}
 }
 
 /*!
@@ -1974,6 +2097,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->voltage, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nextVoltage, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
+
 	//neuron input current...
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->current, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->current[ptrPos], &managerRuntimeData.current[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
@@ -1989,6 +2115,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	// copying external current needs to be done separately because setExternalCurrent needs to call it, too
 	// do it only from host to device
 	copyExternalCurrent(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->curSpike, sizeof(bool) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->curSpike[ptrPos], &managerRuntimeData.curSpike[ptrPos], sizeof(bool) * length, cudaMemcpyHostToDevice));
 	
 	copyNeuronParameters(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
@@ -2137,6 +2266,11 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 		assert(dest->Izh_b == NULL);
 		assert(dest->Izh_c == NULL);
 		assert(dest->Izh_d == NULL);
+		assert(dest->Izh_C == NULL);
+		assert(dest->Izh_k == NULL);
+		assert(dest->Izh_vr == NULL);
+		assert(dest->Izh_vt == NULL);
+		assert(dest->Izh_vpeak == NULL);
 	}
 
 	if(lGrpId == ALL) {
@@ -2159,6 +2293,21 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_d, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_C, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_C[ptrPos], &(managerRuntimeData.Izh_C[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_k, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_k[ptrPos], &(managerRuntimeData.Izh_k[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_vr, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_vr[ptrPos], &(managerRuntimeData.Izh_vr[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_vt, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_vt[ptrPos], &(managerRuntimeData.Izh_vt[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_vpeak, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	// pre-compute baseFiringInv for fast computation on GPUs.
 	if (sim_with_homeostasis) {
@@ -2635,9 +2784,11 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].voltage) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].recovery) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].current) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extCurrent) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plastic) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plasticInv) );
@@ -2669,6 +2820,11 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_b) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_c) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_d) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA) );
 	if (sim_with_NMDA_rise) {
 		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_r) );
@@ -2747,7 +2903,6 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 	assert(runtimeData[netId].memType == GPU_MEM);
 	checkAndSetGPUDevice(netId);
 	
-	// update all neuron state (i.e., voltage and recovery), including homeostasis
 	kernel_neuronStateUpdate << <NUM_BLOCKS, NUM_THREADS >> > ();
 	CUDA_GET_LAST_ERROR("Kernel execution failed");
 }

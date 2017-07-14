@@ -384,6 +384,19 @@ public:
 		snn_->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD);
 	}
 
+	// sets integration method (FORWARD_EULER, RUNGE_KUTTA4, etc.) and integration step
+	void setIntegrationMethod(integrationMethod_t method, int numStepsPerMs) {
+		std::string funcName = "setIntegrationMethod()";
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
+			"CONFIG.");
+		UserErrors::assertTrue((numStepsPerMs >= 1) && (numStepsPerMs <= 100), UserErrors::MUST_BE_IN_RANGE, funcName,
+			"numStepsPerMs", "[1, 100]");
+
+		snn_->setIntegrationMethod(method, numStepsPerMs);
+
+		//std::cout << "numStepsPerMs is (in interface): " + numStepsPerMs << std::endl;
+	}
+
 	// set neuron parameters for Izhikevich neuron, with standard deviations
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd)
@@ -406,6 +419,36 @@ public:
 
 		// set standard deviations of Izzy params to zero
 		snn_->setNeuronParameters(grpId, izh_a, 0.0f, izh_b, 0.0f, izh_c, 0.0f, izh_d, 0.0f);
+	}
+
+	void setNeuronParameters(int grpId, float izh_C, float izh_k, float izh_vr, float izh_vt,
+		float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d)
+	{
+		std::string funcName = "setNeuronParameters(\"" + getGroupName(grpId) + "\")";
+		UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+		UserErrors::assertTrue(izh_C > 0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "izh_C");
+
+		// set standard deviations of Izzy params to zero
+		snn_->setNeuronParameters(grpId, izh_C, 0.0f, izh_k, 0.0f, izh_vr, 0.0f, izh_vt, 0.0f,
+			izh_a, 0.0f, izh_b, 0.0f, izh_vpeak, 0.0f, izh_c, 0.0f, izh_d, 0.0f);
+	}
+
+
+	void setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+		float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+		float izh_d, float izh_d_sd)
+	{
+		std::string funcName = "setNeuronParameters(\"" + getGroupName(grpId) + "\")";
+		UserErrors::assertTrue(!isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, funcName);
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
+		UserErrors::assertTrue(izh_C > 0, UserErrors::CANNOT_BE_NEGATIVE, funcName, "izh_C");
+
+		// wrapper identical to core func
+		snn_->setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
+			izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
 	}
 
 	// set parameters for each neuronmodulator
@@ -1517,6 +1560,11 @@ void CARLsim::setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiri
 	_impl->setHomeoBaseFiringRate(grpId, baseFiring, baseFiringSD);
 }
 
+void CARLsim::setIntegrationMethod(integrationMethod_t method, int numStepsPerMs)
+{
+	_impl->setIntegrationMethod(method, numStepsPerMs);
+}
+
 // set neuron params
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd, float izh_c, 
 	float izh_c_sd, float izh_d, float izh_d_sd)
@@ -1526,6 +1574,23 @@ void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float 
 void CARLsim::setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d) {
 	_impl->setNeuronParameters(grpId, izh_a, izh_b, izh_c, izh_d);
 }
+
+void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_k, float izh_vr, float izh_vt,
+	float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d)
+{
+	_impl->setNeuronParameters(grpId, izh_C, izh_k, izh_vr, izh_vt, izh_a, izh_b, izh_vpeak, izh_c, izh_d);
+}
+
+void CARLsim::setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+	float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+	float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+	float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+	float izh_d, float izh_d_sd)
+{
+	_impl->setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
+		izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd, izh_d, izh_d_sd);
+}
+
 void CARLsim::setNeuromodulator(int grpId, float baseDP, float tauDP, float base5HT, float tau5HT, float baseACh, 
 	float tauACh, float baseNE, float tauNE)
 {
