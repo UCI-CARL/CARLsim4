@@ -115,13 +115,13 @@ int main(int argc, char* argv[] ) {
 		sim.setNeuronParameters(gExc[i], 0.02f, 0.2f, -65.0f, 8.0f); // RS
 		gInh[i] = sim.createGroup(Inh[i], N_INH, INHIBITORY_NEURON, i, CPU_CORES);
 		sim.setNeuronParameters(gInh[i], 0.1f, 0.2f, -65.0f, 2.0f); // RS	
-		gInput[i] = sim.createSpikeGeneratorGroup(Input[i], N_INPUT, EXCITATORY_NEURON, i, CPU_CORES);
+		gInput[i] = sim.createSpikeGeneratorGroup(Input[i], N_EXC, EXCITATORY_NEURON, i, CPU_CORES);
 	}
 	
 	int cinput2e[4], ce2inh[4], cinh2e[4];
 	for (int i=0; i<4; i++)
 	{	
-		cinput2e[i] = sim.connect(gInput[i], gExc[i], "full", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		cinput2e[i] = sim.connect(gInput[i], gExc[i], "one-to-one", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 		ce2inh[i] = sim.connect(gExc[i], gInh[(i+1)%4], "random", RangeWeight(excWeight), pConn1, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
 		cinh2e[i] = sim.connect(gInh[i], gExc[(i+3)%4], "random", RangeWeight(inhWeight), pConn2, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED); 
 	}
@@ -133,11 +133,11 @@ int main(int argc, char* argv[] ) {
 	sim.setupNetwork();
 
 	//setup monitors
-//	SpikeMonitor* spkMon1 = sim.setSpikeMonitor(gExc[0], "NULL");
-//	SpikeMonitor* spkMon2 = sim.setSpikeMonitor(gInh[0], "NULL");
+	SpikeMonitor* spkMon1 = sim.setSpikeMonitor(gExc[0], "NULL");
+	SpikeMonitor* spkMon2 = sim.setSpikeMonitor(gInh[0], "NULL");
 
 	//setup some baseline input                           
-        PoissonRate in(N_INPUT);
+        PoissonRate in(N_EXC);
         in.setRates(inputFireRate);                        
 	for (int i=0; i<4; i++){            
        		sim.setSpikeRate(gInput[i], &in);   
