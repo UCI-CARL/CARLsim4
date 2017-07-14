@@ -2836,6 +2836,14 @@ void SNN::generateConnectionRuntime(int netId) {
 	memset(managerRuntimeData.Npre, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	for (std::list<ConnectionInfo>::iterator connIt = connectionLists[netId].begin(); connIt != connectionLists[netId].end(); connIt++) {
 		connIt->srcGLoffset = GLoffset[connIt->grpSrc];
+		if (managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]] == SYNAPSE_ID_MASK) {
+			KERNEL_ERROR("Error: the number of synapses exceeds maximum limit (%d) for neuron %d (group %d)", SYNAPSE_ID_MASK, connIt->nSrc, connIt->grpSrc);
+			exitSimulation(ID_OVERFLOW_ERROR);
+		}
+		if (managerRuntimeData.Npre[connIt->nDest + GLoffset[connIt->grpDest]] == SYNAPSE_ID_MASK) {
+			KERNEL_ERROR("Error: the number of synapses exceeds maximum limit (%d) for neuron %d (group %d)", SYNAPSE_ID_MASK, connIt->nDest, connIt->grpDest);
+			exitSimulation(ID_OVERFLOW_ERROR);
+		}
 		managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]]++;
 		managerRuntimeData.Npre[connIt->nDest + GLoffset[connIt->grpDest]]++;
 
@@ -2913,6 +2921,7 @@ void SNN::generateConnectionRuntime(int netId) {
 		}
 	}
 	assert(parsedConnections == networkConfigs[netId].numPreSynNet);
+	//printf("parsed pre connections %d\n", parsedConnections);
 
 	// generate postSynapticIds
 	connectionLists[netId].sort(compareSrcNeuron); // sort by local nSrc id
@@ -2974,6 +2983,7 @@ void SNN::generateConnectionRuntime(int netId) {
 				//	groupInfo[it->grpSrc].maxPostConn = managerRuntimeData.Npost[it->nSrc];
 			}
 			assert(parsedConnections == managerRuntimeData.Npost[lNId]);
+			//printf("parsed post connections %d\n", parsedConnections);
 			// note: elements in postConnectionList are deallocated automatically with postConnectionList
 			/* for postDelayInfo debugging
 			printf("%d ", lNId);
@@ -5441,14 +5451,9 @@ void SNN::resetSpikeCnt(int gGrpId) {
 
 //! nid=neuron id, sid=synapse id, grpId=group id.
 inline SynInfo SNN::SET_CONN_ID(int nId, int sId, int grpId) {
-	if (sId > SYNAPSE_ID_MASK) {
-		KERNEL_ERROR("Error: Syn Id (%d) exceeds maximum limit (%d) for neuron %d (group %d)", sId, SYNAPSE_ID_MASK, nId, grpId);
-		exitSimulation(1);
-	}
-
 	if (grpId > GROUP_ID_MASK) {
 		KERNEL_ERROR("Error: Group Id (%d) exceeds maximum limit (%d)", grpId, GROUP_ID_MASK);
-		exitSimulation(1);
+		exitSimulation(ID_OVERFLOW_ERROR);
 	}
 
 	SynInfo synInfo;
