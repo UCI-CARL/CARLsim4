@@ -66,7 +66,7 @@ NeuronMonitorCore::NeuronMonitorCore(SNN* snn, int monitorId, int grpId) {
     userHasBeenWarned_ = false;
 	needToWriteFileHeader_ = true;
     neuronFileSignature_ = 206661979;
-	neuronFileVersion_ = 0.2f;
+	neuronFileVersion_ = 0.1f;
 
 	// defer all unsafe operations to init function
 	init();

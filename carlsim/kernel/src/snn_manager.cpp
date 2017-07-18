@@ -6385,8 +6385,8 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 				// WRITE TO A TEXT FILE INSTEAD OF BINARY
 				if (writeNeuronStateToFile) {
 					int cnt;
-					cnt = fwrite(&nId, sizeof(int), 1, nrnFileId); assert(cnt == 1);
 					cnt = fwrite(&time, sizeof(int), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&nId, sizeof(int), 1, nrnFileId); assert(cnt == 1);		
 					cnt = fwrite(&v, sizeof(float), 1, nrnFileId); assert(cnt == 1);
 					cnt = fwrite(&u, sizeof(float), 1, nrnFileId); assert(cnt == 1);
 					cnt = fwrite(&I, sizeof(float), 1, nrnFileId); assert(cnt == 1);
