@@ -11,7 +11,7 @@
 # Includes
 
     target_include_directories(carlsim-interface
-        PRIVATE
+        PUBLIC
             inc
     )
 
