@@ -9,3 +9,4 @@
     add_subdirectory(interface)
     add_subdirectory(kernel)
     add_subdirectory(monitor)
+    add_subdirectory(test)
