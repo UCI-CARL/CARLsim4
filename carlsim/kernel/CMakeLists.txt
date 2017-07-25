@@ -6,3 +6,12 @@
         src/snn_manager.cpp
         src/spike_buffer.cpp
     )
+
+# Linking
+
+    if(UNIX)
+        target_link_libraries(carlsim-kernel
+            PRIVATE
+                pthread
+        )
+    endif()
