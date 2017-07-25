@@ -14,3 +14,10 @@
         PRIVATE
             inc
     )
+
+# Linking
+
+    target_link_libraries(carlsim-interface
+        PUBLIC
+            carlsim-kernel
+    )
