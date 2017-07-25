@@ -10,3 +10,7 @@ cmake_minimum_required(VERSION 3.0)
     if(CARLSIM_NO_CUDA)
         add_definitions(-D__NO_CUDA__)
     endif()
+
+# Subdirectories
+
+    add_subdirectory(carlsim)
