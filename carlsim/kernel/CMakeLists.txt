@@ -7,6 +7,15 @@
         src/spike_buffer.cpp
     )
 
+# Definitions
+
+    if(CARLSIM_NO_CUDA)
+        target_compile_definitions(carlsim-kernel
+            PUBLIC
+                -D__NO_CUDA__
+        )
+    endif()
+
 # Linking
 
     if(UNIX)

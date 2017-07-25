@@ -15,3 +15,10 @@
         PUBLIC
             .
     )
+
+# Linking
+
+    target_link_libraries(carlsim-monitor
+        PRIVATE
+            carlsim-kernel
+    )
