@@ -25,6 +25,10 @@
 *.la
 *.a
 
+# Build directory
+.build
+build
+
 # =====================
 # emacs ignore list
 # =====================
