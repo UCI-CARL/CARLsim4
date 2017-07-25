@@ -16,6 +16,11 @@
         )
     endif()
 
+    target_include_directories(carlsim-kernel
+        PUBLIC
+            inc
+    )
+
 # Linking
 
     if(UNIX)

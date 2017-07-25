@@ -1,7 +1,6 @@
 # Includes
 
     include_directories(interface/inc)
-    include_directories(kernel/inc)
     include_directories(monitor)
 
 # Subdirectories
