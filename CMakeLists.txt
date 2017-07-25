@@ -14,3 +14,4 @@ cmake_minimum_required(VERSION 3.0)
 # Subdirectories
 
     add_subdirectory(carlsim)
+    add_subdirectory(tools)
