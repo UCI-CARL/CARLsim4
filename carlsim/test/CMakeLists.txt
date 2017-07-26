@@ -1,3 +1,7 @@
+# Dependencies
+
+    find_package(GTest REQUIRED)
+
 # Targets
 
     add_executable(carlsim-tests
@@ -18,10 +22,17 @@
         stp.cpp
     )
 
+# Includes
+
+    target_include_directories(carlsim-tests
+        PRIVATE
+            ${GTEST_INCLUDE_DIRS}
+    )
+
 # Linking
 
     target_link_libraries(carlsim-tests
         PRIVATE
             carlsim-spike-generators
-            gtest
+            ${GTEST_LIBRARIES}
     )
