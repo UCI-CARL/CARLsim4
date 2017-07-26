@@ -17,3 +17,7 @@
             carlsim-interface
             carlsim-monitor
     )
+
+# Installation
+
+    install(FILES simple_weight_tuner.h DESTINATION include)

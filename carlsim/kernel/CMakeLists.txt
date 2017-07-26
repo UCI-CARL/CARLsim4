@@ -77,3 +77,15 @@
                 carlsim-kernel-cuda
         )
     endif()
+
+# Installation
+
+    install(
+        FILES
+            inc/cuda_version_control.h
+            inc/error_code.h
+            inc/snn_datastructures.h
+            inc/snn_definitions.h
+            inc/snn.h
+            inc/spike_buffer.h
+        DESTINATION include)

@@ -16,3 +16,7 @@
         PRIVATE
             carlsim-interface
     )
+
+# Installation
+
+    install(FILES stopwatch.h DESTINATION include)

@@ -27,3 +27,18 @@
         PUBLIC
             carlsim-kernel
     )
+
+# Installation
+
+    install(
+        FILES
+            inc/callback_core.h
+            inc/callback.h
+            inc/carlsim_datastructures.h
+            inc/carlsim_definitions.h
+            inc/carlsim.h
+            inc/carlsim_log_definitions.h
+            inc/linear_algebra.h
+            inc/poisson_rate.h
+            inc/user_errors.h
+        DESTINATION include)

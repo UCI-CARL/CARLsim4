@@ -28,3 +28,14 @@
             carlsim-interface
             carlsim-monitor
     )
+
+# Installation
+
+    install(
+        FILES
+            interactive_spikegen.h
+            periodic_spikegen.h
+            pre_post_group_spikegen.h
+            spikegen_from_file.h
+            spikegen_from_vector.h
+        DESTINATION include)

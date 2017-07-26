@@ -28,3 +28,15 @@
         PRIVATE
             carlsim-kernel
     )
+
+# Installation
+
+    install(
+        FILES
+            connection_monitor_core.h
+            connection_monitor.h
+            group_monitor_core.h
+            group_monitor.h
+            spike_monitor_core.h
+            spike_monitor.h
+        DESTINATION include)

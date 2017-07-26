@@ -16,3 +16,7 @@
         PRIVATE
             carlsim-interface
     )
+
+# Installation
+
+    install(FILES visual_stimulus.h DESTINATION include)

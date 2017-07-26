@@ -30,6 +30,10 @@ cmake_minimum_required(VERSION 3.0)
     link_archive(carlsim-stopwatch)
     link_archive(carlsim-visual-stimulus)
 
+# Installation
+
+    install(TARGETS carlsim DESTINATION lib)
+
 # Subdirectories
 
     add_subdirectory(carlsim)
