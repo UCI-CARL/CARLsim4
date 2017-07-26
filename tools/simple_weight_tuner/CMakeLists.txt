@@ -4,6 +4,12 @@
         simple_weight_tuner.cpp
     )
 
+# Properties
+
+    # Since we build shared library enable position independent code
+    set_property(TARGET carlsim-simple-weight-tuner PROPERTY
+        POSITION_INDEPENDENT_CODE TRUE)
+
 # Linking
 
     target_link_libraries(carlsim-simple-weight-tuner

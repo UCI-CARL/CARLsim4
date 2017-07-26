@@ -9,6 +9,12 @@
         spike_monitor.cpp
     )
 
+# Properties
+
+    # Since we build shared library enable position independent code
+    set_property(TARGET carlsim-monitor PROPERTY
+        POSITION_INDEPENDENT_CODE TRUE)
+
 # Includes
 
     target_include_directories(carlsim-monitor

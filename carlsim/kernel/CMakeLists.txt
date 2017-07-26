@@ -10,6 +10,7 @@
         cuda_add_library(carlsim-kernel-cuda
             src/gpu_module/snn_gpu_module.cu
             OPTIONS
+                -Xcompiler -fPIC
                 -gencode arch=compute_30,code=sm_30
         )
     endif()
@@ -20,6 +21,12 @@
         src/snn_manager.cpp
         src/spike_buffer.cpp
     )
+
+# Properties
+
+    # Since we build shared library enable position independent code
+    set_property(TARGET carlsim-kernel PROPERTY
+        POSITION_INDEPENDENT_CODE TRUE)
 
 # Definitions
 
