@@ -552,7 +552,7 @@ public:
 		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
 		float izh_d, float izh_d_sd);
 
-	/*!
+ /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.
 	*
 	* \TODO finish docu
