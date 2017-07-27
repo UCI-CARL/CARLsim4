@@ -100,6 +100,88 @@ TEST(Interface, connectDeath) {
 	delete sim;
 }
 
+TEST(Interface, connectCompartmentsDeath) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim* sim = new CARLsim("Interface.connectCompartmentsDeath", CPU_MODE, SILENT, 0, 42);
+
+	// set up compartmental groups
+	int N = 5; //number of neurons
+	int s = sim->createGroup("soma", N, EXCITATORY_NEURON);
+	int d1 = sim->createGroup("d1", N, EXCITATORY_NEURON);
+	int d2 = sim->createGroup("d2", N, EXCITATORY_NEURON);
+	int d3 = sim->createGroup("d3", N, EXCITATORY_NEURON);
+	int d4 = sim->createGroup("d4", N, EXCITATORY_NEURON);
+	int d5 = sim->createGroup("d5", N, EXCITATORY_NEURON);
+	int d6 = sim->createGroup("d6", 2 * N, EXCITATORY_NEURON);
+
+	// some regular neuron groups
+	int reg0 = sim->createGroup("reg0", 2 * N, EXCITATORY_NEURON);
+	int reg1 = sim->createGroup("reg1", 2 * N, EXCITATORY_NEURON);
+
+	// make them 9-param Izzy neurons
+	sim->setNeuronParameters(s, 550.0f, 2.0, -59.0, -50.0, 0.0, -0.0, 24.0, -53.0, 109.0f);
+	sim->setNeuronParameters(d1, 367.0f, 1.0, -59.0, -44.0, 0.0, 3.0, 20.0, -46.0, 24.0f);
+	sim->setNeuronParameters(d2, 425.0f, 2.0, -59.0, -25.0, 0.0, 0.0, 13.0, -38.0, 69.0f);
+	sim->setNeuronParameters(d3, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim->setNeuronParameters(d4, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim->setNeuronParameters(d5, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim->setNeuronParameters(d6, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim->setNeuronParameters(reg0, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+	sim->setNeuronParameters(reg1, 225.0f, 1.0, -59.0, -36.0, 0.0, -4.0, 21.0, -40.0, 21.0f);
+
+	// enable compartments
+	sim->setCompartmentParameters(s, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d1, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d2, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d3, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d4, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d5, 1.0f, 1.0f);
+	sim->setCompartmentParameters(d6, 1.0f, 1.0f);
+
+	int gen = sim->createSpikeGeneratorGroup("SpikeGen", N, EXCITATORY_NEURON);
+
+	// grpIDs must be valid, cannot be identical
+	EXPECT_DEATH({ sim->connectCompartments(sim->getNumGroups(), d1); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(s, 10); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(s, -1); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(-1, s); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(d3, d3); }, "");
+
+	// no spike generators in connect call
+	EXPECT_DEATH({ sim->connectCompartments(gen, s); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(d2, gen); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(gen, gen); }, "");
+
+	// groups must be of same size
+	EXPECT_DEATH({ sim->connectCompartments(s, d6); }, "");
+
+
+	// connectCompartments is bidirectional: connecting same groups twice is illegal
+	sim->connectCompartments(s, d1);
+	EXPECT_DEATH({ sim->connectCompartments(s, d1); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(d1, s); }, "");
+
+	// can't have both synaptic and compartmental connections on the same groups
+	EXPECT_DEATH({ sim->connect(s, d1, "full", RangeWeight(1.0f), 1.0f); }, "");
+	EXPECT_DEATH({ sim->connect(d1, s, "full", RangeWeight(1.0f), 1.0f); }, "");
+	sim->connect(d3, d2, "full", RangeWeight(1.0f), 1.0f);
+	EXPECT_DEATH({ sim->connectCompartments(d3, d2); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(d2, d3); }, "");
+
+	// can't be involved in more than 4 connections (d1-d4), d5 must break
+	sim->connectCompartments(d2, s);
+	sim->connectCompartments(d3, s);
+	sim->connectCompartments(s, d4);
+	EXPECT_DEATH({ sim->connectCompartments(d5, s); }, "");
+	EXPECT_DEATH({ sim->connectCompartments(s, d5); }, "");
+
+	// use compartment connections on regular neurons
+	// must break during setupNetwork (in verifyCompartments)
+	sim->connectCompartments(reg0, reg1);
+	EXPECT_DEATH({ sim->setupNetwork(); }, "");
+}
+
 //! Death tests for createGroup (test all possible silly values)
 // \FIXME this should be interface-level
 TEST(Interface, createGroupDeath) {

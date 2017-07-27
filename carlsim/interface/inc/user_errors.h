@@ -27,6 +27,8 @@ public:
 		CAN_ONLY_BE_CALLED_IN_STATE,//!< function can only be called in certain state
 		CANNOT_BE_CALLED_IN_MODE,	//!< function cannot be called in certain mode
 		CANNOT_BE_CALLED_IN_STATE,	//!< function cannot be called in certain state
+		CANNOT_BE_CONN_SYN_AND_COMP, //!< cannot be both synaptically and compartmentally connected
+		CANNOT_BE_CONN_TWICE,	//!< cannot be connected twice
 		CANNOT_BE_IDENTICAL,	//!< parameters cannot be identical
 		CANNOT_BE_NEGATIVE,		//!< parameter cannot have negative value (opposite to "must be", but includes zero)
 		CANNOT_BE_NULL,			//!< parameter cannot have NULL value

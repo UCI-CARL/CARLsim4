@@ -210,6 +210,39 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	return (numConnections - 1);
 }
 
+// make a compartmental connection between two groups
+short int SNN::connectCompartments(int grpIdLower, int grpIdUpper) {
+	assert(grpIdLower >= 0 && grpIdLower < numGroups);
+	assert(grpIdUpper >= 0 && grpIdUpper < numGroups);
+	assert(grpIdLower != grpIdUpper);
+	assert(!isPoissonGroup(grpIdLower));
+	assert(!isPoissonGroup(grpIdUpper));
+
+	// the two groups must be located on the same partition
+	assert(groupConfigMap[grpIdLower].preferredNetId == groupConfigMap[grpIdUpper].preferredNetId);
+
+	// this flag must be set if any compartmental connections exist
+	// note that grpId.withCompartments is not necessarily set just yet, this will be done in
+	// CpuSNN::setCompartmentParameters
+	sim_with_compartments = true;
+
+	compConnectConfig compConnConfig;
+
+	compConnConfig.grpSrc = grpIdLower;
+	compConnConfig.grpDest = grpIdUpper;
+	compConnConfig.connId = -1;
+
+	// assign a connection id
+	assert(compConnConfig.connId == -1);
+	compConnConfig.connId = numCompartmentConnections;
+
+	// store the configuration of a connection
+	compConnectConfigMap[numCompartmentConnections] = compConnConfig;
+
+	numCompartmentConnections++;
+
+	return (numCompartmentConnections - 1);
+}
 
 // create group of Izhikevich neurons
 // use int for nNeur to avoid arithmetic underflow
@@ -227,6 +260,9 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	// initialize group configuration
 	GroupConfig grpConfig;
 	GroupConfigMD grpConfigMD;
+
+	//All groups are non-compartmental by default
+	grpConfig.withCompartments = false;
 	
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
@@ -267,7 +303,10 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	// initialize group configuration
 	GroupConfig grpConfig;
 	GroupConfigMD grpConfigMD;
-	
+
+	//All groups are non-compartmental by default  FIXME:IS THIS NECESSARY?
+	grpConfig.withCompartments = false;
+
 	// init parameters of neural group size and location
 	grpConfig.grpName = grpName;
 	grpConfig.type = neurType | POISSON_NEURON;
@@ -298,6 +337,21 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 
 	return grpConfigMD.gGrpId;
 }
+
+void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingDown) {
+	if (gGrpId == ALL) { 
+		for (int grpId = 0; grpId<numGroups; grpId++) {
+			setCompartmentParameters(grpId, couplingUp, couplingDown);
+		}
+	}
+	else {
+		groupConfigMap[gGrpId].withCompartments = true;
+		groupConfigMap[gGrpId].compCouplingUp = couplingUp;
+		groupConfigMap[gGrpId].compCouplingDown = couplingDown;
+		glbNetworkConfig.numComp += groupConfigMap[gGrpId].numN;
+	}
+}
+
 
 // set conductance values for a simulation (custom values or disable conductances alltogether)
 void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
@@ -458,7 +512,6 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
 		groupConfigMap[gGrpId].withParamModel_9 = 1;
-		KERNEL_INFO("Set a nine parameter group!");
 	}
 }
 
@@ -1833,6 +1886,7 @@ void SNN::SNNinit() {
 
 	numGroups = 0;
 	numConnections = 0;
+	numCompartmentConnections = 0;
 	numSpikeGenGrps = 0;
 	simulatorDeleted = false;
 
@@ -1844,6 +1898,7 @@ void SNN::SNNinit() {
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
 
+	sim_with_compartments = false;
 	sim_with_fixedwts = true; // default is true, will be set to false if there are any plastic synapses
 	sim_with_conductances = false; // default is false
 	sim_with_stdp = false;
@@ -1865,6 +1920,9 @@ void SNN::SNNinit() {
 	rGABAb = 1.0-1.0/100.0;
 	dGABAb = 1.0-1.0/150.0;
 	sGABAb = 1.0;
+
+	// default integration method: Forward-Euler with 0.5ms integration step
+	setIntegrationMethod(FORWARD_EULER, 2);
 
 	mulSynFast = NULL;
 	mulSynSlow = NULL;
@@ -1890,8 +1948,6 @@ void SNN::SNNinit() {
 	// Manager runtime data
 	memset(&managerRuntimeData, 0, sizeof(RuntimeData));
 	managerRuntimeData.allocated = false; // FIXME: redundant??
-
-
 
 	// default weight update parameter
 	wtANDwtChangeUpdateInterval_ = 1000; // update weights every 1000 ms (default)
@@ -2704,6 +2760,13 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
+			groupConfigs[netId][lGrpId].numCompNeighbors = 0;
+			groupConfigs[netId][lGrpId].withCompartments = groupConfigMap[gGrpId].withCompartments;
+			groupConfigs[netId][lGrpId].compCouplingUp = groupConfigMap[gGrpId].compCouplingUp;
+			groupConfigs[netId][lGrpId].compCouplingDown = groupConfigMap[gGrpId].compCouplingDown;
+			memset(&groupConfigs[netId][lGrpId].compNeighbors, 0, sizeof(groupConfigs[netId][lGrpId].compNeighbors[0])*MAX_NUM_COMP_CONN);
+			memset(&groupConfigs[netId][lGrpId].compCoupling, 0, sizeof(groupConfigs[netId][lGrpId].compCoupling[0])*MAX_NUM_COMP_CONN);
+
 			//!< homeostatic plasticity variables
 			groupConfigs[netId][lGrpId].avgTimeScale = groupConfigMap[gGrpId].homeoConfig.avgTimeScale;
 			groupConfigs[netId][lGrpId].avgTimeScale_decay = groupConfigMap[gGrpId].homeoConfig.avgTimeScaleDecay;
@@ -3113,6 +3176,46 @@ void SNN::generateConnectionRuntime(int netId) {
 	//	groupInfo[destGrp].maxPreConn = managerRuntimeData.Npre[src];
 }
 
+void SNN::generateCompConnectionRuntime(int netId)
+{
+	std::map<int, int> GLgrpId; // global grpId to local grpId offset
+
+	for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+		GLgrpId[grpIt->gGrpId] = grpIt->lGrpId;
+		//printf("Global group id %i; Local group id %i\n", grpIt->gGrpId, grpIt->lGrpId);
+	}
+
+	//printf("The current netid is: %i\n", netId);
+
+	for (std::list<compConnectConfig>::iterator connIt = localCompConnectLists[netId].begin(); connIt != localCompConnectLists[netId].end(); connIt++) {
+		//printf("The size of localCompConnectLists is: %i\n", localCompConnectLists[netId].size());
+		int grpLower = connIt->grpSrc;
+		int grpUpper = connIt->grpDest;
+
+		int i = groupConfigs[netId][GLgrpId[grpLower]].numCompNeighbors;
+		if (i >= MAX_NUM_COMP_CONN) {
+			KERNEL_ERROR("Group %s(%d) exceeds max number of allowed compartmental connections (%d).",
+				groupConfigMap[grpLower].grpName.c_str(), grpLower, (int)MAX_NUM_COMP_CONN);
+			exitSimulation(1);
+		}
+		groupConfigs[netId][GLgrpId[grpLower]].compNeighbors[i] = grpUpper;
+		groupConfigs[netId][GLgrpId[grpLower]].compCoupling[i] = groupConfigs[netId][GLgrpId[grpUpper]].compCouplingDown; // get down-coupling from upper neighbor
+		groupConfigs[netId][GLgrpId[grpLower]].numCompNeighbors++;
+
+		int j = groupConfigs[netId][GLgrpId[grpUpper]].numCompNeighbors;
+		if (j >= MAX_NUM_COMP_CONN) {
+			KERNEL_ERROR("Group %s(%d) exceeds max number of allowed compartmental connections (%d).",
+				groupConfigMap[grpUpper].grpName.c_str(), grpUpper, (int)MAX_NUM_COMP_CONN);
+			exitSimulation(1);
+		}
+		groupConfigs[netId][GLgrpId[grpUpper]].compNeighbors[j] = grpLower;
+		groupConfigs[netId][GLgrpId[grpUpper]].compCoupling[j] = groupConfigs[netId][GLgrpId[grpLower]].compCouplingUp; // get up-coupling from lower neighbor
+		groupConfigs[netId][GLgrpId[grpUpper]].numCompNeighbors++;
+
+		//printf("Group %i (local group %i) has %i compartmental neighbors!\n", grpUpper, GLgrpId[grpUpper], groupConfigs[netId][GLgrpId[grpUpper]].numCompNeighbors);
+	}
+}
+
 
 void SNN::generatePoissonGroupRuntime(int netId, int lGrpId) {
 	for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++)
@@ -3145,6 +3248,7 @@ void SNN::collectGlobalNetworkConfigC() {
 	glbNetworkConfig.numNPois = glbNetworkConfig.numNExcPois + glbNetworkConfig.numNInhPois;
 	glbNetworkConfig.numN = glbNetworkConfig.numNReg + glbNetworkConfig.numNPois;
 }
+
 
 void SNN::collectGlobalNetworkConfigP() {
 	// print group and connection overview
@@ -4503,6 +4607,9 @@ void SNN::verifyNetwork() {
 	// NOTE: this used to be updateParameters
 	//verifyNumNeurons();
 
+	// make sure compartment config is valid
+	verifyCompartments();
+
 	// make sure STDP post-group has some incoming plastic connections
 	verifySTDP();
 
@@ -4547,6 +4654,26 @@ void SNN::verifyNetwork() {
 	if (glbNetworkConfig.maxDelay > MAX_SYN_DELAY) {
 		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h", glbNetworkConfig.maxDelay);
 		exitSimulation(1);
+	}
+}
+
+void SNN::verifyCompartments() {
+	for (std::map<int, compConnectConfig>::iterator it = compConnectConfigMap.begin(); it != compConnectConfigMap.end(); it++)
+	{
+		int grpLower = it->second.grpSrc;
+		int grpUpper = it->second.grpDest;
+
+		// make sure groups are compartmentally enabled
+		if (!groupConfigMap[grpLower].withCompartments) {
+			KERNEL_ERROR("Group %s(%d) is not compartmentally enabled, cannot be part of a compartmental connection.",
+				groupConfigMap[grpLower].grpName.c_str(), grpLower);
+			exitSimulation(1);
+		}
+		if (!groupConfigMap[grpUpper].withCompartments) {
+			KERNEL_ERROR("Group %s(%d) is not compartmentally enabled, cannot be part of a compartmental connection.",
+				groupConfigMap[grpUpper].grpName.c_str(), grpUpper);
+			exitSimulation(1);
+		}
 	}
 }
 
@@ -4722,6 +4849,13 @@ void SNN::partitionSNN() {
 			for (std::map<int, ConnectConfig>::iterator connIt = connectConfigMap.begin(); connIt != connectConfigMap.end(); connIt++) {
 				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
 					localConnectLists[netId].push_back(connectConfigMap[connIt->second.connId]); // Copy by value
+				}
+			}
+
+			//printf("The size of compConnectConfigMap is: %i\n", compConnectConfigMap.size());
+			for (std::map<int, compConnectConfig>::iterator connIt = compConnectConfigMap.begin(); connIt != compConnectConfigMap.end(); connIt++) {
+				if (groupConfigMDMap[connIt->second.grpSrc].netId == netId && groupConfigMDMap[connIt->second.grpDest].netId == netId) {
+					localCompConnectLists[netId].push_back(compConnectConfigMap[connIt->second.connId]); // Copy by value
 				}
 			}
 		}
@@ -5071,8 +5205,10 @@ void SNN::generateRuntimeSNN() {
 	// 1. genearte configurations for the simulation
 	// generate (copy) group configs from groupPartitionLists[]
 	generateRuntimeGroupConfigs();
+
 	// generate (copy) connection configs from localConnectLists[] and exeternalConnectLists[]
 	generateRuntimeConnectConfigs();
+
 	// generate local network configs and accquire maximum size of rumtime data
 	generateRuntimeNetworkConfigs();
 
@@ -5135,6 +5271,8 @@ void SNN::generateRuntimeSNN() {
 			// - init Npre, Npre_plastic, Npost, cumulativePre, cumulativePost, preSynapticIds, postSynapticIds, postDelayInfo
 			// - init wt, maxSynWt
 			generateConnectionRuntime(netId);
+
+			generateCompConnectionRuntime(netId);
 
 			// - reset current
 			resetCurrent(netId);

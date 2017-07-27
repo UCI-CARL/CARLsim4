@@ -170,6 +170,17 @@ public:
 			assert(false);
 		}
 
+		// groups cannot be both chemically (synaptically) and electrically (compartmentally) connected
+		UserErrors::assertTrue(std::find(connComp_[grpId1].begin(), connComp_[grpId1].end(), grpId2) ==
+			connComp_[grpId1].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+		UserErrors::assertTrue(std::find(connComp_[grpId2].begin(), connComp_[grpId2].end(), grpId1) ==
+			connComp_[grpId2].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+
+		// add synaptic connection to 2D matrix
+		connSyn_[grpId1].push_back(grpId2);
+
 		return snn_->connect(grpId1, grpId2, connType, wt.init, wt.max, connProb, delay.min, delay.max,
 			radRF, mulSynFast, mulSynSlow, synWtType);
 	}
@@ -187,6 +198,17 @@ public:
 
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 		assert(++numConnections_ <= MAX_CONN_PER_SNN);
+
+		// groups cannot be both chemically (synaptically) and electrically (compartmentally) connected
+		UserErrors::assertTrue(std::find(connComp_[grpId1].begin(), connComp_[grpId1].end(), grpId2) ==
+			connComp_[grpId1].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+		UserErrors::assertTrue(std::find(connComp_[grpId2].begin(), connComp_[grpId2].end(), grpId1) ==
+			connComp_[grpId2].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+
+		// add synaptic connection to 2D matrix
+		connSyn_[grpId1].push_back(grpId2);
 
 		// TODO: check for sign of weights
 		// ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
@@ -213,10 +235,81 @@ public:
 			funcName, "CONFIG.");
 		assert(++numConnections_ <= MAX_CONN_PER_SNN);
 
+		// groups cannot be both chemically (synaptically) and electrically (compartmentally) connected
+		UserErrors::assertTrue(std::find(connComp_[grpId1].begin(), connComp_[grpId1].end(), grpId2) ==
+			connComp_[grpId1].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+		UserErrors::assertTrue(std::find(connComp_[grpId2].begin(), connComp_[grpId2].end(), grpId1) ==
+			connComp_[grpId2].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName,
+			grpId1str.str() + " and " + grpId2str.str());
+
+		// add synaptic connection to 2D matrix
+		connSyn_[grpId1].push_back(grpId2);
+
 		// ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(this, conn);
 		ConnectionGeneratorCore* CGC = new ConnectionGeneratorCore(sim_, conn);
 		connGen_.push_back(CGC);
 		return snn_->connect(grpId1, grpId2, CGC, mulSynFast, mulSynSlow, synWtType);
+	}
+
+	short int connectCompartments(int grpIdLower, int grpIdUpper) {
+		std::stringstream funcName; funcName << "connectCompartments(" << grpIdLower << "," << grpIdUpper << ")";
+
+		// grpIDs must be valid, cannot be identical
+		std::stringstream grpIdLowerStr; grpIdLowerStr << "Group Id " << grpIdLower;
+		std::stringstream grpIdUpperStr; grpIdUpperStr << "Group Id " << grpIdUpper;
+		UserErrors::assertTrue(grpIdLower >= 0 && grpIdLower<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+			grpIdLowerStr.str(), "[0,getNumGroups()]");
+		UserErrors::assertTrue(grpIdUpper >= 0 && grpIdUpper<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+			grpIdUpperStr.str(), "[0,getNumGroups()]");
+		UserErrors::assertTrue(grpIdLower != grpIdUpper, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(),
+			grpIdLowerStr.str() + " and " + grpIdUpperStr.str());
+
+		// groups cannot be spike generators
+		UserErrors::assertTrue(!isPoissonGroup(grpIdLower), UserErrors::WRONG_NEURON_TYPE, funcName.str(),
+			grpIdLowerStr.str() + " is PoissonGroup, connectCompartments");
+		UserErrors::assertTrue(!isPoissonGroup(grpIdUpper), UserErrors::WRONG_NEURON_TYPE, funcName.str(),
+			grpIdUpperStr.str() + " is PoissonGroup, connectCompartments");
+
+		// groups must have the same size
+		UserErrors::assertTrue(getGroupNumNeurons(grpIdLower) == getGroupNumNeurons(grpIdUpper),
+			UserErrors::MUST_BE_IDENTICAL, funcName.str(), "Sizes of " + grpIdLowerStr.str() + " and " +
+			grpIdUpperStr.str());
+
+		// groups must be located on the same partition
+		UserErrors::assertTrue(groupPrefNetIds_.at(grpIdLower) == groupPrefNetIds_.at(grpIdUpper),
+			UserErrors::MUST_BE_IDENTICAL, funcName.str(), "Preferred partions of " + grpIdLowerStr.str() + " and " +
+			grpIdUpperStr.str());
+
+		// groups cannot be both chemically (synaptically) and electrically (compartmentally) connected
+		UserErrors::assertTrue(std::find(connSyn_[grpIdLower].begin(), connSyn_[grpIdLower].end(), grpIdUpper) ==
+			connSyn_[grpIdLower].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName.str(),
+			grpIdLowerStr.str() + " and " + grpIdUpperStr.str());
+		UserErrors::assertTrue(std::find(connSyn_[grpIdUpper].begin(), connSyn_[grpIdUpper].end(), grpIdLower) ==
+			connSyn_[grpIdUpper].end(), UserErrors::CANNOT_BE_CONN_SYN_AND_COMP, funcName.str(),
+			grpIdLowerStr.str() + " and " + grpIdUpperStr.str());
+
+		// groups cannot be connected twice (order doesn't matter)
+		UserErrors::assertTrue(std::find(connComp_[grpIdLower].begin(), connComp_[grpIdLower].end(), grpIdUpper) ==
+			connComp_[grpIdLower].end(), UserErrors::CANNOT_BE_CONN_TWICE, funcName.str(),
+			grpIdLowerStr.str() + " and " + grpIdUpperStr.str());
+		UserErrors::assertTrue(std::find(connComp_[grpIdUpper].begin(), connComp_[grpIdUpper].end(), grpIdLower) ==
+			connComp_[grpIdUpper].end(), UserErrors::CANNOT_BE_CONN_TWICE, funcName.str(),
+			grpIdLowerStr.str() + " and " + grpIdUpperStr.str());
+
+		// groups can have at most getMaxNumCompConnections() connections
+		UserErrors::assertTrue(connComp_[grpIdLower].size() < getMaxNumCompConnections(), UserErrors::MUST_BE_IN_RANGE,
+			funcName.str(), "Number of compartmental connections for group " + grpIdLowerStr.str(),
+			"[0,getMaxNumCompConnections()");
+		UserErrors::assertTrue(connComp_[grpIdUpper].size() < getMaxNumCompConnections(), UserErrors::MUST_BE_IN_RANGE,
+			funcName.str(), "Number of compartmental connections for group " + grpIdUpperStr.str(),
+			"[0,getMaxNumCompConnections()");
+
+		// add compartment connection to 2D matrix (both ways)
+		connComp_[grpIdLower].push_back(grpIdUpper);
+		connComp_[grpIdUpper].push_back(grpIdLower);
+
+		return snn_->connectCompartments(grpIdLower, grpIdUpper);
 	}
 
 	// create group of Izhikevich spiking neurons on 1D grid
@@ -247,6 +340,18 @@ public:
 		int grpId = snn_->createGroup(grpName.c_str(), grid, neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
 
+		int partitionOffset = 0;
+		if (preferredBackend == CPU_CORES)
+			partitionOffset = MAX_NUM_CUDA_DEVICES;
+		else if (preferredBackend == GPU_CORES)
+			partitionOffset = 0;
+		int prefPartition = preferredPartition + partitionOffset;
+		groupPrefNetIds_.insert(std::pair<int, int>(grpId, prefPartition));
+
+		// extend 2D connection matrices to number of groups
+		connSyn_.resize(grpIds_.size());
+		connComp_.resize(grpIds_.size());
+
 		return grpId;
 	}
 
@@ -267,7 +372,19 @@ public:
 		int grpId = snn_->createSpikeGeneratorGroup(grpName.c_str(),grid,neurType, preferredPartition, preferredBackend);
 		grpIds_.push_back(grpId); // keep track of all groups
 
+		// extend 2D connection matrices to number of groups
+		connSyn_.resize(grpIds_.size());
+		connComp_.resize(grpIds_.size());
+
 		return grpId;
+	}
+
+	void setCompartmentParameters(int grpId, float couplingUp, float couplingDown) {
+		std::string funcName = "setCompartmentParameters(\"" + getGroupName(grpId) + "\")";
+		UserErrors::assertTrue(carlsimState_ == CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName,
+			"CONFIG.");
+
+		snn_->setCompartmentParameters(grpId, couplingUp, couplingDown);
 	}
 
 
@@ -1110,6 +1227,7 @@ public:
 	}
 
 	int getNumConnections() { return snn_->getNumConnections(); }
+	int getMaxNumCompConnections() { return (int)MAX_NUM_COMP_CONN; }
 
 	int getNumGroups() { return snn_->getNumGroups(); }
 	int getNumNeurons() { return snn_->getNumNeurons(); }
@@ -1387,6 +1505,9 @@ private:
 		// set default save sim params
 		// TODO: when we run executable from local dir, put save file in results/
 		setDefaultSaveOptions("results/sim_"+netName_+".dat",false);
+
+		connSyn_.clear();
+		connComp_.clear();
 	}
 
 
@@ -1433,6 +1554,14 @@ private:
 	SimMode preferredSimMode_;  //!< preferred simulation mode (CPU_MODE, GPU_MODE, HYBRID_MODE)
 	bool enablePrint_;
 	bool copyState_;
+
+	//! a 2D matrix storing for each groupId (first dim) to which other groups it is connected to (second dim)
+	std::vector<std::vector<int> > connSyn_;
+	//! a 2D matrix storing for each groupId (first dim) to which other groups it is compartmentally connected
+	//! to (second dim)
+	std::vector<std::vector<int> > connComp_;
+
+	std::map<int, int> groupPrefNetIds_; //!< a list of all created groups' preferred net ids
 
 	unsigned int numConnections_;	//!< keep track of number of allocated connections
 	std::vector<std::string> userWarnings_; // !< an accumulated list of user warnings
@@ -1522,6 +1651,10 @@ short int CARLsim::connect(int grpId1, int grpId2, ConnectionGenerator* conn, fl
 	return _impl->connect(grpId1, grpId2, conn, mulSynFast, mulSynSlow, synWtType);
 }
 
+short int CARLsim::connectCompartments(int grpIdLower, int grpIdUpper) {
+	return _impl->connectCompartments(grpIdLower, grpIdUpper);
+}
+
 // create group with / without grid
 int CARLsim::createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 	return _impl->createGroup(grpName, grid, neurType, preferredPartition, preferredBackend);
@@ -1536,6 +1669,10 @@ int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D&
 }
 int CARLsim::createSpikeGeneratorGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
 	return _impl->createSpikeGeneratorGroup(grpName, nNeur, neurType, preferredPartition, preferredBackend);
+}
+
+void CARLsim::setCompartmentParameters(int grpId, float couplingUp, float couplingDown) {
+	_impl->setCompartmentParameters(grpId, couplingUp, couplingDown);
 }
 
 // set conductances
@@ -1777,6 +1914,8 @@ Point3D CARLsim::getNeuronLocation3D(int grpId, int relNeurId) { return _impl->g
 
 // Returns the number of connections (pairs of pre-post groups) in the network
 int CARLsim::getNumConnections() { return _impl->getNumConnections(); }
+
+int CARLsim::getMaxNumCompConnections() { return _impl->getMaxNumCompConnections(); }
 
 // returns the number of connections associated with a connection ID
 int CARLsim::getNumSynapticConnections(short int connectionId) { return _impl->getNumSynapticConnections(connectionId); }
