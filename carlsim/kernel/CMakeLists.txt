@@ -4,6 +4,8 @@
         find_package(CUDA REQUIRED)
     endif()
 
+    find_package(OpenMP REQUIRED)
+
 # Targets
 
     if(NOT CARLSIM_NO_CUDA)
@@ -27,6 +29,13 @@
     # Since we build shared library enable position independent code
     set_property(TARGET carlsim-kernel PROPERTY
         POSITION_INDEPENDENT_CODE TRUE)
+
+# Flags
+
+    target_compile_options(carlsim-kernel
+        PRIVATE
+            ${OpenMP_CXX_FLAGS}
+    )
 
 # Definitions
 
@@ -63,7 +72,7 @@
     if(UNIX)
         target_link_libraries(carlsim-kernel
             PRIVATE
-                pthread
+                gomp
         )
     endif()
 
