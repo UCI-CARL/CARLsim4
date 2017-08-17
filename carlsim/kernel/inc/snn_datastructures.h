@@ -320,7 +320,7 @@ typedef struct GroupConfig_s {
 typedef struct GroupConfigMD_s {
 	GroupConfigMD_s() : gGrpId(-1), gStartN(-1), gEndN(-1),
 						lGrpId(-1), lStartN(-1), lEndN(-1),
-					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
+					    netId(-1), maxOutgoingDelay(1), fixedInputWts(true), hasExternalConnect(false),
 						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
 						spikeMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
 	{}
@@ -336,7 +336,7 @@ typedef struct GroupConfigMD_s {
 	int GtoLOffset;
 	int numPostSynapses;
 	int numPreSynapses;
-	int maxIncomingDelay;
+	int maxOutgoingDelay;
 	bool fixedInputWts;
 	bool hasExternalConnect;
 	int spikeMonitorId;
@@ -569,7 +569,8 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
+							  numSynNet(0), maxDelay(-1), numN1msDelay(0), numN2msDelay(0),
+							  simIntegrationMethod(FORWARD_EULER),
 							  simNumStepsPerMs(2), timeStep(0.5)
 	{}
 
@@ -583,6 +584,8 @@ typedef struct GlobalNetworkConfig_s {
 	int numNPois;     //!< number of poisson neurons in the global network
 	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
+	int numN1msDelay; //!< number of neurons with maximum out going axonal delay = 1 ms
+	int numN2msDelay; //!< number of neurons with maximum out going axonal delay >= 2 ms
 
 	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
 	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond
