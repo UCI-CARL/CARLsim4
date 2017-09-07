@@ -2739,7 +2739,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
 			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
-			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxIncomingDelay;
+			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxOutgoingDelay;
 			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
 			groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
@@ -2799,7 +2799,7 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].fixedInputWts = grpIt->fixedInputWts;
 				groupConfigMDMap[gGrpId].hasExternalConnect = grpIt->hasExternalConnect;
 				groupConfigMDMap[gGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
-				groupConfigMDMap[gGrpId].maxIncomingDelay = grpIt->maxIncomingDelay;
+				groupConfigMDMap[gGrpId].maxOutgoingDelay = grpIt->maxOutgoingDelay;
 			}
 			groupConfigs[netId][lGrpId].withParamModel_9 = groupConfigMap[gGrpId].withParamModel_9;
 
@@ -3242,6 +3242,11 @@ void SNN::collectGlobalNetworkConfigC() {
 		} else if (IS_INHIBITORY_TYPE(groupConfigMap[gGrpId].type) && !(groupConfigMap[gGrpId].type & POISSON_NEURON)) {
 			glbNetworkConfig.numNInhReg += groupConfigMap[gGrpId].numN;
 		}
+
+		if (groupConfigMDMap[gGrpId].maxOutgoingDelay == 1)
+			glbNetworkConfig.numN1msDelay += groupConfigMap[gGrpId].numN;
+		else if (groupConfigMDMap[gGrpId].maxOutgoingDelay >= 2)
+			glbNetworkConfig.numN2msDelay += groupConfigMap[gGrpId].numN;
 	}
 
 	glbNetworkConfig.numNReg = glbNetworkConfig.numNExcReg + glbNetworkConfig.numNInhReg;
@@ -3312,8 +3317,8 @@ void SNN::compileGroupConfig() {
 		// is greater than the MaxDelay for grpSrc. We find the maximum
 		// delay for the grpSrc by this scheme.
 		grpSrc = connIt->second.grpSrc;
-		if (connIt->second.maxDelay > groupConfigMDMap[grpSrc].maxIncomingDelay)
-		 	groupConfigMDMap[grpSrc].maxIncomingDelay = connIt->second.maxDelay;
+		if (connIt->second.maxDelay > groupConfigMDMap[grpSrc].maxOutgoingDelay)
+		 	groupConfigMDMap[grpSrc].maxOutgoingDelay = connIt->second.maxDelay;
 
 		// given group has plastic connection, and we need to apply STDP rule...
 		synWtType = GET_FIXED_PLASTIC(connIt->second.connProp);
@@ -4087,7 +4092,7 @@ void SNN::findMaxNumSynapsesNeurons(int _netId, int& _maxNumPostSynN, int& _maxN
 void SNN::findMaxSpikesD1D2(int _netId, unsigned int& _maxSpikesD1, unsigned int& _maxSpikesD2) {
 	_maxSpikesD1 = 0; _maxSpikesD2 = 0;
 	for(std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[_netId].begin(); grpIt != groupPartitionLists[_netId].end(); grpIt++) {
-		if (grpIt->maxIncomingDelay == 1)
+		if (grpIt->maxOutgoingDelay == 1)
 			_maxSpikesD1 += (groupConfigMap[grpIt->gGrpId].numN * NEURON_MAX_FIRING_RATE);
 		else
 			_maxSpikesD2 += (groupConfigMap[grpIt->gGrpId].numN * NEURON_MAX_FIRING_RATE);
@@ -6175,8 +6180,10 @@ void SNN::printSimSummary() {
 	KERNEL_INFO("Random Seed:\t\t%d", randSeed_);
 	KERNEL_INFO("Timing:\t\t\tModel Simulation Time = %lld sec", (unsigned long long)simTimeSec);
 	KERNEL_INFO("\t\t\tActual Execution Time = %4.2f sec", etime/1000.0f);
-	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz", managerRuntimeData.spikeCountD2 / (1.0 * simTimeSec * glbNetworkConfig.numNExcReg));
-	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz", managerRuntimeData.spikeCountD1 / (1.0 * simTimeSec * glbNetworkConfig.numNInhReg));
+	KERNEL_INFO("Average Firing Rate:\t2+ms delay = %3.3f Hz",
+		glbNetworkConfig.numN2msDelay > 0 ? managerRuntimeData.spikeCountD2 / (1.0 * simTimeSec * glbNetworkConfig.numN2msDelay) : 0.0f);
+	KERNEL_INFO("\t\t\t1ms delay = %3.3f Hz",
+		glbNetworkConfig.numN1msDelay > 0 ? managerRuntimeData.spikeCountD1 / (1.0 * simTimeSec * glbNetworkConfig.numN1msDelay) : 0.0f);
 	KERNEL_INFO("\t\t\tOverall = %3.3f Hz", managerRuntimeData.spikeCount / (1.0 * simTimeSec * glbNetworkConfig.numN));
 	KERNEL_INFO("Overall Spike Count Transferred:");
 	KERNEL_INFO("\t\t\t2+ms delay = %d", managerRuntimeData.spikeCountExtRxD2);
