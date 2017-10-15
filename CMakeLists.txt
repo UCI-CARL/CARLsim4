@@ -33,6 +33,7 @@ cmake_minimum_required(VERSION 3.0)
 # Installation
 
     install(TARGETS carlsim DESTINATION lib)
+    install(FILES cmake/carlsim-config.cmake DESTINATION lib/cmake/carlsim)
 
 # Subdirectories
 
