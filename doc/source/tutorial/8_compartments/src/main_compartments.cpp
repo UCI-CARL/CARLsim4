@@ -43,10 +43,6 @@
 // include CARLsim user interface
 #include <carlsim.h>
 
-#define N_EXC 800
-#define N_INH 200
-
-
 int main() {
 	CARLsim* sim = new CARLsim("compartments", GPU_MODE, USER, 0, 42);
 	sim->setIntegrationMethod(RUNGE_KUTTA4, 30);
