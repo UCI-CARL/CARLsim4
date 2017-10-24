@@ -174,7 +174,11 @@ TEST(COMPARTMENTS, spikeTimesCPUvsData) {
 *
 * This test makes sure that CPU mode and GPU mode of the compartment model produce the exact same spike times,
 * even with RK4 at 50 time steps.
-* FIX ME: TEST CURRENTLY FAILS AT numIntSteps = 30 (or 40 depending on machine) with small spike time deviation (2ms)
+* FIX ME: TEST CURRENTLY FAILS AT some timesteps. Note: this test passes when done in debug mode.
+* CPU + release, CPU + debug, and GPU + debug modes all produce the same spike times. The GPU + release mode, however,
+* experiences deviation. Precise floating point model is used in both release and debug modes. (Compiler) Optimization settings do
+* not seem to affect the issue. The GPU release mode seems to suffer from occassional calculation errors that slowly snowball out of control.
+* The cause of these calculation errors has not been determined.
 */
 #ifndef __NO_CUDA__
 TEST(COMPARTMENTS, spikeTimesCPUvsGPU) {
@@ -184,7 +188,7 @@ TEST(COMPARTMENTS, spikeTimesCPUvsGPU) {
 		int cpu_numSpikesSP, cpu_numSpikesSR, cpu_numSpikesSLM, cpu_numSpikesSO;
 		std::vector<std::vector<int> > cpu_spkTimesSP, cpu_spkTimesSR, cpu_spkTimesSLM, cpu_spkTimesSO;
 
-		for (int numIntSteps = 50; numIntSteps <= 100; numIntSteps += 10) {
+		for (int numIntSteps = 10; numIntSteps <= 100; numIntSteps += 10) {
 			//printf("This simulation has coba: %i. And has %i steps.\n", hasCOBA, numIntSteps);
 			for (int isGPUmode = 0; isGPUmode <= 1; isGPUmode++) {
 				//printf("This is GPU mode: %i.\n", isGPUmode);

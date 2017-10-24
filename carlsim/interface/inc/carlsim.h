@@ -586,6 +586,7 @@ public:
 	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, const RangeRmem& rMem = RangeRmem(1.0f));
     
    /*!
+ /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.
 	*
 	* \TODO finish docu

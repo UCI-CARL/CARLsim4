@@ -936,6 +936,8 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 	float lif_gain = runtimeDataGPU.lif_gain[nid];
 	float lif_bias = runtimeDataGPU.lif_bias[nid];
 
+	const float one_sixth = 1.0f / 6.0f;
+
 	float timeStep = networkConfigGPU.timeStep;
 
 	float totalCurrent = runtimeDataGPU.extCurrent[nid];
@@ -1042,7 +1044,6 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > 30.0f) {
@@ -1070,7 +1071,6 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > vpeak) {
@@ -2205,7 +2205,8 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->voltage, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nextVoltage, sizeof(float) * length));
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nextVoltage, sizeof(float) * length));
+
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	//neuron input current...
@@ -2224,9 +2225,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	// do it only from host to device
 	copyExternalCurrent(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->curSpike, sizeof(bool) * length));
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->curSpike, sizeof(bool) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->curSpike[ptrPos], &managerRuntimeData.curSpike[ptrPos], sizeof(bool) * length, cudaMemcpyHostToDevice));
-
+	
 	copyNeuronParameters(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
 	if (networkConfigs[netId].sim_with_nm)
@@ -2924,11 +2925,11 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].voltage) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].recovery) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].current) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extCurrent) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plastic) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plasticInv) );
@@ -2966,11 +2967,12 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_b) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_c) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_d) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak));
+
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_m) ); //LIF parameters
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_ref) );
@@ -3071,7 +3073,6 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 		CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].voltage[0], &runtimeData[netId].nextVoltage[0],
 			sizeof(float) * networkConfigs[netId].numNReg, cudaMemcpyDeviceToDevice));
 	}
-
 }
 
 void SNN::globalStateUpdate_G_GPU(int netId) {

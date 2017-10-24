@@ -896,7 +896,6 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	return compCurrent;
 }
 
-
 #if defined(WIN32) || defined(WIN64)
 	void  SNN::globalStateUpdate_CPU(int netId) {
 #else // POSIX
@@ -905,6 +904,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	float timeStep = networkConfigs[netId].timeStep;
+
 	// loop that allows smaller integration time step for v's and u's
 	for (int j = 1; j <= networkConfigs[netId].simNumStepsPerMs; j++) {
 		bool lastIter = (j == networkConfigs[netId].simNumStepsPerMs);
@@ -1674,7 +1674,8 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 		dest->voltage = new float[length];
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
+
 		dest->nextVoltage = new float[length];
 	memcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length);
 
@@ -2043,23 +2044,23 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		dest->Izh_d = new float[length];
 	memcpy(&dest->Izh_d[ptrPos], &(managerRuntimeData.Izh_d[ptrPos]), sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
 		dest->Izh_C = new float[length];
 	memcpy(&dest->Izh_C[ptrPos], &(managerRuntimeData.Izh_C[ptrPos]), sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
 		dest->Izh_k = new float[length];
 	memcpy(&dest->Izh_k[ptrPos], &(managerRuntimeData.Izh_k[ptrPos]), sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
 		dest->Izh_vr = new float[length];
 	memcpy(&dest->Izh_vr[ptrPos], &(managerRuntimeData.Izh_vr[ptrPos]), sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
 		dest->Izh_vt = new float[length];
 	memcpy(&dest->Izh_vt[ptrPos], &(managerRuntimeData.Izh_vt[ptrPos]), sizeof(float) * length);
 
-	if(allocateMem)
+	if (allocateMem)
 		dest->Izh_vpeak = new float[length];
 	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
 
