@@ -172,13 +172,8 @@ TEST(COMPARTMENTS, spikeTimesCPUvsData) {
 /*!
 * \brief Testing CPU vs GPU consistency for compartment model
 *
-* This test makes sure that CPU mode and GPU mode of the compartment model produce the exact same spike times,
-* even with RK4 at 50 time steps.
-* FIX ME: TEST CURRENTLY FAILS AT some timesteps. Note: this test passes when done in debug mode.
-* CPU + release, CPU + debug, and GPU + debug modes all produce the same spike times. The GPU + release mode, however,
-* experiences deviation. Precise floating point model is used in both release and debug modes. (Compiler) Optimization settings do
-* not seem to affect the issue. The GPU release mode seems to suffer from occassional calculation errors that slowly snowball out of control.
-* The cause of these calculation errors has not been determined.
+* This test makes sure that CPU mode and GPU mode of the compartment model produce the exact same spike times.
+* FIX ME: TEST CURRENTLY FAILS AT some timesteps.
 */
 #ifndef __NO_CUDA__
 TEST(COMPARTMENTS, spikeTimesCPUvsGPU) {
