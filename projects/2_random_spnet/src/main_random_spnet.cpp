@@ -56,7 +56,9 @@ int main(int argc, const char* argv[]) {
 	// ---------------- CONFIG STATE -------------------
 	CARLsim sim("spnet", CPU_MODE, USER, 2, 42);
 
-	int nNeur = 1000;			// number of neurons
+	int scale = 1;
+
+	int nNeur = 1000*scale;			// number of neurons
 	int nNeurExc1 = 0.267*nNeur;	// number of excitatory-1 neurons
 	int nNeurExc2 = 0.267*nNeur;	// number of excitatory-2 neurons
 	int nNeurExc3 = 0.267*nNeur;	// number of excitatory-3 neurons
@@ -67,11 +69,11 @@ int main(int argc, const char* argv[]) {
 	// create 80-20 network with 80% RS and 20% FS neurons
 	int gExc1 = sim.createGroup("exc1", nNeurExc1, EXCITATORY_NEURON, 0, CPU_CORES);
 	sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS1
-	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS2
-	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, 2, CPU_CORES);
 	sim.setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS3
-	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 1, CPU_CORES);
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 3, CPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
 	// specify connectivity
@@ -138,28 +140,32 @@ int main(int argc, const char* argv[]) {
 		std::vector<float> thalamCurrExc2(nNeurExc2, 0.0f);
 		std::vector<float> thalamCurrExc3(nNeurExc3, 0.0f);
 		std::vector<float> thalamCurrInh(nNeurInh, 0.0f);
-		int randNeurId = floor(drand48()*(nNeur-1) + 0.5);
 		float thCurr = 20.0f;
-		if (randNeurId < nNeurExc1) {
-			// neurId belongs to gExc
-			thalamCurrExc1[randNeurId] = thCurr;
-		} 
-		
-		else if (randNeurId < (nNeurExc1 + nNeurExc2)) {
-			// neurId belongs to gExc
-			thalamCurrExc2[randNeurId - nNeurExc1] = thCurr;
-		} 
 
-		else if (randNeurId < (nNeurExc1 + nNeurExc2 + nNeurExc3)) {
-			// neurId belongs to gExc
-			thalamCurrExc3[randNeurId - (nNeurExc1 + nNeurExc2)] = thCurr;
-		} 
+		for (int inj=0; inj<scale; inj++){
 
-		else {
-			// neurId belongs to gInh
-			thalamCurrInh[randNeurId - (nNeurExc1 + nNeurExc2 + nNeurExc3)] = thCurr;
+			int randNeurId = floor(drand48()*(nNeur-1) + 0.5);
+			if (randNeurId < nNeurExc1) {
+				// neurId belongs to gExc
+				thalamCurrExc1[randNeurId] = thCurr;
+			} 
+			
+			else if (randNeurId < (nNeurExc1 + nNeurExc2)) {
+				// neurId belongs to gExc
+				thalamCurrExc2[randNeurId - nNeurExc1] = thCurr;
+			} 
+
+			else if (randNeurId < (nNeurExc1 + nNeurExc2 + nNeurExc3)) {
+				// neurId belongs to gExc
+				thalamCurrExc3[randNeurId - (nNeurExc1 + nNeurExc2)] = thCurr;
+			} 
+
+			else {
+				// neurId belongs to gInh
+				thalamCurrInh[randNeurId - (nNeurExc1 + nNeurExc2 + nNeurExc3)] = thCurr;
+			}
 		}
-	
+
 		sim.setExternalCurrent(gExc1, thalamCurrExc1);
 		sim.setExternalCurrent(gExc2, thalamCurrExc2);
 		sim.setExternalCurrent(gExc3, thalamCurrExc3);
