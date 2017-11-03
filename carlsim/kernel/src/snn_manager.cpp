@@ -1407,54 +1407,52 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 // handling of file pointer should be handled externally: as far as this function is concerned, it is simply
 // trying to write to file
 void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
-	//int tmpInt;
-	//float tmpFloat;
+	int tmpInt;
+	float tmpFloat;
 
 	//// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//// write file signature
-	//tmpInt = 294338571; // some int used to identify saveSimulation files
-	//if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpInt = 294338571; // some int used to identify saveSimulation files
+	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write version number
-	//tmpFloat = 0.2f;
-	//if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = 0.2f;
+	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write simulation time so far (in seconds)
-	//tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write execution time so far (in seconds)
-	//if(simMode_ == GPU_MODE) {
-	//	stopGPUTiming();
-	//	tmpFloat = gpuExecutionTime/1000.0f;
-	//} else {
-	//	stopCPUTiming();
-	//	tmpFloat = cpuExecutionTime/1000.0f;
-	//}
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	stopTiming();
+	tmpFloat = executionTime/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// TODO: add more params of interest
 
 	//// write network info
-	//if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&glbNetworkConfig.numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	int dummyInt = 0;
 	//if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	
 	//// write group info
-	//char name[100];
-	//for (int g=0;g<numGroups;g++) {
-	//	if (!fwrite(&groupConfigs[0][g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	char name[100];
+	for (int gGrpId=0;gGrpId<numGroups;gGrpId++) {
+		if (!fwrite(&groupConfigMDMap[gGrpId].gStartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMDMap[gGrpId].gEndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	if (!fwrite(&groupConfigs[0][g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	strncpy(name,groupInfo[g].Name.c_str(),100);
-	//	if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//}
+		strncpy(name,groupConfigMap[gGrpId].grpName.c_str(),100);
+		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	}
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
