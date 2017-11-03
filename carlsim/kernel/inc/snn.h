@@ -94,6 +94,8 @@
 
 class SpikeMonitor;
 class SpikeMonitorCore;
+class NeuronMonitor;
+class NeuronMonitorCore;
 class ConnectionMonitorCore;
 class ConnectionMonitor;
 
@@ -188,6 +190,16 @@ public:
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
+	//! Creates a group of LIF spiking neurons
+	/*!
+	 * \param grpName the symbolic name of a group
+	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
+	 * \param neurType the type of neuron
+	 * \param preferredPartition defines the desired runtime partition for the group
+	 * \param preferredBackend defines whether the group will be placed on CPU or GPU
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
+
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
 	 * \param name the symbolic name of a group
@@ -247,6 +259,20 @@ public:
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
+
+	/*!
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
+	 *
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] minRmem minimum membrane resistance
+	 * \param[in] maxRmem maximum membrane resistance
+	 * 
+	 */
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, double minRmem, double maxRmem);
 
 	//! Sets the Izhikevich parameters C, k, vr, vt, a, b, vpeak, c, and d of a neuron group.
 	/*!
@@ -416,6 +442,14 @@ public:
 	 */
 	SpikeMonitor* setSpikeMonitor(int gid, FILE* fid);
 
+	//! sets up a neuron monitor registered with a callback to process the neuron state values, there can only be one NeuronMonitor per group
+	/*!
+	* \param grpId ID of the neuron group
+	* \param neuronMon (optional) neuronMonitor class
+	* \return NeuronMonitor* pointer to a NeuronMonitor object
+	*/
+	NeuronMonitor* setNeuronMonitor(int gid, FILE* fid);
+
 	//!Sets the Poisson spike rate for a group. For information on how to set up spikeRate, see Section Poisson spike generators in the Tutorial.
 	/*!Input arguments:
 	 * \param grpId ID of the neuron group
@@ -450,6 +484,18 @@ public:
 	 * determine the last time it was called, and update SpikeMonitor information only if necessary.
 	 */
 	void updateSpikeMonitor(int grpId = ALL);
+
+	/*!
+	* \brief copy required neuron state values from ??? buffer to ??? buffer
+	*
+	* This function is public in SNN, but it should probably not be a public user function in CARLsim.
+	* It is usually called once every 1000ms by the core to update neuron state value binaries and NeuronMonitor objects. In GPU
+	* mode, it will first copy the neuron state info to the host. The input argument can either be a specific group ID or
+	* keyword ALL (for all groups).
+	* Core and utility functions can call updateNeuronMonitor at any point in time. The function will automatically
+	* determine the last time it was called, and update SpikeMonitor information only if necessary.
+	*/
+	void updateNeuronMonitor(int grpId = ALL);
 
 	//! stores the pre and post synaptic neuron ids with the weight and delay
 	/*
@@ -509,7 +555,7 @@ public:
 	// get functions for GroupInfo
 	int getGroupStartNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gStartN; }
 	int getGroupEndNeuronId(int gGrpId) { return groupConfigMDMap[gGrpId].gEndN; }
-	int getGroupNumNeurons(int grpId) { return groupConfigMap[grpId].numN; }
+	int getGroupNumNeurons(int gGrpId) { return groupConfigMap[gGrpId].numN; }
 
 	std::string getNetworkName() { return networkName_; }
 
@@ -541,6 +587,13 @@ public:
 	//! Returns pointer to existing SpikeMonitorCore object, NULL else.
 	//! Should not be exposed to user interface
 	SpikeMonitorCore* getSpikeMonitorCore(int grpId);
+
+	//! Returns pointer to existing NeuronMonitor object, NULL else
+	NeuronMonitor* getNeuronMonitor(int grpId);
+
+	//! Returns pointer to existing NeuronMonitorCore object, NULL else.
+	//! Should not be exposed to user interface
+	NeuronMonitorCore* getNeuronMonitorCore(int grpId);
 
 	//! temporary getter to return pointer to current[] \TODO replace with NeuronMonitor
 	float* getCurrent() { return managerRuntimeData.current; }
@@ -768,6 +821,7 @@ private:
 
 	// Abstract layer for trasferring data (local-to-local copy)
 	void fetchSpikeTables(int netId);
+	void fetchNeuronStateBuffer(int netId, int lGrpId);
 	void fetchGroupState(int netId, int lGrpId);
 	void fetchWeightState(int netId, int lGrpId);
 	void fetchGrpIdsLookupArray(int netId);
@@ -848,6 +902,7 @@ private:
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
 	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem);
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset);
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem);
@@ -882,6 +937,7 @@ private:
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem, int destOffset) { assert(false); }
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
 	void copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) { assert(false); }
@@ -966,7 +1022,8 @@ private:
 	void copyPostConnectionInfo(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copyExternalCurrent(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);
 	void copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
-	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
+	void copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
+	void copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem);
 	void copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocateMem);	
 	void copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem, int destOffset);	
 	void copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool allocateMem);	
@@ -1081,8 +1138,13 @@ private:
 
 	// keep track of number of SpikeMonitor/SpikeMonitorCore objects
 	int numSpikeMonitor;
-	SpikeMonitorCore* spikeMonCoreList[MAX_GRP_PER_SNN];
-	SpikeMonitor*     spikeMonList[MAX_GRP_PER_SNN];
+	SpikeMonitorCore*  spikeMonCoreList[MAX_GRP_PER_SNN];
+	SpikeMonitor*      spikeMonList[MAX_GRP_PER_SNN];
+
+	// neuron monitor variables
+	int numNeuronMonitor;
+	NeuronMonitor*     neuronMonList[MAX_GRP_PER_SNN];
+	NeuronMonitorCore* neuronMonCoreList[MAX_GRP_PER_SNN];
 
 	// \FIXME \DEPRECATED this one moved to group-based
 	long int    simTimeLastUpdSpkMon_; //!< last time we ran updateSpikeMonitor
@@ -1096,7 +1158,7 @@ private:
 
 	// neuron monitor variables
 	//NeuronMonitorCore* neurBufferCallback[MAX_]
-	int numNeuronMonitor;
+	//int numNeuronMonitor;
 
 	// connection monitor variables
 	int numConnectionMonitor;

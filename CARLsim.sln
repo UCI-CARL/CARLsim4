@@ -45,6 +45,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tutorial_4_image_processing
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "visual_stimulus", "tools\visual_stimulus\visual_stimulus.vcxproj", "{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tutorial_8_neuron_model", "doc\source\tutorial\8_neuron_model\tutorial_8_neuron_model.vcxproj", "{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -307,6 +309,18 @@ Global
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|Win32.Build.0 = Release|Win32
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|x64.ActiveCfg = Release|x64
 		{07BEA5B4-2D2D-4EB3-BE11-3C3842F6A89D}.Release|x64.Build.0 = Release|x64
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|Win32.Build.0 = Debug|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|x64.ActiveCfg = Debug|x64
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Debug|x64.Build.0 = Debug|x64
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|Mixed Platforms.ActiveCfg = Release|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|Mixed Platforms.Build.0 = Release|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|Win32.ActiveCfg = Release|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|Win32.Build.0 = Release|Win32
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|x64.ActiveCfg = Release|x64
+		{E0A97472-FAA5-4408-AFB3-24EC5EF02DED}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

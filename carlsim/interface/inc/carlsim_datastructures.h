@@ -373,6 +373,33 @@ struct RadiusRF {
 };
 
 /*!
+ * \brief Struct defines the minimum and maximum membrane resisatnces of the LIF neuron group
+ *
+ */
+struct RangeRmem{
+	RangeRmem(double _rMem){
+		// same membrane resistance for all neurons in the group
+		UserErrors::assertTrue(_rMem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "rMem");
+		minRmem = _rMem;
+		maxRmem = _rMem;
+	}
+
+	RangeRmem(double _minRmem, double _maxRmem){
+		// membrane resistances of the  neuron group varies uniformly between a maximum and a minimum value
+		UserErrors::assertTrue(_minRmem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "minRmem");
+		UserErrors::assertTrue(_minRmem <= _maxRmem, UserErrors::CANNOT_BE_LARGER, "RangeRmem", "minRmem", "maxRmem");
+		minRmem = _minRmem;
+		maxRmem = _maxRmem;
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeRmem &rMem) {
+        return strm << "RangeRmem=[" << rMem.minRmem << "," << rMem.maxRmem << "]";
+    }
+	double minRmem, maxRmem;	
+};
+
+
+/*!
  * \brief A struct for retrieving STDP related information of a group
  *
  * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupSTDPInfo()

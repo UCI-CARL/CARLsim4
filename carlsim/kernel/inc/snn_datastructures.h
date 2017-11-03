@@ -187,7 +187,9 @@ typedef struct NeuralDynamicsConfig_s {
 							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
 							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
 							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
-							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f)
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), lif_tau_m(-1), 
+							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minRmem(1.0f),
+							   lif_maxRmem(1.0f)
 	{}
 	float 		Izh_C;
 	float 		Izh_C_sd;
@@ -207,7 +209,12 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
-
+	int 		lif_tau_m; //!< parameters for a LIF spiking group
+	int 		lif_tau_ref;
+	float 		lif_vTh;
+	float 		lif_vReset;
+	double		lif_minRmem;
+	double		lif_maxRmem;
 } NeuralDynamicsConfig;
 
 //!< long-term plasiticity configurations
@@ -302,6 +309,7 @@ typedef struct GroupConfig_s {
 	int          numN;
 	bool isSpikeGenerator;
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF;
 	bool withCompartments;
 
 	float compCouplingUp;
@@ -322,7 +330,7 @@ typedef struct GroupConfigMD_s {
 						lGrpId(-1), lStartN(-1), lEndN(-1),
 					    netId(-1), maxOutgoingDelay(1), fixedInputWts(true), hasExternalConnect(false),
 						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
-						spikeMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
+						spikeMonitorId(-1), neuronMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
 	{}
 
 	int gGrpId;
@@ -340,6 +348,7 @@ typedef struct GroupConfigMD_s {
 	bool fixedInputWts;
 	bool hasExternalConnect;
 	int spikeMonitorId;
+	int neuronMonitorId;
 	int groupMonitorId;
 	float refractPeriod;
 	int currTimeSlice; //!< timeSlice is used by the Poisson generators in order to not generate too many or too few spikes within a window of time
@@ -428,6 +437,7 @@ typedef struct GroupConfigRT_s {
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF; //!< True = a LIF spiking group
 
 	bool withCompartments;
 	float compCouplingUp;
@@ -464,7 +474,16 @@ typedef struct RuntimeData_s {
 	float* Izh_c;
 	float* Izh_d;
 	float* current;
+	float* totalCurrent;
 	float* extCurrent;
+	
+	int* lif_tau_m; //!< parameters for a LIF spiking group
+	int* lif_tau_ref;
+	int* lif_tau_ref_c; // current refractory of the neuron
+	float* lif_vTh;
+	float* lif_vReset;
+	float* lif_gain;
+	float* lif_bias;
 
 	//! Keeps track of all neurons that spiked at current time.
 	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
@@ -560,6 +579,11 @@ typedef struct RuntimeData_s {
 	float* grpAChBuffer;
 	float* grpNEBuffer;
 
+	// neuron monitor assistive buffers
+	float* nVBuffer;
+	float* nUBuffer;
+	float* nIBuffer;
+
 	unsigned int* spikeGenBits;
 #ifndef __NO_CUDA__
 	curandGenerator_t gpuRandGen;
@@ -642,6 +666,10 @@ typedef struct NetworkConfigRT_s  {
 	bool sim_with_homeostasis;
 	bool sim_with_stp;
 	bool sim_in_testing;
+	
+	// please note that spike monitor and connection monitor don't need this flag because no extra buffer is required
+	// for neuron monitor, the kernel allocates extra buffers to store v, u, i values of each monitored neuron
+	bool sim_with_nm; // simulation with neuron monitor
 
 	// stdp, da-stdp configurations
 	float stdpScaleFactor;
