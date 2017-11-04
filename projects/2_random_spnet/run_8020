@@ -1,0 +1,23 @@
+#!/bin/bash
+#SBATCH --job-name="perf8020"
+#SBATCH --output="result8020.out"
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:k80:4
+#SBATCH -t 48:00:00
+
+module load cuda/7.0
+
+scale=( 1 10 100 1000)
+numGPU=( 1 2 4 )
+filename="record_8020.csv"
+for s in "${scale[@]}"
+do
+	echo "Scale is " $s >> $filename
+	for numG in "${numGPU[@]}"
+	do
+			./random_spnet $s $numG $filename
+	done	
+done
+
+

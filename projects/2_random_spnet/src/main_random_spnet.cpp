@@ -50,13 +50,21 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
-
+#include <stopwatch.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 int main(int argc, const char* argv[]) {
-	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("spnet", CPU_MODE, USER, 2, 42);
+	if (argc != 4) {printf("\n\nFewer arguments provided. Aborting.\n");return 1;}
 
-	int scale = 1;
+	// ---------------- CONFIG STATE -------------------
+	CARLsim sim("spnet", GPU_MODE, USER, 2, 42);
+
+	int scale = atoi(argv[1]);
+	int N_CORES = atoi(argv[2]);
+	FILE* recordFile;
+	recordFile = fopen(argv[3],"a");
+	Stopwatch watch;
 
 	int nNeur = 1000*scale;			// number of neurons
 	int nNeurExc1 = 0.267*nNeur;	// number of excitatory-1 neurons
@@ -67,13 +75,13 @@ int main(int argc, const char* argv[]) {
 	int maxDelay = 20;      	// maximal conduction delay
 
 	// create 80-20 network with 80% RS and 20% FS neurons
-	int gExc1 = sim.createGroup("exc1", nNeurExc1, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc1 = sim.createGroup("exc1", nNeurExc1, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS1
-	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, 1, CPU_CORES);
+	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, int(N_CORES/4.0), GPU_CORES);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS2
-	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, 2, CPU_CORES);
+	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, int((2*N_CORES)/4.0), GPU_CORES);
 	sim.setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS3
-	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 3, CPU_CORES);
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, int((3*N_CORES)/4.0), GPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
 	// specify connectivity
@@ -134,6 +142,9 @@ int main(int argc, const char* argv[]) {
 	SMexc2->startRecording();
 	SMexc3->startRecording();
 	SMinh->startRecording();
+
+	watch.lap("runNetwork");
+
 	for (int t=0; t<10000; t++) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc1(nNeurExc1, 0.0f);
@@ -174,6 +185,8 @@ int main(int argc, const char* argv[]) {
 		// run for 1 ms, don't generate run stats
 		sim.runNetwork(0,1,false);
 	}
+	watch.stop();
+
 	SMexc1->stopRecording();
 	SMexc2->stopRecording();
 	SMexc3->stopRecording();
@@ -188,5 +201,7 @@ int main(int argc, const char* argv[]) {
 	//CMee->printSparse();
 	//CMei->printSparse();
 
+	fprintf(recordFile, "%d,%d,%ld\n", nNeur, N_CORES, watch.getLapTime(0));
+	fclose(recordFile);
 	return 0;
 }
