@@ -50,15 +50,15 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
-#include <stopwatch.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stopwatch.h>
 
 int main(int argc, const char* argv[]) {
 	if (argc != 4) {printf("\n\nFewer arguments provided. Aborting.\n");return 1;}
 
 	// ---------------- CONFIG STATE -------------------
-	CARLsim sim("spnet", GPU_MODE, USER, 2, 42);
+	CARLsim sim("spnet", CPU_MODE, USER, 2, 42);
 
 	int scale = atoi(argv[1]);
 	int N_CORES = atoi(argv[2]);
@@ -66,22 +66,22 @@ int main(int argc, const char* argv[]) {
 	recordFile = fopen(argv[3],"a");
 	Stopwatch watch;
 
-	int nNeur = 1000*scale;			// number of neurons
+	int nNeur = 10*scale;			// number of neurons
 	int nNeurExc1 = 0.267*nNeur;	// number of excitatory-1 neurons
 	int nNeurExc2 = 0.267*nNeur;	// number of excitatory-2 neurons
 	int nNeurExc3 = 0.267*nNeur;	// number of excitatory-3 neurons
 	int nNeurInh = 0.2*nNeur;	// number of inhibitory neurons
-	int nSynPerNeur = 100;  	// number of synpases per neuron
+	int nSynPerNeur = 10;  	// number of synpases per neuron
 	int maxDelay = 20;      	// maximal conduction delay
 
 	// create 80-20 network with 80% RS and 20% FS neurons
-	int gExc1 = sim.createGroup("exc1", nNeurExc1, EXCITATORY_NEURON, 0, GPU_CORES);
+	int gExc1 = sim.createGroup("exc1", nNeurExc1, EXCITATORY_NEURON, 0, CPU_CORES);
 	sim.setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS1
-	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, int(N_CORES/4.0), GPU_CORES);
+	int gExc2 = sim.createGroup("exc2", nNeurExc2, EXCITATORY_NEURON, int(N_CORES/4.0), CPU_CORES);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS2
-	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, int((2*N_CORES)/4.0), GPU_CORES);
+	int gExc3 = sim.createGroup("exc3", nNeurExc3, EXCITATORY_NEURON, int((2*N_CORES)/4.0), CPU_CORES);
 	sim.setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS3
-	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, int((3*N_CORES)/4.0), GPU_CORES);
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, int((3*N_CORES)/4.0), CPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
 	// specify connectivity
