@@ -66,12 +66,12 @@ int main(int argc, const char* argv[]) {
 	recordFile = fopen(argv[3],"a");
 	Stopwatch watch;
 
-	int nNeur = 10*scale;			// number of neurons
+	int nNeur = 1000*scale;			// number of neurons
 	int nNeurExc1 = 0.267*nNeur;	// number of excitatory-1 neurons
 	int nNeurExc2 = 0.267*nNeur;	// number of excitatory-2 neurons
 	int nNeurExc3 = 0.267*nNeur;	// number of excitatory-3 neurons
 	int nNeurInh = 0.2*nNeur;	// number of inhibitory neurons
-	int nSynPerNeur = 10;  	// number of synpases per neuron
+	int nSynPerNeur = 100;  	// number of synpases per neuron
 	int maxDelay = 20;      	// maximal conduction delay
 
 	// create 80-20 network with 80% RS and 20% FS neurons
@@ -92,21 +92,37 @@ int main(int argc, const char* argv[]) {
 
 	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
 	// every neuron in gExc should receive ~nSynPerNeur synapses
-	sim.connect(gExc1, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc1, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc1, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc1, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc1, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc1, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	sim.connect(gExc2, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc2, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc2, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc2, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc2, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc2, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	sim.connect(gExc3, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc3, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gExc3, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc3, gExc1, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc3, gExc2, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gExc3, gExc3, "random", RangeWeight(0.0f, wtExc, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 
-	sim.connect(gInh, gExc1, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gInh, gExc2, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-	sim.connect(gInh, gExc3, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gInh, gExc1, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gInh, gExc2, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+	//sim.connect(gInh, gExc3, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+
+	sim.connect(gExc1, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc1, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc1, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	sim.connect(gExc2, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc2, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc2, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	sim.connect(gExc3, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc3, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gExc3, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	sim.connect(gInh, gExc1, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh, gExc2, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	sim.connect(gInh, gExc3, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 
 	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms, no plasticity
 	// every neuron in gInh should receive ~nSynPerNeur synapses
@@ -115,13 +131,13 @@ int main(int argc, const char* argv[]) {
 	sim.connect(gExc3, gInh, "random", RangeWeight(wtExc), pConn*nNeur/(3*nNeurExc3), RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
 	// enable STDP on all incoming synapses to gExc
-	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
-	sim.setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc1, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
-	sim.setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc2, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
-	sim.setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	//float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
+	//sim.setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	//sim.setISTDP(gExc1, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	//sim.setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	//sim.setISTDP(gExc2, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	//sim.setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	//sim.setISTDP(gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
 
 	// run CUBA mode
 	sim.setConductances(false);

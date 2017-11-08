@@ -4538,14 +4538,17 @@ void SNN::fetchNetworkSpikeCount() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 
-			if (netId < CPU_RUNTIME_BASE)
+			if (netId < CPU_RUNTIME_BASE) {
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
-			else
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			} else {
 				copyNetworkSpikeCount(netId,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			}
 
 			managerRuntimeData.spikeCountD2 += spikeCountD2 - spikeCountExtD2;
 			managerRuntimeData.spikeCountD1 += spikeCountD1 - spikeCountExtD1;
@@ -4649,6 +4652,7 @@ void SNN::routeSpikes() {
 		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+		//printf("srcNetId %d,destNetId %d, D1:%d/D2:%d\n", srcNetId, destNetId, firingTableIdxD1, firingTableIdxD2);
 
 		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
