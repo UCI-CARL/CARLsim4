@@ -4543,12 +4543,12 @@ void SNN::fetchNetworkSpikeCount() {
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
 					&spikeCountD1, &spikeCountD2,
 					&spikeCountExtD1, &spikeCountExtD2);
-				printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
 			} else {
 				copyNetworkSpikeCount(netId,
 					&spikeCountD1, &spikeCountD2,
 					&spikeCountExtD1, &spikeCountExtD2);
-				printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
 			}
 
 			managerRuntimeData.spikeCountD2 += spikeCountD2 - spikeCountExtD2;
@@ -5848,7 +5848,6 @@ void SNN::resetPropogationBuffer() {
 // FIXME: imlement option of resetting weights
 void SNN::resetSynapse(int netId, bool changeWeights) {
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * networkConfigs[netId].numPreSynNet); // reset the synaptic derivatives
-	printf("netId:%d, numPreSynNet:%d\n", netId, networkConfigs[netId].numPreSynNet);
 
 	for (int syn = 0; syn < networkConfigs[netId].numPreSynNet; syn++)
 		managerRuntimeData.synSpikeTime[syn] = MAX_SIMULATION_TIME; // reset the spike time of each syanpse
