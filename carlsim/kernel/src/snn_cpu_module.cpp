@@ -627,6 +627,7 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 	unsigned int pos_ij = runtimeData[netId].cumulativePre[lNId]; // the index of pre-synaptic neuron
 	for(int j = 0; j < runtimeData[netId].Npre_plastic[lNId]; pos_ij++, j++) {
 		int stdp_tDiff = (simTime - runtimeData[netId].synSpikeTime[pos_ij]);
+		printf("[%d,%d,%d,%d,%d,%d]\n", simTime, netId, lNId, runtimeData[netId].Npre_plastic[lNId], runtimeData[netId].synSpikeTime[pos_ij], pos_ij);
 		assert(!((stdp_tDiff < 0) && (runtimeData[netId].synSpikeTime[pos_ij] != MAX_SIMULATION_TIME)));
 
 		if (stdp_tDiff > 0) {

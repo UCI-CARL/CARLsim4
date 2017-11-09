@@ -3164,6 +3164,7 @@ void SNN::generateConnectionRuntime(int netId) {
 	int parsedConnections = 0;
 	memset(managerRuntimeData.Npost, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	memset(managerRuntimeData.Npre, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
+	memset(managerRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	for (std::list<ConnectionInfo>::iterator connIt = connectionLists[netId].begin(); connIt != connectionLists[netId].end(); connIt++) {
 		connIt->srcGLoffset = GLoffset[connIt->grpSrc];
 		if (managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]] == SYNAPSE_ID_MASK) {
@@ -5847,6 +5848,7 @@ void SNN::resetPropogationBuffer() {
 // FIXME: imlement option of resetting weights
 void SNN::resetSynapse(int netId, bool changeWeights) {
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * networkConfigs[netId].numPreSynNet); // reset the synaptic derivatives
+	printf("netId:%d, numPreSynNet:%d\n", netId, networkConfigs[netId].numPreSynNet);
 
 	for (int syn = 0; syn < networkConfigs[netId].numPreSynNet; syn++)
 		managerRuntimeData.synSpikeTime[syn] = MAX_SIMULATION_TIME; // reset the spike time of each syanpse
