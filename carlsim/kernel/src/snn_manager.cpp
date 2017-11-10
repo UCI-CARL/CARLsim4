@@ -1407,54 +1407,52 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 // handling of file pointer should be handled externally: as far as this function is concerned, it is simply
 // trying to write to file
 void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
-	//int tmpInt;
-	//float tmpFloat;
+	int tmpInt;
+	float tmpFloat;
 
 	//// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//// write file signature
-	//tmpInt = 294338571; // some int used to identify saveSimulation files
-	//if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpInt = 294338571; // some int used to identify saveSimulation files
+	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write version number
-	//tmpFloat = 0.2f;
-	//if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = 0.2f;
+	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write simulation time so far (in seconds)
-	//tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write execution time so far (in seconds)
-	//if(simMode_ == GPU_MODE) {
-	//	stopGPUTiming();
-	//	tmpFloat = gpuExecutionTime/1000.0f;
-	//} else {
-	//	stopCPUTiming();
-	//	tmpFloat = cpuExecutionTime/1000.0f;
-	//}
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	stopTiming();
+	tmpFloat = executionTime/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// TODO: add more params of interest
 
 	//// write network info
-	//if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&glbNetworkConfig.numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	int dummyInt = 0;
 	//if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	
 	//// write group info
-	//char name[100];
-	//for (int g=0;g<numGroups;g++) {
-	//	if (!fwrite(&groupConfigs[0][g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	char name[100];
+	for (int gGrpId=0;gGrpId<numGroups;gGrpId++) {
+		if (!fwrite(&groupConfigMDMap[gGrpId].gStartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMDMap[gGrpId].gEndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	if (!fwrite(&groupConfigs[0][g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	strncpy(name,groupInfo[g].Name.c_str(),100);
-	//	if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//}
+		strncpy(name,groupConfigMap[gGrpId].grpName.c_str(),100);
+		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	}
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
@@ -3166,6 +3164,7 @@ void SNN::generateConnectionRuntime(int netId) {
 	int parsedConnections = 0;
 	memset(managerRuntimeData.Npost, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	memset(managerRuntimeData.Npre, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
+	memset(managerRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	for (std::list<ConnectionInfo>::iterator connIt = connectionLists[netId].begin(); connIt != connectionLists[netId].end(); connIt++) {
 		connIt->srcGLoffset = GLoffset[connIt->grpSrc];
 		if (managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]] == SYNAPSE_ID_MASK) {
@@ -4540,14 +4539,17 @@ void SNN::fetchNetworkSpikeCount() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 
-			if (netId < CPU_RUNTIME_BASE)
+			if (netId < CPU_RUNTIME_BASE) {
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
-			else
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			} else {
 				copyNetworkSpikeCount(netId,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			}
 
 			managerRuntimeData.spikeCountD2 += spikeCountD2 - spikeCountExtD2;
 			managerRuntimeData.spikeCountD1 += spikeCountD1 - spikeCountExtD1;
@@ -4651,6 +4653,7 @@ void SNN::routeSpikes() {
 		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+		//printf("srcNetId %d,destNetId %d, D1:%d/D2:%d\n", srcNetId, destNetId, firingTableIdxD1, firingTableIdxD2);
 
 		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
 			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
