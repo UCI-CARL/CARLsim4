@@ -47,78 +47,78 @@ int main() {
 	// Declare and initialize a CARLsim object in either GPU or CPU mode.
 	CARLsim* sim = new CARLsim("compartments", GPU_MODE, USER, 0, 42);
 	// Set the integration method used for updating neurons' voltage & recovery values.
-	// RUNGE_KUTTA4 is more 'accurate' than FORWARD_EULER, but is also more computationally intensive.
+	// RUNGE_KUTTA4 is more accurate than FORWARD_EULER, but is also more computationally intensive.
 	// Larger number of timesteps delivers more accuracy, but is also more computationally intensive.
 	sim->setIntegrationMethod(RUNGE_KUTTA4, 30);
 
-	// In this tutorial we will assign 5 neurons to each compartment group.
+	// In this tutorial we assign 5 neurons to each compartment group.
 	// Note: all compartmentally connected groups must have the same number of neurons.
 	int N = 5;
 
 	// Each one of the groups below represents a single layer.
-	int grpSP = sim->createGroup("excit", N, EXCITATORY_NEURON);
-	int grpSR = sim->createGroup("excit", N, EXCITATORY_NEURON);
-	int grpSLM = sim->createGroup("excit", N, EXCITATORY_NEURON);
-	int grpSO = sim->createGroup("excit", N, EXCITATORY_NEURON);
+	int grpSoma = sim->createGroup("excit", N, EXCITATORY_NEURON);    // grpSoma 
+	int grpD_one = sim->createGroup("excit", N, EXCITATORY_NEURON);   // grpD_one
+	int grpD_two = sim->createGroup("excit", N, EXCITATORY_NEURON);   // grpD_two 
+	int grpD_three = sim->createGroup("excit", N, EXCITATORY_NEURON); // grpD_three 
 
-	sim->setNeuronParameters(grpSP, 550.0f, 2.3330991f, -59.101414f, -50.428886f, 0.0021014998f,
-		-0.41361538f, 24.98698f, -53.223213f, 109.0f);//9 parameter setNeuronParametersCall (RS NEURON) (soma)
-	sim->setNeuronParameters(grpSR, 367.0f, 1.1705916f, -59.101414f, -44.298294f, 0.2477681f,
-		3.3198094f, 20.274296f, -46.076824f, 24.0f);//9 parameter setNeuronParametersCall (RS NEURON) (dendr)
-	sim->setNeuronParameters(grpSLM, 425.0f, 2.2577047f, -59.101414f, -25.137894f, 0.32122386f,
-		0.14995363f, 13.203414f, -38.54892f, 69.0f);//9 parameter setNeuronParametersCall (RS NEURON) (dendr)
-	sim->setNeuronParameters(grpSO, 225.0f, 1.109572f, -59.101414f, -36.55802f, 0.29814243f,
-		-4.385603f, 21.473854f, -40.343994f, 21.0f);//9 parameter setNeuronParametersCall (RS NEURON) (dendr)
+	sim->setNeuronParameters(grpSoma, 550.0f, 2.3330991f, -59.101414f, -50.428886f, 0.0021014998f,
+		-0.41361538f, 24.98698f, -53.223213f, 109.0f); // 9 parameter setNeuronParametersCall (Regular Spiking NEURON) (soma)
+	sim->setNeuronParameters(grpD_one, 367.0f, 1.1705916f, -59.101414f, -44.298294f, 0.2477681f,
+		3.3198094f, 20.274296f, -46.076824f, 24.0f);   // 9 parameter setNeuronParametersCall (Regular Spiking NEURON) (dendr)
+	sim->setNeuronParameters(grpD_two, 425.0f, 2.2577047f, -59.101414f, -25.137894f, 0.32122386f,
+		0.14995363f, 13.203414f, -38.54892f, 69.0f);   // 9 parameter setNeuronParametersCall (Regular Spiking NEURON) (dendr)
+	sim->setNeuronParameters(grpD_three, 225.0f, 1.109572f, -59.101414f, -36.55802f, 0.29814243f,
+		-4.385603f, 21.473854f, -40.343994f, 21.0f);   // 9 parameter setNeuronParametersCall (Regular Spiking NEURON) (dendr)
 
 	// Set the coupling (up & down) constants for each layer. 
-	sim->setCompartmentParameters(grpSR, 28.396f, 5.526f);//SR 28 and 5
-	sim->setCompartmentParameters(grpSLM, 50.474f, 0.0f);//SLM 50 and 0
-	sim->setCompartmentParameters(grpSO, 0.0f, 49.14f);//SO 0 and 49
-	sim->setCompartmentParameters(grpSP, 116.861f, 4.60f);// SP (somatic) 116 and 4
+	sim->setCompartmentParameters(grpD_one, 28.396f, 5.526f); // grpD_one 28 and 5
+	sim->setCompartmentParameters(grpD_two, 50.474f, 0.0f);   // grpD_two 50 and 0
+	sim->setCompartmentParameters(grpD_three, 0.0f, 49.14f);  // grpD_three 0 and 49
+	sim->setCompartmentParameters(grpSoma, 116.861f, 4.60f);  // grpSoma (somatic) 116 and 4
 
 	// Create a dummy spike generator & connect it to one of the layers.
 	// CARLsim requires such a connection in order to run the network. 
 	int gin = sim->createSpikeGeneratorGroup("input", N, EXCITATORY_NEURON);
-	sim->connect(gin, grpSP, "one-to-one", RangeWeight(0.0f), 1.0f, RangeDelay(1), RadiusRF(-1));
+	sim->connect(gin, grpSoma, "one-to-one", RangeWeight(0.0f), 1.0f, RangeDelay(1), RadiusRF(-1));
 
 	// We will ignore conductances for this tutorial.
 	sim->setConductances(0);
 
 	// Connect the 4 groups (layers) compartmentally.
 	// The layers are arranged in following manner:
-	// SO
+	// D-3
 	// ||
-	// SP
+	// Soma
 	// ||
-	// SR
+	// D-1
 	// ||
-	// SLM
-	sim->connectCompartments(grpSLM, grpSR);
-	sim->connectCompartments(grpSR, grpSP);
-	sim->connectCompartments(grpSP, grpSO);
+	// D-2
+	sim->connectCompartments(grpD_two, grpD_one);
+	sim->connectCompartments(grpD_one, grpSoma);
+	sim->connectCompartments(grpSoma, grpD_three);
 
 	// Ignore STDP for this tutorial.
-	sim->setSTDP(grpSR, false);
-	sim->setSTDP(grpSLM, false);
-	sim->setSTDP(grpSO, false);
-	sim->setSTDP(grpSP, false);
+	sim->setSTDP(grpD_one, false);
+	sim->setSTDP(grpD_two, false);
+	sim->setSTDP(grpD_three, false);
+	sim->setSTDP(grpSoma, false);
 
 	sim->setupNetwork();
 
 	// Set-up spike monitors so that we can observe the neurons' spike times.
 
-	SpikeMonitor* spkMonSP = sim->setSpikeMonitor(grpSP, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSR = sim->setSpikeMonitor(grpSR, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSLM = sim->setSpikeMonitor(grpSLM, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSO = sim->setSpikeMonitor(grpSO, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonSP = sim->setSpikeMonitor(grpSoma, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonSR = sim->setSpikeMonitor(grpD_one, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonSLM = sim->setSpikeMonitor(grpD_two, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonSO = sim->setSpikeMonitor(grpD_three, "DEFAULT"); // put spike times into file
 
 	spkMonSP->startRecording();
 	spkMonSR->startRecording();
 	spkMonSLM->startRecording();
 	spkMonSO->startRecording();
 
-	// Steadily inject 600mA of current into SP (soma) layer.
-	sim->setExternalCurrent(grpSP, 600);
+	// Continuously inject 600mA of current into SP (soma) layer.
+	sim->setExternalCurrent(grpSoma, 600);
 	sim->runNetwork(1, 0);
 
 	spkMonSP->stopRecording();
@@ -142,7 +142,6 @@ int main() {
 	// This is due to the way coupling constants are arranged. 
 
 	delete sim;
-
 
 	return 0;
 }

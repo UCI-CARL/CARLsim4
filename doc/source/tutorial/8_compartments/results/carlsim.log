@@ -5,7 +5,7 @@
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1869] ***************************** Configuring Network ********************************
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1871] Starting CARLsim simulation "compartments" in USER mode
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1872] Random number seed: 42
-[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1878] Current local time and date: Thu Nov  2 16:37:15 2017
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1878] Current local time and date: Thu Nov  9 16:45:29 2017
 
 [DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:163] CONNECT SETUP: connId=0, mulFast=1.000000, mulSlow=1.000000
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:404] Running CUBA mode (all synaptic conductances disabled)
@@ -236,7 +236,7 @@
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6179] Simulation Mode:	CUBA
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6180] Random Seed:		42
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6181] Timing:			Model Simulation Time = 1 sec
-[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6182] 			Actual Execution Time = 431606.09 sec
+[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6182] 			Actual Execution Time = 431606.06 sec
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6184] Average Firing Rate:	2+ms delay = 0.000 Hz
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6186] 			1ms delay = 3.200 Hz
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6187] 			Overall = 3.200 Hz
