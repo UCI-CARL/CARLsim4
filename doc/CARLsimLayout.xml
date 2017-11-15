@@ -109,6 +109,9 @@
 				<tab type="user" visible="no" title="7.3 Parameter Tuning Interface (PTI)" url="@ref tut7s3_experiment_class"/>
 				<tab type="user" visible="no" title="7.4 Output Files" url="@ref tut7s4_output_files"/>
 			</tab>
+			<tab type="usergroup" visible="yes" title="8. Multi-Compartment Models" url="@ref tut8_compartments">
+				<tab type="user" visible="no" title="8.1 Introducton" url="@ref tut8s1_intro"/>
+			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
 		<tab type="namespaces" visible="yes" title="">
