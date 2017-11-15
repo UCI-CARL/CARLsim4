@@ -1,0 +1,11 @@
+/*!
+
+\page tut8_compartments Tutorial 8: Multi-Compartment Models
+\tableofcontents
+\author Stanislav Listopad
+
+\section tut8s1_intro 8.1 Introduction
+
+In this tutorial we introduce generating multi-compartment models in CARLsim.
+
+*/
