@@ -1,21 +1,29 @@
 #!/bin/bash
+#SBATCH --job-name="bmark3-1"
+#SBATCH --output="result1.out"
+#SBATCH --partition=gpu
+#SBATCH --nodes=1
+#SBATCH --gres=gpu:k80:4
+#SBATCH -t 48:00:00
 
-numNeurons='1000 3162 10000 31622'
+module load cuda/7.0
+
+numNeurons='10000'
 numSynapses=(100 200 300 400 500 600)
-numCore='1 2 4'
-index='0 1 2 3 4 5'
-weight1=(1.9049 0.9524 0.6786 0.4911 0.4286 0.3274)
-weight2=(2.1777 1.1705 0.7554 0.5308 0.4083 0.3267)
-weight3=(2.0816 1.0928 0.7286 0.5204 0.3838 0.3643)
-
+numCore='4'
+index='0'
+weight1=(3.75 2.0586 1.4375 1.0938 0.875 0.75)
+weight2=(3.5703 1.9609 1.339 1.0 0.8125 0.6687)
+weight3=(3.25 1.4268 0.8652 0.5625 0.4609 0.375)
+filename="r1.csv"
 for numC in $numCore
 do
-	echo "GPU number is " $numC >> record.csv
+	echo "GPU number is " $numC >> $filename
 	for numN in $numNeurons # number of neurons, which defines the workload
 	do
 		for n in $index # number of synapse per neuron
 		do
-			./benchmark3 $numN 100 42 ${numSynapses[$n]} "record.csv" 10 10 6.5 ${weight1[$n]}  ${weight2[$n]} ${weight3[$n]} $numC 0
+			./benchmark3 $numN 100 42 ${numSynapses[$n]} $filename 1 20 80 ${weight1[$n]}  ${weight2[$n]} ${weight3[$n]} $numC 0
 			#13 parameters needed
 			#1, number of neurons in a group | 2, number of input neurons
 			#3, randseed | 4, number of synapse per neuron |5, record File
@@ -27,23 +35,6 @@ do
 			#12, number of GPU cores | 13, whether need weight tuning		
 		done
 	done	
-done
-
-echo "100 neurons" >> record.csv
-
-for numC in $numCore
-do 
-	./benchmark3 100 100 42 100   "record.csv" 10 10 6.5 1.9049 2.1777 2.0816  $numC 0
-
-done
-
-
-echo "316 neurons"
-for numC in $numCore
-do
-	./benchmark3 316 100 42 100 "record.csv" 10 10 6.5 1.9049 2.1777 2.0816 $numC 0
-	./benchmark3 316 100 42 200 "record.csv" 10 10 6.5 0.9524 1.1705 1.0928 $numC 0
-	./benchmark3 316 100 42 300 "record.csv" 10 10 6.5 0.6786 0.7554 0.7286 $numC 0
 done
 
 
