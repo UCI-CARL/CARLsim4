@@ -23,6 +23,8 @@
     <ClInclude Include="connection_monitor_core.h" />
     <ClInclude Include="group_monitor.h" />
     <ClInclude Include="group_monitor_core.h" />
+    <ClInclude Include="neuron_monitor.h" />
+    <ClInclude Include="neuron_monitor_core.h" />
     <ClInclude Include="spike_monitor.h" />
     <ClInclude Include="spike_monitor_core.h" />
   </ItemGroup>
@@ -31,6 +33,8 @@
     <ClCompile Include="connection_monitor_core.cpp" />
     <ClCompile Include="group_monitor.cpp" />
     <ClCompile Include="group_monitor_core.cpp" />
+    <ClCompile Include="neuron_monitor.cpp" />
+    <ClCompile Include="neuron_monitor_core.cpp" />
     <ClCompile Include="spike_monitor.cpp" />
     <ClCompile Include="spike_monitor_core.cpp" />
   </ItemGroup>

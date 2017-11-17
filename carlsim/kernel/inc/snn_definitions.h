@@ -159,6 +159,10 @@
 #define LONG_SPIKE_MON_DURATION 600000 // about 10 minutes
 #define LARGE_SPIKE_MON_GRP_SIZE 5000 // about 10 minutes
 
+#define MAX_NEURON_MON_BUFFER_SIZE 52428800 // about 50 MB. size is in bytes. (???)
+#define LONG_NEURON_MON_DURATION 100000       // about 100 seconds
+#define MAX_NEURON_MON_GRP_SZIE 128
+
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
 // poisson neuron. Copy that curFiring status to the GPU which uses that for evaluation

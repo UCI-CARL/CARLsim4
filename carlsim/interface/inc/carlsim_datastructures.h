@@ -120,6 +120,26 @@ static const char* simMode_string[] = {
 };
 
 /*!
+* \brief Integration methods
+*
+* CARLsim supports different integration methods. Currently available:
+*
+* FORWARD_EULER: Forward-Euler (aka Euler method). Most basic explicit method for numerical integration of ODEs.
+*                Suggest time step of 0.5ms or lower for stability.
+* RUNGE_KUTTA4:  Fourth-order Runge-Kutta (aka classical Runge-Kutta, aka RK4).
+*                Suggest time step of 0.1ms or lower.
+*/
+enum integrationMethod_t {
+	FORWARD_EULER,
+	RUNGE_KUTTA4,
+	UNKNOWN_INTEGRATION
+};
+static const char* integrationMethod_string[] = {
+	"Forward-Euler", "4-th order Runge-Kutta", "Unknown integration method"
+};
+
+
+/*!
  * \brief computing backend
  * 
  * CARLsim supports execution on standard x86 CPU Cores or off-the-shelf NVIDIA GPU (CUDA Cores) 
@@ -351,6 +371,33 @@ struct RadiusRF {
 
 	double radX, radY, radZ;
 };
+
+/*!
+ * \brief Struct defines the minimum and maximum membrane resisatnces of the LIF neuron group
+ *
+ */
+struct RangeRmem{
+	RangeRmem(double _rMem){
+		// same membrane resistance for all neurons in the group
+		UserErrors::assertTrue(_rMem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "rMem");
+		minRmem = _rMem;
+		maxRmem = _rMem;
+	}
+
+	RangeRmem(double _minRmem, double _maxRmem){
+		// membrane resistances of the  neuron group varies uniformly between a maximum and a minimum value
+		UserErrors::assertTrue(_minRmem >= 0.0f, UserErrors::CANNOT_BE_NEGATIVE, "RangeRmem", "minRmem");
+		UserErrors::assertTrue(_minRmem <= _maxRmem, UserErrors::CANNOT_BE_LARGER, "RangeRmem", "minRmem", "maxRmem");
+		minRmem = _minRmem;
+		maxRmem = _maxRmem;
+	}
+
+	friend std::ostream& operator<<(std::ostream &strm, const RangeRmem &rMem) {
+        return strm << "RangeRmem=[" << rMem.minRmem << "," << rMem.maxRmem << "]";
+    }
+	double minRmem, maxRmem;	
+};
+
 
 /*!
  * \brief A struct for retrieving STDP related information of a group
