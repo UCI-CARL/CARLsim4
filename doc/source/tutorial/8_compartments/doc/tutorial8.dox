@@ -60,7 +60,7 @@ We inject current into the soma using the setExternalCurrent function:
 
 \code
 sim->setExternalCurrent(grpSoma, 600);
-\encode
+\endcode
 
 The soma compartment and one neighbouring dendrite compartment will spike as a result.
 Changing the coupling constants, injection current, or neuron parameters will affect the results.
