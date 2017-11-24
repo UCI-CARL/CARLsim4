@@ -5,7 +5,7 @@
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1869] ***************************** Configuring Network ********************************
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1871] Starting CARLsim simulation "compartments" in USER mode
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1872] Random number seed: 42
-[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1878] Current local time and date: Thu Nov  9 16:45:29 2017
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1878] Current local time and date: Fri Nov 24 13:48:09 2017
 
 [DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:163] CONNECT SETUP: connId=0, mulFast=1.000000, mulSlow=1.000000
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:404] Running CUBA mode (all synaptic conductances disabled)
@@ -37,7 +37,7 @@
 [DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:2692] Allocation for group (excit) [id:3, local id:3], St=15, End=19
 [DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:2692] Allocation for group (input) [id:4, local id:4], St=20, End=24
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:4959] 
-+ Local Network (0)
++ Local Network (8)
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:4960] |-+ Group List:
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:249]   |-+ Local Group excit(G:0,L:0): 
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:252]     |- Type                       =    EXCIT
@@ -90,96 +90,72 @@
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:198]     |- Avg numPreSynapses         =     1.00
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:199]     |- Avg numPostSynapses        =     1.00
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:5236] 
-[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:5238] *****************      Initializing GPU 0 Runtime      *************************
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3421] GPU Memory Management: (Total 3072.000 MB)
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3422] Data			Size		Total Used	Total Available
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3424] Init:			3072.000 MB	521.184 MB	2550.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3437] Random Gen:		2.000 MB	523.184 MB	2548.816 MB
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:283] Grp Size = 5, Total Buffer Cnt = 1, Buffer Cnt = 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:283] Grp Size = 5, Total Buffer Cnt = 2, Buffer Cnt = 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:283] Grp Size = 5, Total Buffer Cnt = 3, Buffer Cnt = 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:283] Grp Size = 5, Total Buffer Cnt = 4, Buffer Cnt = 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:283] Grp Size = 5, Total Buffer Cnt = 5, Buffer Cnt = 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:288] STATIC THREAD ALLOCATION
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:289] ------------------------
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:290] Buffer Size = 128, Buffer Count = 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:314] 0. Start=0, size=5 grpId=0:excit (SpikeMonId=-1) (GroupMonId=-1)
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:314] 1. Start=5, size=5 grpId=1:excit (SpikeMonId=-1) (GroupMonId=-1)
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:314] 2. Start=10, size=5 grpId=2:excit (SpikeMonId=-1) (GroupMonId=-1)
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:314] 3. Start=15, size=5 grpId=3:excit (SpikeMonId=-1) (GroupMonId=-1)
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:314] 4. Start=20, size=5 grpId=4:input (SpikeMonId=-1) (GroupMonId=-1)
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:322] GPU loadBufferSize = 128, GPU loadBufferCount = 5
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3450] Static Load:		0.000 MB	523.184 MB	2548.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3459] Conn Info:		0.000 MB	523.184 MB	2548.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3465] Syn State:		0.000 MB	523.184 MB	2548.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3481] Neuron State:		0.000 MB	523.184 MB	2548.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3488] Group State:		1.000 MB	524.184 MB	2547.816 MB
-[INFO C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3498] Auxiliary Data:		0.000 MB	524.184 MB	2547.816 MB
-
-
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3514] Transfering group settings to GPU:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3516] Settings for Group excit:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3518] 	Type: 6
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3519] 	NumN: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3520] 	M: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3521] 	PreM: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3522] 	spikeGenerator: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3523] 	FixedInputWts: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3524] 	MaxDelay: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3525] 	WithSTDP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3542] 	WithSTP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3548] 	spikeGen: is not set 
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3516] Settings for Group excit:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3518] 	Type: 6
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3519] 	NumN: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3520] 	M: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3521] 	PreM: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3522] 	spikeGenerator: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3523] 	FixedInputWts: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3524] 	MaxDelay: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3525] 	WithSTDP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3542] 	WithSTP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3548] 	spikeGen: is not set 
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3516] Settings for Group excit:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3518] 	Type: 6
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3519] 	NumN: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3520] 	M: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3521] 	PreM: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3522] 	spikeGenerator: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3523] 	FixedInputWts: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3524] 	MaxDelay: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3525] 	WithSTDP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3542] 	WithSTP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3548] 	spikeGen: is not set 
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3516] Settings for Group excit:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3518] 	Type: 6
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3519] 	NumN: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3520] 	M: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3521] 	PreM: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3522] 	spikeGenerator: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3523] 	FixedInputWts: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3524] 	MaxDelay: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3525] 	WithSTDP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3542] 	WithSTP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3548] 	spikeGen: is not set 
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3516] Settings for Group input:
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3518] 	Type: 7
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3519] 	NumN: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3520] 	M: 5
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3521] 	PreM: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3522] 	spikeGenerator: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3523] 	FixedInputWts: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3524] 	MaxDelay: 1
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3525] 	WithSTDP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3542] 	WithSTP: 0
-[DEBUG C:/Users/staslist/Documents/GitHub/CARLsim4/carlsim/kernel/src/gpu_module/snn_gpu_module.cu:3548] 	spikeGen: is not set 
+[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:5240] *****************      Initializing CPU 0 Runtime      *************************
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1838] copyExternalCurrent: lGrpId=-1, ptrPos=0, length=20, allocate=y
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1328] Transfering group settings to CPU:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1330] Settings for Group excit:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1332] 	Type: 6
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1333] 	NumN: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1334] 	M: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1335] 	PreM: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1336] 	spikeGenerator: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1337] 	FixedInputWts: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1338] 	MaxDelay: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1339] 	WithSTDP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1356] 	WithSTP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1362] 	spikeGen: is not set 
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1330] Settings for Group excit:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1332] 	Type: 6
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1333] 	NumN: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1334] 	M: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1335] 	PreM: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1336] 	spikeGenerator: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1337] 	FixedInputWts: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1338] 	MaxDelay: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1339] 	WithSTDP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1356] 	WithSTP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1362] 	spikeGen: is not set 
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1330] Settings for Group excit:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1332] 	Type: 6
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1333] 	NumN: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1334] 	M: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1335] 	PreM: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1336] 	spikeGenerator: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1337] 	FixedInputWts: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1338] 	MaxDelay: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1339] 	WithSTDP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1356] 	WithSTP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1362] 	spikeGen: is not set 
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1330] Settings for Group excit:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1332] 	Type: 6
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1333] 	NumN: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1334] 	M: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1335] 	PreM: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1336] 	spikeGenerator: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1337] 	FixedInputWts: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1338] 	MaxDelay: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1339] 	WithSTDP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1356] 	WithSTP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1362] 	spikeGen: is not set 
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1330] Settings for Group input:
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1332] 	Type: 7
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1333] 	NumN: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1334] 	M: 5
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1335] 	PreM: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1336] 	spikeGenerator: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1337] 	FixedInputWts: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1338] 	MaxDelay: 1
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1339] 	WithSTDP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1356] 	WithSTP: 0
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1362] 	spikeGen: is not set 
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1128] SpikeMonitor set for group 0 (excit)
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1128] SpikeMonitor set for group 1 (excit)
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1128] SpikeMonitor set for group 2 (excit)
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:1128] SpikeMonitor set for group 3 (excit)
+[DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_cpu_module.cpp:1838] copyExternalCurrent: lGrpId=0, ptrPos=0, length=5, allocate=n
 [DEBUG c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:719] runNetwork: runDur=1000ms, printRunSummary=y
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:729] 
-[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:730] ******************** Running the simulation on 1 GPU(s) and 0 CPU(s) ***************************
+[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:730] ******************** Running the simulation on 0 GPU(s) and 1 CPU(s) ***************************
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:731] 
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:116] (t=1.000s) SpikeMonitor for group excit(0) has 40 spikes in 1000ms (8.00 +/- 0.00 Hz)
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\print_snn_info.cpp:116] (t=1.000s) SpikeMonitor for group excit(1) has 0 spikes in 1000ms (0.00 +/- 0.00 Hz)
@@ -236,7 +212,7 @@
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6179] Simulation Mode:	CUBA
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6180] Random Seed:		42
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6181] Timing:			Model Simulation Time = 1 sec
-[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6182] 			Actual Execution Time = 431606.06 sec
+[INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6182] 			Actual Execution Time = 431602.38 sec
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6184] Average Firing Rate:	2+ms delay = 0.000 Hz
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6186] 			1ms delay = 3.200 Hz
 [INFO c:\users\staslist\documents\github\carlsim4\carlsim\kernel\src\snn_manager.cpp:6187] 			Overall = 3.200 Hz

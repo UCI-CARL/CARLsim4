@@ -107,38 +107,38 @@ int main() {
 
 	// Set-up spike monitors so that we can observe the neurons' spike times.
 
-	SpikeMonitor* spkMonSP = sim->setSpikeMonitor(grpSoma, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSR = sim->setSpikeMonitor(grpD_one, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSLM = sim->setSpikeMonitor(grpD_two, "DEFAULT"); // put spike times into file
-	SpikeMonitor* spkMonSO = sim->setSpikeMonitor(grpD_three, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonSoma = sim->setSpikeMonitor(grpSoma, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonDOne = sim->setSpikeMonitor(grpD_one, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonDTwo = sim->setSpikeMonitor(grpD_two, "DEFAULT"); // put spike times into file
+	SpikeMonitor* spkMonDthree = sim->setSpikeMonitor(grpD_three, "DEFAULT"); // put spike times into file
 
-	spkMonSP->startRecording();
-	spkMonSR->startRecording();
-	spkMonSLM->startRecording();
-	spkMonSO->startRecording();
+	spkMonSoma->startRecording();
+	spkMonDOne->startRecording();
+	spkMonDTwo->startRecording();
+	spkMonDthree->startRecording();
 
-	// Continuously inject 600mA of current into SP (soma) layer.
+	// Continuously inject 600mA of current into soma layer.
 	sim->setExternalCurrent(grpSoma, 600);
 	sim->runNetwork(1, 0);
 
-	spkMonSP->stopRecording();
-	spkMonSR->stopRecording();
-	spkMonSLM->stopRecording();
-	spkMonSO->stopRecording();
+	spkMonSoma->stopRecording();
+	spkMonDOne->stopRecording();
+	spkMonDTwo->stopRecording();
+	spkMonDthree->stopRecording();
 
 	// Print out the spike times.
-	spkMonSP->print();
-	spkMonSR->print();
-	spkMonSLM->print();
-	spkMonSO->print();
+	spkMonSoma->print();
+	spkMonDOne->print();
+	spkMonDTwo->print();
+	spkMonDthree->print();
 
-	// Expected spike times: SP should fire due to the current being injected into it.
-	// Each one of the 5 neurons in SP group (layer) should fire at the ~following times:
+	// Expected spike times: soma should fire due to the current being injected into it.
+	// Each one of the 5 neurons in some group (layer) should fire at the ~following times:
 	// 48 86 135 215 383 553 722 891
 	// The exact times depend on the integration method & number of timesteps.
-	// Each one of the 5 neurons in SO group (layer) should fire at the ~following times:
+	// Each one of the 5 neurons in dendrite-3 group (layer) should fire at the ~following times:
 	// 48 85 135 215 383 552 721 890
-	// The SR and SLM layers will be silent.
+	// The dendrite-1 and dendrite-2 groups (layers) will be silent.
 	// This is due to the way coupling constants are arranged. 
 
 	delete sim;
