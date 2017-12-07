@@ -50,9 +50,9 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
-#include <stopwatch.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <stopwatch.h>
 
 int main(int argc, const char* argv[]) {
 	if (argc != 4) {printf("\n\nFewer arguments provided. Aborting.\n");return 1;}
@@ -107,6 +107,22 @@ int main(int argc, const char* argv[]) {
 	sim.connect(gInh, gExc1, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(gInh, gExc2, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	sim.connect(gInh, gExc3, "random", RangeWeight(0.0f, wtInh, wtMax), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+
+	//sim.connect(gExc1, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc1, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc1, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	//sim.connect(gExc2, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc2, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc2, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	//sim.connect(gExc3, gExc1, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc3, gExc2, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gExc3, gExc3, "random", RangeWeight(wtExc), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+
+	//sim.connect(gInh, gExc1, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gInh, gExc2, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
+	//sim.connect(gInh, gExc3, "random", RangeWeight(wtInh), pConn, RangeDelay(1, 20), RadiusRF(-1), SYN_FIXED);
 
 	// gInh receives input from nSynPerNeur neurons from gExc, all delays are 1ms, no plasticity
 	// every neuron in gInh should receive ~nSynPerNeur synapses
