@@ -1,0 +1,15 @@
+#!/bin/bash
+
+scale=( 300 400 500 )
+numGPU=( 1 2 4 )
+filename="record_8020.csv"
+for s in "${scale[@]}"
+do
+	echo "Scale is " $s >> $filename
+	for numG in "${numGPU[@]}"
+	do
+			./random_spnet $s $numG $filename
+	done	
+done
+
+
