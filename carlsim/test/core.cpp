@@ -636,3 +636,18 @@ TEST(Core, saveLoadSimulation) {
 		}
 	}
 }
+
+TEST(Core, synapseIdOverflow) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+	CARLsim sim("Core.synapseIdOverflow", HYBRID_MODE, SILENT, 0, 42);
+
+	int gExc = sim.createGroup("exc", 65536, EXCITATORY_NEURON, 0, CPU_CORES);
+	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+	int gInput = sim.createSpikeGeneratorGroup("input", 1, EXCITATORY_NEURON, 0, CPU_CORES);
+
+	// make connections more than 65535
+	sim.connect(gInput, gExc, "full", RangeWeight(1.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+	
+	EXPECT_DEATH({ sim.setupNetwork(); }, ""); //sim.setupNetwork();
+}

@@ -23,9 +23,10 @@ New features in CARLsim 4 include:
 Detailed instructions for installing the latest stable release of CARLsim on Mac OS X / Linux / Windows
 can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_started.html).
 
-On Linux / OS X:
+### Linux/MacOS
 
-For Beginner
+#### For Beginner
+
 1. Download CARLsim 4 zip file by clicking on the `Clone or download` box in the top-right corner.
 
 2. Unzip the source code.
@@ -57,7 +58,8 @@ For Beginner
    $ ./hello_world
    ```
 
-For Advanced User and Developer
+#### For Advanced User and Developer
+
 1. Fork CARLsim 4 by clicking on the `Fork` box in the top-right corner.
 
 2. Clone the repo, where `YourUsername` is your actual GitHub user name:
@@ -118,7 +120,52 @@ For Advanced User and Developer
    The script will copy all files from `hello_world/` to `project_name/`, make all required
    file changes to compile the new project, and add all new files to git.
 
-On Windows 7/10: Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" project file
+#### Using CMake
+
+1. Obtatin `CARLsim4`'s source code.
+
+2. Create a build directory (you can make it anywhere)
+
+   ```
+   $ mkdir .build
+   ```
+
+3. Proceed into build directory and do configuration:
+
+   ```
+   $ cd .build
+   $ cmake \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_INSTALL_PREFIX=/usr/local/carlsim \
+       -DCARLSIM_NO_CUDA=OFF \
+       <path-to-carlsim>
+   ```
+
+   As you can see `cmake` accepts several options `-D<name>=<value>`: they define cmake variables.
+   `CMAKE_BUILD_TYPE=Release` means that we are going to build release version of the library.
+   If you need debug version then pass `Debug`.
+   `CMAKE_INSTALL_PREFIX` specifies a directory which we are going to install the library into.
+   `CARLSIM_NO_CUDA` switches on/off support of CUDA inside the library.
+   `<path-to-carlsim>` must be replaced with the path to the CARLsim4's source directory.
+
+4. Build:
+
+   ```
+   make -j <jobs-num>
+   ```
+   
+   Set `<jobs-num>` to the number of logical processors your computer has plus one,
+   this will employ parallel building.
+
+5. Install:
+
+   ```
+   make install
+   ```
+
+### Windows
+
+Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" project file
 `projects\hello_world\hello_world.vcxproj`.
 
 
@@ -126,6 +173,7 @@ On Windows 7/10: Simply download the code. Open and build `CARLsim.sln`. Run the
 
 CARLsim 4 comes with the following requirements:
 - (Windows) Microsoft Visual Studio 2015 or higher.
+- (optional) CMake 3.0 or higher in case you want to build it using CMake.
 - (optional) CUDA Toolkit 6.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
   the [NVIDIA CUDA Zone](https://developer.nvidia.com/cuda-zone).
   This is only required if you want to run CARLsim in `GPU_MODE`. Make sure to install the 

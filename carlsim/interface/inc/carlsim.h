@@ -62,6 +62,7 @@
 #include <callback.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
+#include <neuron_monitor.h>
 #include <connection_monitor.h>
 #include <group_monitor.h>
 #include <linear_algebra.h>
@@ -264,6 +265,16 @@ public:
 	short int connect(int grpId1, int grpId2, ConnectionGenerator* conn, float mulSynFast, float mulSynSlow,
 						bool synWtType=SYN_FIXED);
 
+	/*!
+	* \brief make a compartmental connection between two compartmentally enabled groups
+	* Note: all compartmentally connected groups must be located on the same partition.
+	*
+	* first group is in the lower layer; second group is in the upper layer
+	* \TODO finish docu
+	* \STATE CONFIG
+	*/
+	short int connectCompartments(int grpIdLower, int grpIdUpper);
+
 
 	/*!
 	 * \brief creates a group of Izhikevich spiking neurons
@@ -271,6 +282,13 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 */
 	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
+	 * \brief creates a group of Leaky-Integrate-and-Fire (LIF) spiking neurons
+	 * \TODO finish doc
+	 * \STATE ::CONFIG_STATE
+	 */
+	int createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
@@ -294,6 +312,18 @@ public:
 	 * \since v3.0
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
+	 * \brief Create a group of LIF spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
+	 * side length 1)
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpName    the group name
+	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
+	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
+	 * \since v4.0
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -441,6 +471,33 @@ public:
 	 */
 	void setHomeoBaseFiringRate(int grpId, float baseFiring, float baseFiringSD=0.0f);
 
+	/*
+	* \brief Sets the integration method for the simulation
+	*
+	* This function specifies the integration method for the simulation. Currently, the chosen integration method
+	* will apply to all neurons in the network.
+	*
+	* The basic simulation time step is 1ms, meaning that spike times cannot be retrieved with sub-millisecond
+	* precision. However, the integration time step can be lower than 1ms, which is specified by numStepsPerMs.
+	* A numStepsPerMs set to 10 would take 10 integration steps per 1ms simulation time step.
+	*
+	* By default, the simulation will use Forward-Euler with an integration step of 0.5ms (i.e.,
+	* <tt>numStepsPerMs</tt>=2).
+	*
+	* Currently CARLsim supports the following integration methods:
+	* - FORWARD_EULER: The most basic, forward-Euler method. Suggested value for <tt>numStepsPerMs</tt>: >= 2.
+	* - RUNGE_KUTTA4:  Fourth-order Runge-Kutta (aka classical Runge-Kutta, aka RK4).
+	*                  Suggested value for <tt>numStepsPerMs</tt>: >= 10.
+	*
+	* \STATE ::CONFIG_STATE
+	* \param[in] method the integration method to use
+	* \param[in] numStepsPerMs the number of integration steps per 1ms simulation time step
+	*
+	* \note Note that the higher numStepsPerMs the slower the simulation may be, due to increased computational load.
+	* \since v3.1
+	*/
+	void setIntegrationMethod(integrationMethod_t method, int numStepsPerMs);
+
 	/*!
 	 * \brief Sets Izhikevich params a, b, c, and d with as mean +- standard deviation
 	 *
@@ -457,6 +514,88 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_b, float izh_c, float izh_d);
+
+	/*!
+	* \brief Sets Izhikevich params C, k, vr, vt, a, b, vpeak, c, and d of a neuron group
+	* C must be positive. There are no limits imposed on other parameters
+	* This is a nine parameter Izhikevich simple spiking model
+	*
+	* \STATE CONFIG
+	* \param[in] grpId			the group ID of a group for which these settings are applied
+	* \param[in] izh_C			Membrane capacitance parameter
+	* \param[in] izh_k			Coefficient present in equation for voltage
+	* \param[in] izh_vr		Resting membrane potential parameter
+	* \param[in] izh_vt		Instantaneous threshold potential parameter
+	* \param[in] izh_a			Recovery time constant
+	* \param[in] izh_b			Coefficient present in equation for voltage
+	* \param[in] izh_vpeak		The spike cutoff value parameter
+	* \param[in] izh_c			The voltage reset value parameter
+	* \param[in] izh_d			Parameter describing the total amount of outward minus inward currents activated
+	*                          during the spike and affecting the after spike behavior
+	* \since v3.1
+	*/
+	void setNeuronParameters(int grpId, float izh_C, float izh_k, float izh_vr, float izh_vt,
+		float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d);
+
+	/*!
+	* \brief Sets Izhikevich params C, k, vr, vt, a, b, vpeak, c, and d with as mean +- standard deviation
+	* C must be positive. There are no limits imposed on other parameters
+	* This is a nine parameter Izhikevich simple spiking model
+	*
+	* \STATE CONFIG
+	* \param[in] grpId			the group ID of a group for which these settings are applied
+	* \param[in] izh_C			Membrane capacitance parameter
+	* \param[in] izh_C_sd		Standard deviation for membrane capacitance parameter
+	* \param[in] izh_k			Coefficient present in equation for voltage
+	* \param[in] izh_k_sd		Standard deviation for coefficient present in equation for voltage
+	* \param[in] izh_vr		Resting membrane potential parameter
+	* \param[in] izh_vr_sd		Standard deviation for resting membrane potential parameter
+	* \param[in] izh_vt		Instantaneous threshold potential parameter
+	* \param[in] izh_vt_sd		Standard deviation for instantaneous threshold potential parameter
+	* \param[in] izh_a			Recovery time constant
+	* \param[in] izh_a_sd		Standard deviation for recovery time constant
+	* \param[in] izh_b			Coefficient present in equation for voltage
+	* \param[in] izh_b_sd		Standard deviation for coefficient present in equation for voltage
+	* \param[in] izh_vpeak		The spike cutoff value parameter
+	* \param[in] izh_vpeak_sd	Standard deviation for the spike cutoff value parameter
+	* \param[in] izh_c			The voltage reset value parameter
+	* \param[in] izh_c_sd		Standard deviation for the voltage reset value parameter
+	* \param[in] izh_d			Parameter describing the total amount of outward minus inward currents activated
+	*                          during the spike and affecting the after spike behavior
+	* \param[in] izh_d_sd		Standard deviation for the parameter describing the total amount of outward minus
+	*                          inward currents activated during the spike and affecting the after spike behavior
+	* \since v3.1
+	*/
+	void setNeuronParameters(int grpId, float izh_C, float izh_C_sd, float izh_k, float izh_k_sd,
+		float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
+		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
+		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
+		float izh_d, float izh_d_sd);
+
+	/*!
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
+	 *
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] rMem Range of total membrane resistance of the neuron group, uniformly distributed or fixed for the whole group
+	 * \STATE ::CONFIG_STATE
+	 */
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, const RangeRmem& rMem = RangeRmem(1.0f));
+    
+   /*!
+ /*!
+	* \brief Sets coupling constants G_u and G_d for the compartment.
+	*
+	* \TODO finish docu
+	* \STATE ::CONFIG_STATE
+	* \param[in] couplingUp		Coupling constant for "up" compartmental connection
+	* \param[in] couplingDown	Coupling constant for "down" compartmental connection
+	*/
+
+	void setCompartmentParameters(int grpId, float couplingUp, float couplingDown);
 
 	/*!
 	 * \brief Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron
@@ -1032,6 +1171,50 @@ public:
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
 
 	/*!
+	* \brief Sets a Neuron Monitor for a groups, print voltage, recovery, and total current values to binary file
+	*
+	* To retrieve outputs, a neuron-monitoring callback mechanism is used. This mechanism allows the user to calculate
+	* basic statistics, store voltage/recovery/current values, or perform more complicated output monitoring. Neuron monitors are
+	* registered for a group and are called automatically by the simulator every second. Similar to an address event
+	* representation (AER), the neuron monitor indicates neuron's state by using the neuron ID within a group
+	* (0-indexed). Only one neuron monitor is allowed per group.
+	*
+	* CARLsim supports two different recording mechanisms: Recording to a neuron state (voltage, recovery, and current)
+	* file (binary) and recording to a
+	* NeuronMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+	* The latter is useful to calculate different neuron state metrics and statistics on-line.
+	*
+	* A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	* is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	* directory: "results/nrnstate_{group name}.dat", where group name is the name assigned to the group at initialization
+	* (can be retrieved via getGroupName).
+	* If no binary file shall be created, set fileName equal to the string "NULL".
+	*
+	* The function returns a pointer to a NeuronMonitor object, which can be used to calculate neuron statistics
+	* or retrieve all neuron state values from a particular time window.
+	* See \ref ??? of the User Guide for more information on how to use NeuronMonitor.
+	*
+	* If you call setNeuronMonitor twice on the same group, the same NeuronMonitor pointer will be returned, and the
+	* name of the neuron state file will be updated. This is the same as calling NeuronMonitor::setLogFile directly, and
+	* allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	*
+	* \STATE ::SETUP_STATE
+	* \param[in] grpId 		the group ID
+	* \param[in] fileName 		name of the binary file to be created. Leave empty for default name
+	*                      	"results/nrnstate_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
+	* \returns   NeuronMonitor*	pointer to a NeuronMonitor object, which can be used to calculate neuron state statistics
+	*                           or retrieve all spikes in AER format
+	*
+	* \note Only one NeuronMonitor is allowed per group. NeuronMonitor cannot be placed on groups with >100 (LARGE_NEURON_MON_GRP_SIZE) neurons
+	* \attention Using NeuronMonitor::startRecording and NeuronMonitor::stopRecording might significantly slow down the
+	* simulation. It is unwise to use this mechanism to record a large number of neuron state values (voltage, recovery, 
+	* and total current values) over a long period of time.
+	* \see ???
+	* \see ch9s1_matlab_oat
+	*/
+	NeuronMonitor* setNeuronMonitor(int grpId, const std::string& fileName);
+
+	/*!
 	 * \brief Sets a spike rate
 	 * \TODO finish docu
 	 *
@@ -1252,6 +1435,14 @@ public:
 	 * \returns the 3D location a neuron codes for as a Point3D struct
 	 */
 	Point3D getNeuronLocation3D(int neurId);
+
+	/*!
+	* \brief Returns the maximum number of allowed compartmental connections per group.
+	*
+	* A compartmentally enabled neuron group cannot have more than this number of compartmental connections.
+	* This value is controlled by MAX_NUM_COMP_CONN in carlsim_definitions.h.
+	*/
+	int getMaxNumCompConnections();
 
 	/*!
 	 * \brief returns the 3D location a neuron codes for

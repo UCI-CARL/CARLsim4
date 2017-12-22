@@ -70,6 +70,7 @@ public:
 	// +++++ PUBLIC METHODS: CONSTRUCTOR / DESTRUCTOR +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	Impl(bool startTimer) {
+		_isTimerOn = false;
 		reset();
 		if (startTimer) {
 			start("start");
