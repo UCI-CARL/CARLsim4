@@ -7,15 +7,7 @@
 #SBATCH -t 48:00:00 
 
 echo "1000" >> "record.csv" 
-./benchmarka 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
-./benchmarka 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
-./benchmarkb 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
-./benchmarkb 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
-
-
-
-
-
-
+./benchmarkA 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
+./benchmarkA 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU"
 
 #1. number of neurons(num_exc+num_inh)  2. simulate time; 3. input  fire rates; 4. weight from input to exc; 5. weight from exc to inh 6. weight from inh to exc; 7.weight from exc to exc  8. recordfile; 9. randseed; 10. number of synapse per neuron; 11. number of partitions; 12. backend

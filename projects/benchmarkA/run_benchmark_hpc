@@ -1,8 +1,8 @@
 #!/bin/bash
-#$ -N Helloworld
+#$ -N BenchmarkA
 #$ -q gpu
 #$ -l gpu=4
 #$ -pe gpu-node-cores 24
 #$ -m beas
 
-./helloworld > out
+./benchmarkA > out

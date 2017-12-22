@@ -7,10 +7,8 @@
 #SBATCH -t 48:00:00 
 
 echo "1000" >> "record.csv" 
-./benchmarka 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
-./benchmarka 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
-./benchmarkb 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
-./benchmarkb 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
+./benchmarkB 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
+./benchmarkB 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
 
 
 
