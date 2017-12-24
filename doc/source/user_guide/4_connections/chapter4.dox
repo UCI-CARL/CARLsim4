@@ -316,6 +316,81 @@ combination with RadiusRF(-1,-1,-1) is not allowed.
 
 
 
+\subsection ch4s1s9_compconn 4.1.9 Compartmental Connections
+\author Stanislav Listopad
+\author Michael Beyeler
+
+Multi-compartment neurons can be connected with CARLsim::connectCompartments.
+This creates a "one-to-one" connection between two compartmentally enabled groups <tt>grpIdLower</tt> and
+<tt>grpIdUpper</tt>:
+
+\code
+short int cId = sim.connectCompartments(grpIdLower, grpIdUpper);
+\endcode
+
+The order of the group IDs in this function call is crucial, as it will define the topography of the network:
+A compartment can have a \em down ("mother") and several \em up ("daughter") compartments, as shown in the following
+figure:
+
+\image html 4_compartments.jpg "Example of a network with 4-compartment neurons."
+
+The network spans four groups (<tt>grpSoma</tt>, <tt>grpDend0</tt>, <tt>grpDend1</tt>, and <tt>grpDend2</tt>) of five
+neurons each.
+Each neuron in the network (labeled 0-19) is considered a compartment, with all neurons in a group belonging to the
+same type of compartment (e.g., somatic compartment, <tt>grpSoma</tt>).
+All the n-th neurons in a group together form one multi-compartment neuron (e.g., neuron 0, 5, 10, and 15).
+
+According to (9) in \ref ch3s1s3_compartments, the dendritic current of neuron 10, \f$i_{10}\f$, is thus given as:
+
+\f{align*}{
+i_{10} =  &  G_0^{down} (v_{10} - v_{0}) + G_5^{down} (v_{10} - v_{5}) + G_{15}^{up} (v_{10} - v_{15}), & \text{(1)}
+\f}
+
+where \f$v_n\f$ is the membrane potential of the n-th neuron,
+\f$G_n^{down}\f$ is the coupling constant that applies to all \em downward connections of the n-th neuron,
+and \f$G_n^{up}\f$ is the coupling constant that applies to all \em downward connections of the n-th neuron.
+The coupling constants are set via CARLsim::setCompartmentParameters.
+
+A group can have at most 4 compartmental neighbors.
+
+The following code configures a network to create the network topography for the figure above:
+
+\code
+// ---------------- CONFIG STATE -------------------
+CARLsim sim("compartments", GPU_MODE, USER);
+
+// create neuron groups
+int grpSoma = sim.createGroup("soma", 5, EXCITATORY_NEURON);
+int grpDend0 = sim.createGroup("dendrite0", 5, EXCITATORY_NEURON);
+int grpDend1 = sim.createGroup("dendrite1", 5, EXCITATORY_NEURON);
+int grpDend2 = sim.createGroup("dendrite2", 5, EXCITATORY_NEURON);
+
+// set (arbitrary) values for 9-param Izhikevich model
+sim.setNeuronParameters(grpSoma, 550.0f, 2.0f, -60.0f, -50.0f, 0.002f, -0.4f, 25.0f, -52.2f, 109.0f);
+sim.setNeuronParameters(grpDend0, 550.0f, 2.0f, -60.0f, -50.0f, 0.002f, -0.4f, 25.0f, -52.2f, 109.0f);
+sim.setNeuronParameters(grpDend1, 550.0f, 2.0f, -60.0f, -50.0f, 0.002f, -0.4f, 25.0f, -52.2f, 109.0f);
+sim.setNeuronParameters(grpDend2, 550.0f, 2.0f, -60.0f, -50.0f, 0.002f, -0.4f, 25.0f, -52.2f, 109.0f);
+
+// set (arbitrary) values for up and down coupling
+sim.setCompartmentParameters(grpSoma, 100.0f, 5.0f); // up, down
+sim.setCompartmentParameters(grpDend0, 100.0f, 5.0f); // up, down
+sim.setCompartmentParameters(grpDend1, 100.0f, 5.0f); // up, down
+sim.setCompartmentParameters(grpDend2, 100.0f, 5.0f); // up, down
+
+// create topography
+sim.connectCompartments(grpSoma, grpDend0);
+sim.connectCompartments(grpDend0, grpDend1);
+sim.connectCompartments(grpDend0, grpDend2);
+\endcode
+
+
+\note A compartmental connection is basically a gap junction (see (9) in \ref ch3s1s3_compartments).
+\note Make sure to call CARLsim::setCompartmentParameters on a compartmentally connected group.
+\note The maximum number of allowed compartmental connections per neuron is controlled by the parameter
+::MAX_NUM_COMP_CONN in carlsim_definitions.h.
+\attention Two compartmentally connected groups must have the same size.
+\since v3.1
+
 \section ch4s2_library_tools 4.2. Library Tools
 
 A library of useful ConnectionGenerator subclasses will be added in a future release.

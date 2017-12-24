@@ -31,13 +31,73 @@ pre-trained network anytime they wish without incurring the cost of training.
 \see \ref ch7s1_spike_monitor
 
 
-\section ch12s2_multi_gpu 12.2 Multi-GPU
+\section ch12s2_num_int 12.2 Numerical Integration Methods
+
+CARLsim currently supports forward-Euler and fourth-order Runge Kutta for the numerical integration of ODEs.
+
+The integration method and integration time step can be specified via CARLsim::setIntegrationMethod.
+By default, the simulation uses forward-Euler with a basic integration step of 0.5ms.
+
+The specified integration method will apply to all neurons in the network.
+Future CARLsim versions might allow to specify the integration method on a per-group basis.
+
+In contrast to the \em integration time step, the \em simulation time step is always 1ms, meaning that spike times cannot
+be retrieved with sub-millisecond precision.
+Future CARLsim versions might allow for sub-millisecond spike times.
+
+
+\subsection ch12s2s1_euler 12.2.1 Euler Method
+
+By default, CARLsim uses the forward (or standard) Euler method with an integration step of 0.5ms for numerical
+stability. This can be set explicitly with the following function call:
+
+\code
+sim.setIntegrationMethod(FORWARD_EULER, numStepsPerMs);
+\endcode
+
+where <tt>numStepsPerMs</tt> is the number of integration steps to perform per 1ms.
+
+We suggest the number of time steps be at least 2 when working with the 4-parameter Izhikevich model
+(see \ref ch3s1s1_izhikevich_neurons4).
+We do not recommend to use forward-Euler when working with the 9-parameter Izhikevich or compartmental models
+(see \ref ch3s1s2_izhikevich_neurons9 and \ref ch3s1s3_compartments).
+
+\note The recovery variable of the Izhikevich model is always integrated using forward-Euler.
+\see \ref ch3s1_neurons
+\see \ref ch12s2s2_RK4
+
+
+\subsection ch12s2s2_RK4 12.2.2 Runge-Kutta Method
+\author Stanislav Listopad
+\author Michael Beyeler
+
+CARLsim also supports the use of fourth-order Runge-Kutta (also referred to as "RK4", "classical Runge-Kutta method",
+or simply as "\em the Runge-Kutta method").
+
+This can be specified with the following function call:
+
+\code
+sim.setIntegrationMethod(RUNGE_KUTTA4, numStepsPerMs);
+\endcode
+
+where <tt>numStepsPerMs</tt> is the number of integration steps to perform per 1ms.
+
+We suggest the number of time steps be at least 10 when working with compartmental neurons
+(see \ref ch3s1s3_compartments).
+
+
+\note Note that the higher numStepsPerMs the slower the simulation may be, due to increased computational load.
+\note The recovery variable of the Izhikevich model is always integrated using forward-Euler.
+\since v3.1
+
+
+\section ch12s3_multi_gpu 12.3 Multi-GPU
 
 CARLsim is now threadsafe so a distinct CARLsim simulation can be run on every GPU device on the
 machine.
 
 
-\section ch12s3_online_weight_tuning 12.3 On-Line Weight Tuning
+\section ch12s4_online_weight_tuning 12.4 On-Line Weight Tuning
 \author Michael Beyeler
 
 CARLsim provides a range of handy functions to change weight values on the fly; that is, without having to recompile
@@ -57,7 +117,7 @@ They apply to weight values of already allocated synapses only.
 \see \ref ch10_ecj
 
 
-\subsection ch12s3s1_simple_weight_tuner 12.3.1 Simple Weight Tuner
+\subsection ch12s4s1_simple_weight_tuner 12.4.1 Simple Weight Tuner
 
 The SimpleWeightTuner utility is a class that allows tuning of weight values of a specific connection (i.e., a
 collection of synapses), so that a specific neuron group fires at a predefined target firing rate---without having
@@ -105,7 +165,7 @@ with each other.
 \since v3.0
 
 
-\subsection ch12s3s2_set_weight 12.3.2 Setting the Weight of a Single Synapse
+\subsection ch12s4s2_set_weight 12.4.2 Setting the Weight of a Single Synapse
 
 The easiest way to change the weight of a synapse is CARLsim::setWeight:
 \code
@@ -133,7 +193,7 @@ can be achieved, depending on a fifth optional argument <tt>updateWeightRange</t
 \since v3.0
 
 
-\subsection ch12s3s3_bias_weights 12.3.3 Add a Bias to All the Weights of a Connection
+\subsection ch12s4s3_bias_weights 12.4.3 Add a Bias to All the Weights of a Connection
 
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::biasWeights:
@@ -160,7 +220,7 @@ different behaviors can be achieved, depending on a third optional argument <tt>
 \since v3.0
 
 
-\subsection ch12s3s4_scale_weights 12.3.4 Scale All the Weigths of a Connection
+\subsection ch12s4s4_scale_weights 12.4.4 Scale All the Weigths of a Connection
 
 Alternatively, it is possible to change the weights of all the synapses that belong to a certain connection ID
 using CARLsim::scaleWeights:
