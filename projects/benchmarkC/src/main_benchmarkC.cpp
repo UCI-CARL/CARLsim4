@@ -130,17 +130,18 @@ int main(int argc, char* argv[] ) {
 	for (int i=0; i<8; i++)
 	{
 		cinput[i] = sim.connect(gInput[i], gExc[i], "one-to-one", RangeWeight(inputWeight), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-		ce2i[i] = sim.connect(gExc[i], gInh[i], "random", RangeWeight(e2iWeight), pConn*1.25, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
+		ce2i[i] = sim.connect(gExc[i], gInh[i], "random", RangeWeight(0,e2iWeight,maxWeight), pConn*1.25, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 	//	ci2e[i] = sim.connect(gInh[i], gExc[i], "random", RangeWeight(0,i2eWeight,maxWeight), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
 		ce2e[i] = sim.connect(gExc[i], gExc[i], "random", RangeWeight(0,e2eWeight,maxWeight), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
-		ci2e[i] = sim.connect(gInh[i], gExc[i], "random", RangeWeight(i2eWeight), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
+		ci2e[i] = sim.connect(gInh[i], gExc[i], "random", RangeWeight(i2eWeight), pConn, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	//	ce2e[i] = sim.connect(gExc[i], gExc[i], "random", RangeWeight(e2eWeight), pConn, RangeDelay(1,20), RadiusRF(-1), SYN_FIXED);
 	}
 
-	float alphaPlus = 0.1f, tauPlus = 20.f, alphaMinus = 0.1f, tauMinus = 20.0f;
+	float alphaPlus = 0.1f, tauPlus = 20.f, alphaMinus = 0.12f, tauMinus = 20.0f;
 	for (int i=0; i<8; i++)
 	{
 		sim.setESTDP(gExc[i], true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim.setESTDP(gInh[i], true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
 	}
 
 	sim.setConductances(false);
