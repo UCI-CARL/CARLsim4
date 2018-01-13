@@ -1,0 +1,30 @@
+#!/bin/bash 
+#SBATCH --job-name="BenchC" 
+#SBATCH --output="BenchC_test_2.out" 
+#SBATCH --partition=gpu 
+#SBATCH --nodes=1 
+#SBATCH --gres=gpu:k80:4 
+#SBATCH -t 48:00:00 
+
+numNeuron='1000'
+numPartitionGPU='1'
+file="record.csv"
+
+
+echo "GPU" >> $file
+for numP in $numPartitionGPU
+do
+	echo $numP "partition" >> $file
+	for numN in $numNeuron
+	do
+		./benchmarkC $numN 10 20 10 6.0 5.0 6.0  $file 42 100 $numP 1 10.0
+	done
+done
+
+
+
+
+
+
+
+#1. number of neurons(num_exc+num_inh)  2. simulate time; 3. input  fire rates; 4. weight from input to exc; 5. weight from exc to inh 6. weight from inh to exc; 7.weight from exc to exc  8. recordfile; 9. randseed; 10. number of synapse per neuron; 11. number of partitions; 12. backend,0:CPU, 1:GPU; 13. maximum weight of ESTDP
