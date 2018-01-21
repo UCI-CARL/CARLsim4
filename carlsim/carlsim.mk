@@ -142,7 +142,7 @@ prep_release:
 
 prep_debug:
 	$(eval CXXFL += -g -Wall -O0)
- 	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
+	$(eval NVCCFL += -g -G --compiler-options "-Wall -O0")
 
 prep_coverage:
 	$(eval CXXFL += -fprofile-arcs -ftest-coverage)
