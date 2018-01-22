@@ -1,15 +1,14 @@
 #!/bin/bash 
-#SBATCH --job-name="BenchA" 
-#SBATCH --output="A_316000_1GPU.out" 
+#SBATCH --job-name="BenchB_CPU" 
+#SBATCH --output="cpu.out" 
 #SBATCH --partition=gpu 
 #SBATCH --nodes=1 
 #SBATCH --gres=gpu:k80:4 
 #SBATCH -t 48:00:00 
 
-numNeuron='316000'
-numPartitionCPU=''
-numPartitionGPU='1'
-file="316000_1GPU.csv"
+numNeuron='1000 3160 10000 31600 100000 316000'
+numPartitionCPU='8 4 2 1'
+file="cpu.csv"
 
 echo "CPU" >> $file 
 for numP in $numPartitionCPU
@@ -17,24 +16,8 @@ do
 	echo $numP "partition" >> $file
 	for numN in $numNeuron
 	do
-		./benchmarkA $numN 10 20 50  1.7 1.5 2.0 $file 42 100 $numP 0
+		./benchmarkB $numN 1 20 50  1.7 1.5 2.0 $file 42 100 $numP 0
 	done
 done
-
-echo "GPU" >> $file
-for numP in $numPartitionGPU
-do
-	echo $numP "partition" >> $file
-	for numN in $numNeuron
-	do
-		./benchmarkA $numN 10 20 50  1.7 1.5 2.0  $file 42 100 $numP 1 
-	done
-done
-
-
-
-
-
-
 
 #1. number of neurons(num_exc+num_inh)  2. simulate time; 3. input  fire rates; 4. weight from input to exc; 5. weight from exc to inh 6. weight from inh to exc; 7.weight from exc to exc  8. recordfile; 9. randseed; 10. number of synapse per neuron; 11. number of partitions; 12. backend

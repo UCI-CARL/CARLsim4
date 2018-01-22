@@ -65,8 +65,7 @@ using namespace std;
 //};
 
 int main(int argc, char* argv[] ) {
-
-  int N_EXC,N_INH, N_INPUT;
+	int N_EXC,N_INH, N_INPUT;
 	float pConn;
 	int randSeed;
 	int simulateTime;
@@ -76,7 +75,6 @@ int main(int argc, char* argv[] ) {
 	int N_Partition;
 
 	if (argc!=13) return 1; // 12 parameters are required
-
 
         // read parameters and create a network on GPU
 	N_EXC =	0.8*atoi(argv[1]);
@@ -92,21 +90,20 @@ int main(int argc, char* argv[] ) {
 
 	Stopwatch watch;
 	randSeed = atoi(argv[9]);
-
-  pConn = atof(argv[10])/atoi(argv[1]); // connection probability
+	pConn = atof(argv[10])/atoi(argv[1]); // connection probability
 	N_Partition = atoi(argv[11]);
 
-	CARLsim sim("benchmark", GPU_MODE, USER, 0, randSeed);
-	CARLsim *simulator = &sim;
+	CARLsim sim("benchmark", HYBRID_MODE, SILENT, 0);
+
 	// configure the network
 	ComputingBackend backend;
 
-	if(argv[12] == "CPU")
+	if(atoi(argv[12]) == 0)
 		backend = CPU_CORES;
-	else
+	else if(atoi(argv[12]) == 1)
 		backend = GPU_CORES;
-
-
+	else
+		return 1;
 
 	int gExc[8];
 	int gInh[8];

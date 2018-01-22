@@ -65,8 +65,7 @@ using namespace std;
 //};
 
 int main(int argc, char* argv[] ) {
-
-  int N_EXC,N_INH, N_INPUT;
+	int N_EXC,N_INH, N_INPUT;
 	float pConn;
 	int randSeed;
 	int simulateTime;
@@ -98,8 +97,7 @@ int main(int argc, char* argv[] ) {
  	pConn = atof(argv[10])/atoi(argv[1]); // connection probability
 	N_Partition = atoi(argv[11]);
 
-	CARLsim sim("benchmark", GPU_MODE, USER, 0, randSeed);
-	CARLsim *simulator = &sim;
+	CARLsim sim("benchmarkC", HYBRID_MODE, SILENT, 0);
 	// configure the network
 	ComputingBackend backend;
 

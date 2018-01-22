@@ -1,14 +1,24 @@
 #!/bin/bash 
-#SBATCH --job-name="Test_BK4IJCNN" 
-#SBATCH --output="Test.out" 
+#SBATCH --job-name="BenchA_GPU" 
+#SBATCH --output="gpu.out" 
 #SBATCH --partition=gpu 
 #SBATCH --nodes=1 
 #SBATCH --gres=gpu:k80:4 
 #SBATCH -t 48:00:00 
 
-echo "1000" >> "record.csv" 
-./benchmarkB 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 8 "CPU" 
-./benchmarkB 1000 10 20 50  1.7 1.5 2.0  "record.csv" 42 100 4 "GPU" 
+numNeuron='1000 3160 10000 31600 100000 316000'
+numPartitionGPU='4 2 1'
+file="gpu.csv"
+
+echo "GPU" >> $file
+for numP in $numPartitionGPU
+do
+	echo $numP "partition" >> $file
+	for numN in $numNeuron
+	do
+		./benchmarkA $numN 1 20 50  1.7 1.5 2.0  $file 42 100 $numP 1 
+	done
+done
 
 
 

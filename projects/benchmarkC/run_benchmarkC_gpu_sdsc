@@ -1,14 +1,14 @@
 #!/bin/bash 
-#SBATCH --job-name="BenchC" 
-#SBATCH --output="BenchC_test_2.out" 
+#SBATCH --job-name="BenchC_GPU" 
+#SBATCH --output="gpu.out" 
 #SBATCH --partition=gpu 
 #SBATCH --nodes=1 
 #SBATCH --gres=gpu:k80:4 
 #SBATCH -t 48:00:00 
 
-numNeuron='1000'
-numPartitionGPU='1 2 4'
-file="record.csv"
+numNeuron='1000 3160 10000 31600 100000 316000'
+numPartitionGPU='4 2 1'
+file="gpu.csv"
 
 
 echo "GPU" >> $file
@@ -17,7 +17,7 @@ do
 	echo $numP "partition" >> $file
 	for numN in $numNeuron
 	do
-		./benchmarkC $numN 10 20 10 6.0 5.0 6.0  $file 42 100 $numP 1 10.0
+		./benchmarkC $numN 1 20 10 6.0 5.0 6.0  $file 42 100 $numP 1 10.0
 	done
 done
 
