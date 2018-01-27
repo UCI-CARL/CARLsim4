@@ -94,7 +94,7 @@ int main(int argc, char* argv[] ) {
 	pConn = atof(argv[10])/atoi(argv[1]); // connection probability
 	N_Partition = atoi(argv[11]);
 
-	CARLsim sim("benchmarkA", HYBRID_MODE, SILENT, 0);
+	CARLsim sim("benchmarkA", HYBRID_MODE, USER, 0);
 	// configure the network
 	ComputingBackend backend;
 
