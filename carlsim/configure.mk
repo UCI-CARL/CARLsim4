@@ -19,21 +19,19 @@
 # Common paths
 #------------------------------------------------------------------------------
 
-# path to CUDA installation
-CUDA_PATH        ?= /usr/local/cuda-9.1
+# path to CUDA installation -- only if not in bashrc/profile
+#CUDA_PATH        ?= /usr/local/cuda
 
 # enable gcov
 CARLSIM4_COVERAGE ?= 0
 
 #------------------------------------------------------------------------------
-# CARLsim/ECJ Parameter Tuning Interface Options
+# CARLsim/ECJ Parameter Tuning Interface Options -- only if not in bashrc/profile
 #------------------------------------------------------------------------------
 # absolute path and name of evolutionary computation in java installation jar
 # file for ECJ-PTI CARLsim support.
-#ECJ_JAR ?= /opt/ecj/jar/ecj.23.jar
-#ECJ_PTI_DIR ?= /opt/CARL/carlsim_ecj_pti
-ECJ_JAR=/opt/ecj/jar/ecj.23.jar
-ECJ_PTI_DIR=/home/hsrcarl/carlsim4lib/carlsim_ecj_pti
+#ECJ_JAR=/opt/ecj/jar/ecj.22.jar
+#ECJ_PTI_DIR=/home/hirak/CARL/carlsim_ecj_pti
 
 
 #------------------------------------------------------------------------------
