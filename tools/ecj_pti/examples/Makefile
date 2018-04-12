@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim3 CARLsim-ECJ PTI interface examples Makefile
+##   CARLsim4 CARLsim-ECJ PTI interface examples Makefile
 ##   -------------------------
 ##
 ##   Authors:   Eric Scott <escott8@gmu.edu>
@@ -12,7 +12,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   03/04/2017
+##   Version:   04/11/2018, HK
 ##
 ##----------------------------------------------------------------------------##
 
@@ -20,16 +20,16 @@
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim3 installation does not reside in the default path, make
-# sure the environment variable CARLSIM3_INSTALL_DIR is set.
-ifneq ($(CARLSIM3_INSTALL_DIR),)
-	CARLSIM3_INC_DIR  := $(CARLSIM3_INSTALL_DIR)/inc
+# NOTE: If your CARLsim4 installation does not reside in the default path, make
+# sure the environment variable CARLSIM4_INSTALL_DIR is set.
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM3_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
 endif
 
 # include compile flags etc.
-include $(CARLSIM3_INC_DIR)/configure.mk
+include $(CARLSIM4_INC_DIR)/configure.mk
 
 pti_lib_path := $(ECJ_PTI_DIR)/lib/
 pti_lib := -lCARLsimPTI
@@ -57,12 +57,12 @@ all: $(targets)
 
 $(targets): build/%: obj/%.o
 	@test -d build/ || mkdir -p build/
-	$(CXX) $(CARLSIM3_FLG) -I$(pti_inc_path) -L$(pti_lib_path) $< -o $@ $(CARLSIM3_LIB) $(pti_lib)
+	$(CXX) $(CARLSIM4_FLG) -I$(pti_inc_path) -L$(pti_lib_path) $< -o $@ $(CARLSIM4_LIB) $(pti_lib)
 
 obj/%.o: %.cpp
 	@test -d obj/ || mkdir -p obj/
 	echo $(pti_inc_path)
-	$(CXX) -c $(CARLSIM3_FLG) $(CXXINCFL) $(CXXFL) -I$(pti_inc_path) $< -o $@
+	$(CXX) -c $(CARLSIM4_FLG) $(CXXINCFL) $(CXXFL) -I$(pti_inc_path) $< -o $@
 
 clean:
 	$(RM) $(clean_files)
