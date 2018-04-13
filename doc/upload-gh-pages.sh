@@ -1,6 +1,7 @@
 #!/bin/bash
 # Upload website to gh-pages
 USAGE="$0 <html_dir> <project-name> [<organization-name>]"
+# example: ./upload-gh-pages.sh ./html CARLsim4 UCI-CARL
 HTML_DIR=$1
 if [ -z "$HTML_DIR" ]; then
     echo $USAGE
