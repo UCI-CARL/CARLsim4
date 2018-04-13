@@ -11,7 +11,7 @@ on how to install ECJ, please go [here](http://cs.gmu.edu/~eclab/projects/ecj/).
 
 
 
-1) Set the ECJ_DIR and ECJ_PTI_DIR variables in user.mk.
+1) Set the ECJ_DIR and ECJ_PTI_DIR variables in ~/.bashrc.
    NOTE: the ECJ_DIR includes the name of the ECJ jar file.
 	 EXAMPLE: if the ECJ jar file is found in /opt/ecj/jar, and named
 	 ecj.22.jar, then:
@@ -19,14 +19,13 @@ on how to install ECJ, please go [here](http://cs.gmu.edu/~eclab/projects/ecj/).
 
 2) Change the current directory to ’tools/ecj_pti’.
 
-3) Type ‘make && sudo make install’
+3) Type ‘make && make install’
 
-4) Refer to the chapter 10 of the user guide and chapter 4 of the tutorial for 
+4) Refer to http://uci-carl.github.io/CARLsim4/ch10_ecj.html and http://uci-carl.github.io/CARLsim4/tut7_pti.html for installation and
    how to use CARLsim and ECJ to tune SNNs.
 
 TO UNINSTALL:
-CARLsim: Remove the folder where you installed the CARLsim ECJ PTI library. This
-folder is located in $(ECJ_PTI_DIR).
+CARLsim: Remove the folder where you installed the CARLsim ECJ PTI library. This folder is located in $(ECJ_PTI_DIR).
 
 Type ‘make help’ for additional information.
 
