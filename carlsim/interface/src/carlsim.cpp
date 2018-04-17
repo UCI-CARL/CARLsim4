@@ -1638,12 +1638,6 @@ private:
 
 	static bool gpuAllocation[MAX_NUM_CUDA_DEVICES];
 	static std::string gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
-#if defined(WIN32) || defined(WIN64)
-	static HANDLE gpuAllocationLock;
-#else
-	static pthread_mutex_t gpuAllocationLock;
-#endif
-
 
 	// +++++ PRIVATE PROPERTIES +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
@@ -1723,12 +1717,6 @@ private:
 // initialize static properties
 bool CARLsim::Impl::gpuAllocation[MAX_NUM_CUDA_DEVICES] = {false};
 std::string CARLsim::Impl::gpuOccupiedBy[MAX_NUM_CUDA_DEVICES];
-
-#if defined(WIN32) || defined(WIN64)
-HANDLE CARLsim::Impl::gpuAllocationLock = CreateMutex(NULL, FALSE, NULL);
-#else
-pthread_mutex_t CARLsim::Impl::gpuAllocationLock = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 // constructor / destructor
 CARLsim::CARLsim(const std::string& netName, SimMode preferredSimMode, LoggerMode loggerMode, int ithGPUs, int randSeed) : 

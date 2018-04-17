@@ -51,11 +51,7 @@
 #include <spike_buffer.h>
 
 // spikeGeneratorUpdate_CPU on CPUs
-#if defined(WIN32) || defined(WIN64)
-	void SNN::spikeGeneratorUpdate_CPU(int netId) {
-#else // POSIX
-	void* SNN::spikeGeneratorUpdate_CPU(int netId) {
-#endif
+void SNN::spikeGeneratorUpdate_CPU(int netId) {
 	assert(runtimeData[netId].allocated);
 	assert(runtimeData[netId].memType == CPU_MEM);
 
@@ -81,36 +77,12 @@
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> spikeGeneratorUpdate_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::updateTimingTable_CPU(int netId) {
-#else // POSIX
-	void* SNN::updateTimingTable_CPU(int netId) {
-#endif
+void SNN::updateTimingTable_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	runtimeData[netId].timeTableD2[simTimeMs + networkConfigs[netId].maxDelay + 1] = runtimeData[netId].spikeCountD2Sec + runtimeData[netId].spikeCountLastSecLeftD2;
 	runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] = runtimeData[netId].spikeCountD1Sec;
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> updateTimingTable_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
 
 //void SNN::routeSpikes_CPU() {
 //	int firingTableIdxD2, firingTableIdxD1;
@@ -227,11 +199,7 @@
 //
 //}
 
-#if defined(WIN32) || defined(WIN64)
-	void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
-#else // POSIX
-	void* SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
-#endif
+void SNN::convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
 
 	runtimeData[netId].spikeCountD2Sec += spikeCountExtRx;
@@ -244,21 +212,7 @@
 		runtimeData[netId].firingTableD2[extIdx] += GtoLOffset;
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> convertExtSpikesD2_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
-		pthread_exit(0);
-	}
-#endif
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
-#else // POSIX
-	void* SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
-#endif
+void SNN::convertExtSpikesD1_CPU(int netId, int startIdx, int endIdx, int GtoLOffset) {
 	int spikeCountExtRx = endIdx - startIdx; // received external spike count
 
 	runtimeData[netId].spikeCountD1Sec += spikeCountExtRx;
@@ -270,36 +224,12 @@
 		runtimeData[netId].firingTableD1[extIdx] += GtoLOffset;
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperConvertExtSpikesD1_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> convertExtSpikesD1_CPU(args->netId, args->startIdx, args->endIdx, args->GtoLOffset);
-		pthread_exit(0);
-	}
-#endif
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::clearExtFiringTable_CPU(int netId) {
-#else // POSIX
-	void* SNN::clearExtFiringTable_CPU(int netId) {
-#endif
+void SNN::clearExtFiringTable_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	memset(runtimeData[netId].extFiringTableEndIdxD1, 0, sizeof(int) * networkConfigs[netId].numGroups);
 	memset(runtimeData[netId].extFiringTableEndIdxD2, 0, sizeof(int) * networkConfigs[netId].numGroups);
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperClearExtFiringTable_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> clearExtFiringTable_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
 
 void SNN::copyTimeTable(int netId, bool toManager) {
 	assert(netId >= CPU_RUNTIME_BASE);
@@ -327,11 +257,7 @@ void SNN::copyExtFiringTable(int netId) {
 // used for management of manager runtime data
 // FIXME: make sure this is right when separating cpu_module to a standalone class
 // FIXME: currently this function clear nSpikeCnt of manager runtime data
-#if defined(WIN32) || defined(WIN64)
-	void SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
-#else // POSIX
-	void* SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
-#endif
+void SNN::resetSpikeCnt_CPU(int netId, int lGrpId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	if (lGrpId == ALL) {
@@ -343,23 +269,9 @@ void SNN::copyExtFiringTable(int netId) {
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperResetSpikeCnt_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> resetSpikeCnt_CPU(args->netId, args->lGrpId);
-		pthread_exit(0);
-	}
-#endif
-
 // This method loops through all spikes that are generated by neurons with a delay of 1ms
 // and delivers the spikes to the appropriate post-synaptic neuron
-#if defined(WIN32) || defined(WIN64)
-	void SNN::doCurrentUpdateD1_CPU(int netId) {
-#else // POSIX
-	void* SNN::doCurrentUpdateD1_CPU(int netId) {
-#endif
+void SNN::doCurrentUpdateD1_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	int k     = runtimeData[netId].timeTableD1[simTimeMs + networkConfigs[netId].maxDelay + 1] - 1;
@@ -391,23 +303,9 @@ void SNN::copyExtFiringTable(int netId) {
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperDoCurrentUpdateD1_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> doCurrentUpdateD1_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
 // This method loops through all spikes that are generated by neurons with a delay of 2+ms
 // and delivers the spikes to the appropriate post-synaptic neuron
-#if defined(WIN32) || defined(WIN64)
-	void SNN::doCurrentUpdateD2_CPU(int netId) {
-#else // POSIX
-	void* SNN::doCurrentUpdateD2_CPU(int netId) {
-#endif
+void SNN::doCurrentUpdateD2_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	if (networkConfigs[netId].maxDelay > 1) {
@@ -456,21 +354,7 @@ void SNN::copyExtFiringTable(int netId) {
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperDoCurrentUpdateD2_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> doCurrentUpdateD2_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
-#else // POSIX
-	void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
-#endif
+void SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	//decay the STP variables before adding new spikes.
@@ -505,21 +389,7 @@ void SNN::copyExtFiringTable(int netId) {
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> doSTPUpdateAndDecayCond_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::findFiring_CPU(int netId) {
-#else // POSIX
-	void* SNN::findFiring_CPU(int netId) {
-#endif
+void SNN::findFiring_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	for(int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -611,17 +481,6 @@ void SNN::copyExtFiringTable(int netId) {
 		}
 	}
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperFindFiring_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> findFiring_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
 
 void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 	unsigned int pos_ij = runtimeData[netId].cumulativePre[lNId]; // the index of pre-synaptic neuron
@@ -896,11 +755,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	return compCurrent;
 }
 
-#if defined(WIN32) || defined(WIN64)
-	void  SNN::globalStateUpdate_CPU(int netId) {
-#else // POSIX
-	void*  SNN::globalStateUpdate_CPU(int netId) {
-#endif
+void  SNN::globalStateUpdate_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	float timeStep = networkConfigs[netId].timeStep;
@@ -1172,22 +1027,8 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	} // end simNumStepsPerMs loop
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperGlobalStateUpdate_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> globalStateUpdate_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
 // This function updates the synaptic weights from its derivatives..
-#if defined(WIN32) || defined(WIN64)
-	void SNN::updateWeights_CPU(int netId) {
-#else // POSIX
-	void* SNN::updateWeights_CPU(int netId) {
-#endif
+void SNN::updateWeights_CPU(int netId) {
 	// at this point we have already checked for sim_in_testing and sim_with_fixedwts
 	assert(sim_in_testing==false);
 	assert(sim_with_fixedwts==false);
@@ -1291,25 +1132,11 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 	}
 }
 
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperUpdateWeights_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> updateWeights_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-
 /*!
  * \brief This function is called every second by SNN::runNetwork(). It updates the firingTableD1(D2) and
  * timeTableD1(D2) by removing older firing information.
  */
- #if defined(WIN32) || defined(WIN64)
-	void SNN::shiftSpikeTables_CPU(int netId) {
-#else // POSIX
-	void* SNN::shiftSpikeTables_CPU(int netId) {
-#endif
+void SNN::shiftSpikeTables_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// Read the neuron ids that fired in the last glbNetworkConfig.maxDelay seconds
 	// and put it to the beginning of the firing table...
@@ -1334,16 +1161,6 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 
 	runtimeData[netId].spikeCountLastSecLeftD2 = runtimeData[netId].timeTableD2[networkConfigs[netId].maxDelay];
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperShiftSpikeTables_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> shiftSpikeTables_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
 
 void SNN::allocateSNN_CPU(int netId) {
 	// setup memory type of CPU runtime data
@@ -2391,12 +2208,7 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 	memcpy(&dest->nSpikeCnt[posN + destOffset], &src->nSpikeCnt[posN], sizeof(int) * lengthN);
 }
 
-
-#if defined(WIN32) || defined(WIN64)
-	void SNN::assignPoissonFiringRate_CPU(int netId) {
-#else // POSIX
-	void* SNN::assignPoissonFiringRate_CPU(int netId) {
-#endif
+void SNN::assignPoissonFiringRate_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
@@ -2418,16 +2230,6 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 		}
 	}
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperAssignPoissonFiringRate_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> assignPoissonFiringRate_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
 
 /*!
 * \brief this function copy weight state in core (CPU) memory sapce to manager (CPU) memory space
@@ -2521,11 +2323,7 @@ void SNN::copySpikeTables(int netId) {
 	memcpy(managerRuntimeData.timeTableD1, runtimeData[netId].timeTableD1, sizeof(int) * (1000 + networkConfigs[netId].maxDelay + 1));
 }
 
-#if defined(WIN32) || defined(WIN64)
-	void SNN::deleteRuntimeData_CPU(int netId) {
-#else // POSIX
-	void* SNN::deleteRuntimeData_CPU(int netId) {
-#endif
+void SNN::deleteRuntimeData_CPU(int netId) {
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// free all pointers
 	delete [] runtimeData[netId].voltage;
@@ -2644,14 +2442,3 @@ void SNN::copySpikeTables(int netId) {
 	if (runtimeData[netId].randNum != NULL) delete [] runtimeData[netId].randNum;
 	runtimeData[netId].randNum = NULL;
 }
-
-#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
-	void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
-		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
-		((SNN *)args->snn_pointer) -> deleteRuntimeData_CPU(args->netId);
-		pthread_exit(0);
-	}
-#endif
-

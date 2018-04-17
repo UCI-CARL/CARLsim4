@@ -1,7 +1,15 @@
+# Options
+
+    option(CARLSIM_NO_MULTITHREADING "Turn off multithreading" OFF)
+
 # Dependencies
 
     if(NOT CARLSIM_NO_CUDA)
         find_package(CUDA REQUIRED)
+    endif()
+
+    if(NOT CARLSIM_NO_MULTITHREADING)
+        find_package(OpenMP REQUIRED)
     endif()
 
 # Targets
@@ -27,6 +35,15 @@
     # Since we build shared library enable position independent code
     set_property(TARGET carlsim-kernel PROPERTY
         POSITION_INDEPENDENT_CODE TRUE)
+
+# Flags
+
+    if(NOT CARLSIM_NO_MULTITHREADING)
+        target_compile_options(carlsim-kernel
+            PRIVATE
+                ${OpenMP_CXX_FLAGS}
+        )
+    endif()
 
 # Definitions
 
@@ -60,11 +77,13 @@
 
 # Linking
 
-    if(UNIX)
-        target_link_libraries(carlsim-kernel
-            PRIVATE
-                pthread
-        )
+    if(NOT CARLSIM_NO_MULTITHREADING)
+        if(UNIX)
+            target_link_libraries(carlsim-kernel
+                PRIVATE
+                    gomp
+            )
+        endif()
     endif()
 
     if(NOT CARLSIM_NO_CUDA)
