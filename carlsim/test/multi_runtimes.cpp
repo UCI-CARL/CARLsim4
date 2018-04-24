@@ -174,7 +174,7 @@ TEST(MultiRuntimes, spikesSingleVsMultiX2) {
 	}
 }
 
-TEST(MultiRuntimes, spikesSingleVsMultiX2_2_GPU) {
+TEST(MultiRuntimes, spikesSingleVsMultiX2_2_GPU_MultiGPU) {
 	int gExc, gExc2, gInput;
 	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
 	CARLsim* sim;
@@ -345,7 +345,7 @@ TEST(MultiRuntimes, spikesSingleVsMultiX4) {
 	}
 }
 
-TEST(MultiRuntimes, spikesSingleVsMultiX4_4_GPU) {
+TEST(MultiRuntimes, spikesSingleVsMultiX4_4_GPU_MultiGPU) {
 	int gExc1, gExc2, gExc3, gExc4, gInput;
 	int nNeur = 10;
 	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
@@ -443,7 +443,7 @@ TEST(MultiRuntimes, spikesSingleVsMultiX4_4_GPU) {
 	}
 }
 
-TEST(MultiRuntimes, shuffleGroups_2_GPU) {
+TEST(MultiRuntimes, shuffleGroups_2_GPU_MultiGPU) {
 	int randSeed = 42;
 	float pConn = 100.0f / 1000; // connection probability
 	
