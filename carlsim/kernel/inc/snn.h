@@ -77,7 +77,8 @@
 
 #include <map>
 #include <list>
-#include <cmath>
+//#include <cmath>
+#include <math.h> // to not use std namespace everywhere
 #include <cstring>
 #include <cassert>
 #include <cstdio>
