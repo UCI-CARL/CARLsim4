@@ -46,8 +46,13 @@ endif
 	@test -d $(CARLSIM4_INC_DIR) || mkdir $(CARLSIM4_INC_DIR)
 	@test -d $(CARLSIM4_LIB_DIR) || mkdir $(CARLSIM4_LIB_DIR)
 	@install -m 0755 $(lib_name).$(lib_ver) $(CARLSIM4_LIB_DIR)
+ifneq ($(DARWIN),)
+	@ln -fs $(CARLSIM4_LIB_DIR)/$(lib_name).$(lib_ver) $(CARLSIM4_LIB_DIR)/$(lib_name).$(SIM_MAJOR_NUM).$(SIM_MINOR_NUM)
+	@ln -fs $(CARLSIM4_LIB_DIR)/$(lib_name).$(SIM_MAJOR_NUM).$(SIM_MINOR_NUM) $(CARLSIM4_LIB_DIR)/$(lib_name)
+else
 	@ln -Tfs $(CARLSIM4_LIB_DIR)/$(lib_name).$(lib_ver) $(CARLSIM4_LIB_DIR)/$(lib_name).$(SIM_MAJOR_NUM).$(SIM_MINOR_NUM)
 	@ln -Tfs $(CARLSIM4_LIB_DIR)/$(lib_name).$(SIM_MAJOR_NUM).$(SIM_MINOR_NUM) $(CARLSIM4_LIB_DIR)/$(lib_name)
+endif
 	@install -m 0644 $(intf_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(krnl_inc_files) $(CARLSIM4_INC_DIR)
 	@install -m 0644 $(mon_inc_files) $(CARLSIM4_INC_DIR)
