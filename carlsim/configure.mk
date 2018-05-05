@@ -62,6 +62,10 @@ ifneq ($(DARWIN),)
    LION        = $(strip $(findstring 10.7, $(shell egrep "<string>10\.7" /System/Library/CoreServices/SystemVersion.plist)))
    MOUNTAIN    = $(strip $(findstring 10.8, $(shell egrep "<string>10\.8" /System/Library/CoreServices/SystemVersion.plist)))
    MAVERICKS   = $(strip $(findstring 10.9, $(shell egrep "<string>10\.9" /System/Library/CoreServices/SystemVersion.plist)))
+   YOSEMITE    = $(strip $(findstring 10.10, $(shell egrep "<string>10\.9" /System/Library/CoreServices/SystemVersion.plist)))
+   ELCAPITAN   = $(strip $(findstring 10.11, $(shell egrep "<string>10\.9" /System/Library/CoreServices/SystemVersion.plist)))
+   SIERRA      = $(strip $(findstring 10.12, $(shell egrep "<string>10\.9" /System/Library/CoreServices/SystemVersion.plist)))
+   HIGHSIERRA  = $(strip $(findstring 10.13, $(shell egrep "<string>10\.9" /System/Library/CoreServices/SystemVersion.plist)))
 endif 
 
 ifeq ("$(OSUPPER)","LINUX")
@@ -69,7 +73,7 @@ ifeq ("$(OSUPPER)","LINUX")
 else
   ifneq ($(DARWIN),)
     # for some newer versions of XCode, CLANG is the default compiler, so we need to include this
-    ifdef MAVERICKS
+    ifneq ($(MAVERICKS)$(YOSEMITE)$(ELCAPITAN)$(SIERRA)$(HIGHSIERRA),)
       NVCC   ?= $(CUDA_PATH)/bin/nvcc -ccbin $(CLANG)
       STDLIB ?= -stdlib=libstdc++
     else
@@ -162,6 +166,7 @@ SIM_LIB_NAME := carlsim
 SIM_MAJOR_NUM := 4
 SIM_MINOR_NUM := 0
 SIM_BUILD_NUM := 0
+#DETECTED_OS := $(shell uname -s)
 
 lib_name := lib$(SIM_LIB_NAME).a
 lib_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM).$(SIM_BUILD_NUM)

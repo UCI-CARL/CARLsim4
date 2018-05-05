@@ -77,8 +77,7 @@
 
 #include <map>
 #include <list>
-//#include <cmath>
-#include <math.h> // to not use std namespace everywhere
+#include <cmath>
 #include <cstring>
 #include <cassert>
 #include <cstdio>
@@ -961,8 +960,8 @@ private:
 	//allocates runtime data on CPU memory
 	void allocateSNN_CPU(int netId); 
 
-	// runNetwork functions - multithreaded in POSIX using pthreads
-#if defined(WIN32) || defined(WIN64)
+	// runNetwork functions - multithreaded in LINUX using pthreads
+#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 	void assignPoissonFiringRate_CPU(int netId);
 	void clearExtFiringTable_CPU(int netId);
 	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
@@ -978,7 +977,7 @@ private:
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
-#else // for POSIX systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
+#else // for APPLE and Win systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
 	void* assignPoissonFiringRate_CPU(int netId);
 	void* clearExtFiringTable_CPU(int netId);
 	void* convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
