@@ -79,12 +79,10 @@ int main(int argc, const char* argv[]) {
 		// update Poisson mean firing rate
 		float inputRateHz = i*10.0f;
 		in.setRates(inputRateHz);
+		sim.setSpikeRate(gIn, &in);
 
 		// run for 1 second
 		sim.runNetwork(1,0);
 	}
-
-	sim.runNetwork(10,0);
-
 	return 0;
 }
