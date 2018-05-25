@@ -188,5 +188,5 @@ will continue to focus on the GPU implementation.
 
 The current release has been tested on the following platforms:
 - Ubuntu 16.04
-- Mac OS 10.11 (El Capitan)
+- Mac OS X 10.11 (El Capitan)
 - Windows 7/10
