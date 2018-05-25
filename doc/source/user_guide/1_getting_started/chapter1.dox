@@ -178,21 +178,21 @@ The CUDA Toolkit version can be found via:
 $ nvcc --version
 \endcode
 You need only input the major number of the toolkit version
-(e.g. 6 for 6.5).
+(e.g. 7 for 7.5).
 
 The compute capability of the GPU device can be found by compiling the <tt>deviceQuery</tt> sample in 
 the directory <tt>1_Utilities</tt> of the CUDA Toolkit.
 \code
 # copy NVIDIA Toolkit to home directory
 $ cd /usr/local/cuda/bin
-$ ./cuda-install-samples-6.5.sh ~
-$ cd ~/NVIDIA_CUDA-6.5_Samples/1_Utilities/deviceQuery
+$ ./cuda-install-samples-9.0.sh ~
+$ cd ~/NVIDIA_CUDA-9.0_Samples/1_Utilities/deviceQuery
 
 # compile and run deviceQuery
 $ make
 $ ./deviceQuery
 \endcode
-For CUDA Toolkits other than version 6.5, the paths above need to be changed accordingly.
+For CUDA Toolkits other than version 9.0, the paths above need to be changed accordingly.
 
 \note Please make sure you install the CUDA SDK samples, as CARLsim relies on
 the file <tt>helper_cuda.h</tt>, which usually resides in
