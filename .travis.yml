@@ -6,14 +6,15 @@ matrix:
     include:
       - os: osx
         compiler: clang
-      - os: linux
-        dist: trusty
-        compiler: gcc
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - lcov
+#FIX THIS
+#      - os: linux
+#        dist: trusty
+#        compiler: gcc
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#          packages:
+#            - lcov
     fast_finish:
      - true
 
