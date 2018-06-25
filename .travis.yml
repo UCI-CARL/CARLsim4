@@ -35,11 +35,12 @@ install:
   - make
   - cd ../../..
   - pwd
-  - make -j4
+  - make distclean
+  - make release_nocuda -j4
   - make install
 
 script:
-  - make test
+  - make test_nocuda
   - travis_wait 49 ./carlsim/test/carlsim_tests --gtest_filter=-*_MultiGPU:*_Adv
 
 after_success:
