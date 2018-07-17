@@ -91,10 +91,35 @@ We suggest the number of time steps be at least 10 when working with compartment
 \since v3.1
 
 
-\section ch12s3_multi_gpu 12.3 Multi-GPU
+\section ch12s3_multi_gpu 12.3 Multi-GPU, multi-CPU, and hybrid simulation
+\author Hirak J Kashyap
 
-CARLsim is now threadsafe so a distinct CARLsim simulation can be run on every GPU device on the
-machine.
+CARLsim is now threadsafe so a distinct CARLsim simulation can be run on every GPU device and/or every CPU core on the
+machine. We call simulations using multiple GPUs as multi-GPU simulation, using multiple CPUs as multi-CPU simulation, and 
+using multiple GPUs and CPUs as hybrid simulation. The user can easily control simulations on multiple CPU/GPU by
+specifying the preferred partition while creating each group. Currently, upto 8 GPUs and 24 CPU cores can be used concurrently in a single simulation.
+The available processors are indexed from 0. By default, CARLsim4 places all the neuron groups on CPU 0 partition.
+The following examples show how to specify the preferred processor for each neuron group
+
+For example, to create a group of Izhikevich neurons on a GPU partition using CARLsim::createGroup, simply specify a name (e.g., "exc1"), the number of neurons
+(e.g., 100), a type (e.g. EXCITATORY_NEURON), the preferred parition number (0-7 for GPU, must be less than or equal to available GPUs), and the computing backend (CPU_CORES/GPU_CORES):
+\code
+int gExc1 = sim.createGroup("exc1", 100, EXCITATORY_NEURON,1,GPU_CORES);
+\endcode
+
+To create a group of spike generators on GPU 0, the user also specifies a name, size, type, the preferred parition number, and the computing backend:
+\code
+int gIn = sim.createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, GPU_CORES);
+\endcode
+
+Similarly, the following method call creates a LIF neuron group named "inh1" and places it on CPU 3 partition.
+
+\code
+int gInh1 = sim.createGroupLIF("inh1", 2018, INHIBITORY_NEURON, 3, CPU_CORES);
+\endcode
+
+An example CARLsim4 simulation using heterogeneous processors (CPU and GPU) and heterogeneous neurons (Izhikevich and LIF) is shown in the lif_izhi_random_spnet
+project under the projects/ directory. The example implements the clasic Izhikevich 80-20 network using LIF neurons and fast spiking Izhikevich neurons.
 
 
 \section ch12s4_online_weight_tuning 12.4 On-Line Weight Tuning

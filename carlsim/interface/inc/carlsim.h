@@ -62,6 +62,7 @@
 #include <callback.h>
 #include <poisson_rate.h>
 #include <spike_monitor.h>
+#include <neuron_monitor.h>
 #include <connection_monitor.h>
 #include <group_monitor.h>
 #include <linear_algebra.h>
@@ -283,6 +284,13 @@ public:
 	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
+	 * \brief creates a group of Leaky-Integrate-and-Fire (LIF) spiking neurons
+	 * \TODO finish doc
+	 * \STATE ::CONFIG_STATE
+	 */
+	int createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
 	 * side length 1)
 	 *
@@ -304,6 +312,18 @@ public:
 	 * \since v3.0
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
+	 * \brief Create a group of LIF spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
+	 * side length 1)
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpName    the group name
+	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
+	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
+	 * \since v4.0
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -552,7 +572,20 @@ public:
 		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
 		float izh_d, float izh_d_sd);
 
- /*!
+	/*!
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
+	 *
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] rMem Range of total membrane resistance of the neuron group, uniformly distributed or fixed for the whole group
+	 * \STATE ::CONFIG_STATE
+	 */
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, const RangeRmem& rMem = RangeRmem(1.0f));
+    
+   /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.
 	*
 	* \TODO finish docu
@@ -1135,6 +1168,50 @@ public:
 	 * \see ch9s1_matlab_oat
 	 */
 	SpikeMonitor* setSpikeMonitor(int grpId, const std::string& fileName);
+
+	/*!
+	* \brief Sets a Neuron Monitor for a groups, print voltage, recovery, and total current values to binary file
+	*
+	* To retrieve outputs, a neuron-monitoring callback mechanism is used. This mechanism allows the user to calculate
+	* basic statistics, store voltage/recovery/current values, or perform more complicated output monitoring. Neuron monitors are
+	* registered for a group and are called automatically by the simulator every second. Similar to an address event
+	* representation (AER), the neuron monitor indicates neuron's state by using the neuron ID within a group
+	* (0-indexed). Only one neuron monitor is allowed per group.
+	*
+	* CARLsim supports two different recording mechanisms: Recording to a neuron state (voltage, recovery, and current)
+	* file (binary) and recording to a
+	* NeuronMonitor object. The former is useful for off-line analysis of activity (e.g., using \ref ch9_matlab_oat).
+	* The latter is useful to calculate different neuron state metrics and statistics on-line.
+	*
+	* A file name can be specified via variable fileName (make sure the specified directory exists). The easiest way
+	* is to set fileName to string "DEFAULT", in which case a default file name will be created in the results
+	* directory: "results/nrnstate_{group name}.dat", where group name is the name assigned to the group at initialization
+	* (can be retrieved via getGroupName).
+	* If no binary file shall be created, set fileName equal to the string "NULL".
+	*
+	* The function returns a pointer to a NeuronMonitor object, which can be used to calculate neuron statistics
+	* or retrieve all neuron state values from a particular time window.
+	* See \ref ??? of the User Guide for more information on how to use NeuronMonitor.
+	*
+	* If you call setNeuronMonitor twice on the same group, the same NeuronMonitor pointer will be returned, and the
+	* name of the neuron state file will be updated. This is the same as calling NeuronMonitor::setLogFile directly, and
+	* allows you to redirect the spike file stream mid-simulation (see \ref ch7s1s3_redirecting_file_streams).
+	*
+	* \STATE ::SETUP_STATE
+	* \param[in] grpId 		the group ID
+	* \param[in] fileName 		name of the binary file to be created. Leave empty for default name
+	*                      	"results/nrnstate_{grpName}.dat". Set to string "NULL" to suppress file creation. Default: ""
+	* \returns   NeuronMonitor*	pointer to a NeuronMonitor object, which can be used to calculate neuron state statistics
+	*                           or retrieve all spikes in AER format
+	*
+	* \note Only one NeuronMonitor is allowed per group. NeuronMonitor cannot be placed on groups with >100 (LARGE_NEURON_MON_GRP_SIZE) neurons
+	* \attention Using NeuronMonitor::startRecording and NeuronMonitor::stopRecording might significantly slow down the
+	* simulation. It is unwise to use this mechanism to record a large number of neuron state values (voltage, recovery, 
+	* and total current values) over a long period of time.
+	* \see ???
+	* \see ch9s1_matlab_oat
+	*/
+	NeuronMonitor* setNeuronMonitor(int grpId, const std::string& fileName);
 
 	/*!
 	 * \brief Sets a spike rate

@@ -56,6 +56,8 @@
 #include <spike_monitor_core.h>
 #include <group_monitor.h>
 #include <group_monitor_core.h>
+#include <neuron_monitor.h>
+#include <neuron_monitor_core.h>
 
 #include <spike_buffer.h>
 #include <error_code.h>
@@ -271,6 +273,54 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	
 	grpConfig.isSpikeGenerator = false;
 	grpConfig.grid = grid;
+	grpConfig.isLIF = false;
+
+	if (preferredPartition == ANY) {
+		grpConfig.preferredNetId = ANY;
+	} else if (preferredBackend == CPU_CORES) {
+		grpConfig.preferredNetId = preferredPartition + CPU_RUNTIME_BASE;
+	} else {
+		grpConfig.preferredNetId = preferredPartition + GPU_RUNTIME_BASE;
+	}
+
+	// assign a global group id
+	grpConfigMD.gGrpId = numGroups;
+
+	// store the configuration of a group
+	groupConfigMap[numGroups] = grpConfig; // numGroups == grpId
+	groupConfigMDMap[numGroups] = grpConfigMD;
+
+	assert(numGroups < MAX_GRP_PER_SNN); // make sure we don't overflow connId
+	numGroups++;
+
+	return grpConfigMD.gGrpId;
+}
+
+// create group of LIF neurons
+// use int for nNeur to avoid arithmetic underflow
+int SNN::createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend) {
+	assert(grid.numX * grid.numY * grid.numZ > 0);
+	assert(neurType >= 0);
+	assert(numGroups < MAX_GRP_PER_SNN);
+
+	if ( (!(neurType & TARGET_AMPA) && !(neurType & TARGET_NMDA) &&
+		  !(neurType & TARGET_GABAa) && !(neurType & TARGET_GABAb)) || (neurType & POISSON_NEURON)) {
+		KERNEL_ERROR("Invalid type using createGroup... Cannot create poisson generators here.");
+		exitSimulation(1);
+	}
+
+	// initialize group configuration
+	GroupConfig grpConfig;
+	GroupConfigMD grpConfigMD;
+	
+	// init parameters of neural group size and location
+	grpConfig.grpName = grpName;
+	grpConfig.type = neurType;
+	grpConfig.numN = grid.N;
+	
+	grpConfig.isLIF = true;
+	grpConfig.isSpikeGenerator = false;
+	grpConfig.grid = grid;
 
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
@@ -313,6 +363,7 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.numN = grid.N;
 	grpConfig.isSpikeGenerator = true;
 	grpConfig.grid = grid;
+	grpConfig.isLIF = false;
 
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
@@ -470,6 +521,7 @@ void SNN::setNeuronParameters(int gGrpId, float izh_a, float izh_a_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d = izh_d;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_d_sd = izh_d_sd;
 		groupConfigMap[gGrpId].withParamModel_9 = 0;
+		groupConfigMap[gGrpId].isLIF = 0;
 	}
 }
 
@@ -512,6 +564,32 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
 		groupConfigMap[gGrpId].withParamModel_9 = 1;
+		groupConfigMap[gGrpId].isLIF = 0;
+		KERNEL_INFO("Set a nine parameter group!");
+	}
+}
+
+
+// set LIF parameters for the group
+void SNN::setNeuronParametersLIF(int gGrpId, int tau_m, int tau_ref, float vTh, float vReset, double minRmem, double maxRmem)
+{
+	assert(gGrpId >= -1);
+	assert(tau_m >= 0); assert(tau_ref >= 0); assert(vReset < vTh);
+	assert(minRmem >= 0.0f); assert(minRmem <= maxRmem);
+
+	if (gGrpId == ALL) { // shortcut for all groups
+		for(int grpId = 0; grpId < numGroups; grpId++) {
+			setNeuronParametersLIF(grpId, tau_m, tau_ref, vTh, vReset, minRmem, maxRmem);
+		}
+	} else {
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m = tau_m;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref = tau_ref;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh = vTh;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset = vReset;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem = minRmem;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxRmem = maxRmem;
+		groupConfigMap[gGrpId].withParamModel_9 = 0;
+		groupConfigMap[gGrpId].isLIF = 1;
 	}
 }
 
@@ -755,10 +833,13 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	CUDA_START_TIMER(timer);
 #endif
 
+	//KERNEL_INFO("Reached the advSimStep loop!");
+
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i = 0; i < runDurationMs; i++) {
 		advSimStep();
+		//KERNEL_INFO("Executed an advSimStep!");
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
@@ -781,12 +862,17 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 			if (numConnectionMonitor) {
 				updateConnectionMonitor();
 			}
+			if (numNeuronMonitor) {
+				updateNeuronMonitor();
+			}
 			
 			shiftSpikeTables();
 		}
 
 		fetchNeuronSpikeCount(ALL);
 	}
+
+	//KERNEL_INFO("Updated monitors!");
 
 	// user can opt to display some runNetwork summary
 	if (printRunSummary) {
@@ -1131,6 +1217,53 @@ SpikeMonitor* SNN::setSpikeMonitor(int gGrpId, FILE* fid) {
 	}
 }
 
+// record neuron state information, return a NeuronInfo object
+NeuronMonitor* SNN::setNeuronMonitor(int gGrpId, FILE* fid) {
+	int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+	int netId = groupConfigMDMap[gGrpId].netId;
+
+	if (getGroupNumNeurons(gGrpId) > 128) {
+		KERNEL_WARN("Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor");
+	}
+
+	// check whether group already has a SpikeMonitor
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		// in this case, return the current object and update fid
+		NeuronMonitor* nrnMonObj = getNeuronMonitor(gGrpId);
+
+		// update spike file ID
+		NeuronMonitorCore* nrnMonCoreObj = getNeuronMonitorCore(gGrpId);
+		nrnMonCoreObj->setNeuronFileId(fid);
+
+		KERNEL_INFO("NeuronMonitor updated for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+		return nrnMonObj;
+	} else {
+		// create new NeuronMonitorCore object in any case and initialize analysis components
+		// nrnMonObj destructor (see below) will deallocate it
+		NeuronMonitorCore* nrnMonCoreObj = new NeuronMonitorCore(this, numNeuronMonitor, gGrpId);
+		neuronMonCoreList[numNeuronMonitor] = nrnMonCoreObj;
+
+		// assign neuron state file ID if we selected to write to a file, else it's NULL
+		// if file pointer exists, it has already been fopened
+		// this will also write the header section of the spike file
+		// spkMonCoreObj destructor will fclose it
+		nrnMonCoreObj->setNeuronFileId(fid);
+
+		// create a new NeuronMonitor object for the user-interface
+		// SNN::deleteObjects will deallocate it
+		NeuronMonitor* nrnMonObj = new NeuronMonitor(nrnMonCoreObj);
+		neuronMonList[numNeuronMonitor] = nrnMonObj;
+
+		// also inform the grp that it is being monitored...
+		groupConfigMDMap[gGrpId].neuronMonitorId = numNeuronMonitor;
+
+		numNeuronMonitor++;
+		KERNEL_INFO("NeuronMonitor set for group %d (%s)", gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+
+		return nrnMonObj;
+	}
+}
+
 // FIXME: distinguish the function call at CONFIG_STATE and RUN_STATE, where groupConfigs[0][] might not be available
 // or groupConfigMap is not sync with groupConfigs[0][]
 // assigns spike rate to group
@@ -1274,54 +1407,52 @@ void SNN::setExternalCurrent(int grpId, const std::vector<float>& current) {
 // handling of file pointer should be handled externally: as far as this function is concerned, it is simply
 // trying to write to file
 void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
-	//int tmpInt;
-	//float tmpFloat;
+	int tmpInt;
+	float tmpFloat;
 
 	//// +++++ WRITE HEADER SECTION +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	//// write file signature
-	//tmpInt = 294338571; // some int used to identify saveSimulation files
-	//if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpInt = 294338571; // some int used to identify saveSimulation files
+	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write version number
-	//tmpFloat = 0.2f;
-	//if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = 0.2f;
+	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write simulation time so far (in seconds)
-	//tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	tmpFloat = ((float)simTimeSec) + ((float)simTimeMs)/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write execution time so far (in seconds)
-	//if(simMode_ == GPU_MODE) {
-	//	stopGPUTiming();
-	//	tmpFloat = gpuExecutionTime/1000.0f;
-	//} else {
-	//	stopCPUTiming();
-	//	tmpFloat = cpuExecutionTime/1000.0f;
-	//}
-	//if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	stopTiming();
+	tmpFloat = executionTime/1000.0f;
+	if (!fwrite(&tmpFloat,sizeof(float),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// TODO: add more params of interest
 
 	//// write network info
-	//if (!fwrite(&numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&glbNetworkConfig.numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	int dummyInt = 0;
 	//if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-
+	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	
 	//// write group info
-	//char name[100];
-	//for (int g=0;g<numGroups;g++) {
-	//	if (!fwrite(&groupConfigs[0][g].StartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].EndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	char name[100];
+	for (int gGrpId=0;gGrpId<numGroups;gGrpId++) {
+		if (!fwrite(&groupConfigMDMap[gGrpId].gStartN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMDMap[gGrpId].gEndN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	if (!fwrite(&groupConfigs[0][g].SizeX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//	if (!fwrite(&groupConfigs[0][g].SizeZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numX,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numY,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+		if (!fwrite(&groupConfigMap[gGrpId].grid.numZ,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
-	//	strncpy(name,groupInfo[g].Name.c_str(),100);
-	//	if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	//}
+		strncpy(name,groupConfigMap[gGrpId].grpName.c_str(),100);
+		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	}
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
@@ -1764,6 +1895,29 @@ SpikeMonitorCore* SNN::getSpikeMonitorCore(int gGrpId) {
 	}
 }
 
+// returns pointer to existing NeuronMonitor object, NULL else
+NeuronMonitor* SNN::getNeuronMonitor(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
+NeuronMonitorCore* SNN::getNeuronMonitorCore(int gGrpId) {
+	assert(gGrpId >= 0 && gGrpId < getNumGroups());
+
+	if (groupConfigMDMap[gGrpId].neuronMonitorId >= 0) {
+		return neuronMonCoreList[(groupConfigMDMap[gGrpId].neuronMonitorId)];
+	}
+	else {
+		return NULL;
+	}
+}
+
 RangeWeight SNN::getWeightRange(short int connId) {
 	assert(connId>=0 && connId<numConnections);
 
@@ -1785,7 +1939,7 @@ void SNN::SNNinit() {
 	case USER:
 		fpInf_ = stdout;
 		fpErr_ = stderr;
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 			fpDeb_ = fopen("nul","w");
 		#else
 			fpDeb_ = fopen("/dev/null","w");
@@ -1797,13 +1951,13 @@ void SNN::SNNinit() {
 		fpDeb_ = stdout;
 		break;
 	case SHOWTIME:
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 			fpInf_ = fopen("nul","w");
 		#else
 			fpInf_ = fopen("/dev/null","w");
 		#endif
 		fpErr_ = stderr;
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 			fpDeb_ = fopen("nul","w");
 		#else
 			fpDeb_ = fopen("/dev/null","w");
@@ -1811,7 +1965,7 @@ void SNN::SNNinit() {
 		break;
 	case SILENT:
 	case CUSTOM:
-		#if defined(WIN32) || defined(WIN64)
+		#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 			fpInf_ = fopen("nul","w");
 			fpErr_ = fopen("nul","w");
 			fpDeb_ = fopen("nul","w");
@@ -1895,6 +2049,7 @@ void SNN::SNNinit() {
 
 	spikeRateUpdated = false;
 	numSpikeMonitor = 0;
+	numNeuronMonitor = 0;
 	numGroupMonitor = 0;
 	numConnectionMonitor = 0;
 
@@ -1965,9 +2120,15 @@ void SNN::SNNinit() {
 void SNN::advSimStep() {
 	doSTPUpdateAndDecayCond();
 
+	//KERNEL_INFO("STPUpdate!");
+
 	spikeGeneratorUpdate();
 
+	//KERNEL_INFO("spikeGeneratorUpdate!");
+
 	findFiring();
+
+	//KERNEL_INFO("Find firing!");
 
 	updateTimingTable();
 
@@ -1975,13 +2136,17 @@ void SNN::advSimStep() {
 
 	doCurrentUpdate();
 
+	//KERNEL_INFO("doCurrentUpdate!");
+
 	globalStateUpdate();
+
+	//KERNEL_INFO("globalStateUpdate!");
 
 	clearExtFiringTable();
 }
 
 void SNN::doSTPUpdateAndDecayCond() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -1994,7 +2159,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doSTPUpdateAndDecayCond_GPU(netId);
 			else{//CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					doSTPUpdateAndDecayCond_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2018,7 +2183,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2029,7 +2194,7 @@ void SNN::doSTPUpdateAndDecayCond() {
 void SNN::spikeGeneratorUpdate() {
 	// If poisson rate has been updated, assign new poisson rate
 	if (spikeRateUpdated) {
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 			cpu_set_t cpus;	
 			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2041,7 +2206,7 @@ void SNN::spikeGeneratorUpdate() {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					assignPoissonFiringRate_GPU(netId);
 				else{ // CPU runtime
-					#if defined(WIN32) || defined(WIN64)
+					#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 						assignPoissonFiringRate_CPU(netId);
 					#else // Linux or MAC
 						pthread_attr_t attr;
@@ -2065,7 +2230,7 @@ void SNN::spikeGeneratorUpdate() {
 			}
 		}
 
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			// join all the threads
 			for (int i=0; i<threadCount; i++){
 				pthread_join(threads[i], NULL);
@@ -2078,7 +2243,7 @@ void SNN::spikeGeneratorUpdate() {
 	// If time slice has expired, check if new spikes needs to be generated by user-defined spike generators
 	generateUserDefinedSpikes();
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2090,7 +2255,7 @@ void SNN::spikeGeneratorUpdate() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				spikeGeneratorUpdate_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					spikeGeneratorUpdate_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2114,7 +2279,7 @@ void SNN::spikeGeneratorUpdate() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2126,7 +2291,7 @@ void SNN::spikeGeneratorUpdate() {
 }
 
 void SNN::findFiring() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2138,7 +2303,7 @@ void SNN::findFiring() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				findFiring_GPU(netId);
 			else {// CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					findFiring_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2162,7 +2327,7 @@ void SNN::findFiring() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2171,7 +2336,7 @@ void SNN::findFiring() {
 }
 
 void SNN::doCurrentUpdate() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2183,7 +2348,7 @@ void SNN::doCurrentUpdate() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doCurrentUpdateD2_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					doCurrentUpdateD2_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2207,7 +2372,7 @@ void SNN::doCurrentUpdate() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2220,7 +2385,7 @@ void SNN::doCurrentUpdate() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				doCurrentUpdateD1_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					doCurrentUpdateD1_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2244,7 +2409,7 @@ void SNN::doCurrentUpdate() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2253,7 +2418,7 @@ void SNN::doCurrentUpdate() {
 }
 
 void SNN::updateTimingTable() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2265,7 +2430,7 @@ void SNN::updateTimingTable() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				updateTimingTable_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					updateTimingTable_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2288,7 +2453,7 @@ void SNN::updateTimingTable() {
 			}
 		}
 	}
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2297,7 +2462,7 @@ void SNN::updateTimingTable() {
 }
 
 void SNN::globalStateUpdate() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2309,7 +2474,7 @@ void SNN::globalStateUpdate() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				globalStateUpdate_C_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					globalStateUpdate_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2333,7 +2498,7 @@ void SNN::globalStateUpdate() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2356,7 +2521,7 @@ void SNN::globalStateUpdate() {
 }
 
 void SNN::clearExtFiringTable() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2368,7 +2533,7 @@ void SNN::clearExtFiringTable() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				clearExtFiringTable_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					clearExtFiringTable_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2392,7 +2557,7 @@ void SNN::clearExtFiringTable() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2401,7 +2566,7 @@ void SNN::clearExtFiringTable() {
 }
 
 void SNN::updateWeights() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2413,7 +2578,7 @@ void SNN::updateWeights() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				updateWeights_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					updateWeights_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2436,7 +2601,7 @@ void SNN::updateWeights() {
 			}
 		}
 	}
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2455,7 +2620,7 @@ void SNN::updateNetworkConfig(int netId) {
 }
 
 void SNN::shiftSpikeTables() {
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -2467,7 +2632,7 @@ void SNN::shiftSpikeTables() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				shiftSpikeTables_F_GPU(netId);
 			else { // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					shiftSpikeTables_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -2491,7 +2656,7 @@ void SNN::shiftSpikeTables() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -2540,8 +2705,16 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vr	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vt	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_m      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_ref      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_tau_ref_c      = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_vTh      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_vReset      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_gain      = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.lif_bias      = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.current    = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.extCurrent = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.totalCurrent = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.curSpike   = new bool[managerRTDSize.maxNumNReg];
 	memset(managerRuntimeData.voltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.nextVoltage, 0, sizeof(float) * managerRTDSize.maxNumNReg);
@@ -2555,9 +2728,24 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vr, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_m, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_ref, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_tau_ref_c, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_vTh, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_vReset, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_gain, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.lif_bias, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.current, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.extCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.totalCurrent, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.curSpike, 0, sizeof(bool) * managerRTDSize.maxNumNReg);
+
+	managerRuntimeData.nVBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups]; // 1 second v buffer
+	managerRuntimeData.nUBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	managerRuntimeData.nIBuffer = new float[MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups];
+	memset(managerRuntimeData.nVBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nUBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
+	memset(managerRuntimeData.nIBuffer, 0, sizeof(float) * MAX_NEURON_MON_GRP_SZIE * 1000 * managerRTDSize.maxNumGroups);
 
 	managerRuntimeData.gAMPA  = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
 	managerRuntimeData.gNMDA_r = new float[managerRTDSize.glbNumNReg]; // sufficient to hold all regular neurons in the global network
@@ -2802,6 +2990,7 @@ void SNN::generateRuntimeGroupConfigs() {
 				groupConfigMDMap[gGrpId].maxOutgoingDelay = grpIt->maxOutgoingDelay;
 			}
 			groupConfigs[netId][lGrpId].withParamModel_9 = groupConfigMap[gGrpId].withParamModel_9;
+			groupConfigs[netId][lGrpId].isLIF = groupConfigMap[gGrpId].isLIF;
 
 		}
 
@@ -2845,6 +3034,13 @@ void SNN::generateRuntimeNetworkConfigs() {
 			networkConfigs[netId].sim_with_stdp = sim_with_stdp;
 			networkConfigs[netId].sim_with_stp = sim_with_stp;
 			networkConfigs[netId].sim_in_testing = sim_in_testing;
+
+			// search for active neuron monitor
+			networkConfigs[netId].sim_with_nm = false;
+			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->netId == netId && grpIt->neuronMonitorId >= 0)
+					networkConfigs[netId].sim_with_nm = true;
+			}
 
 			// stdp, da-stdp configurations
 			networkConfigs[netId].stdpScaleFactor = stdpScaleFactor_;
@@ -2968,6 +3164,7 @@ void SNN::generateConnectionRuntime(int netId) {
 	int parsedConnections = 0;
 	memset(managerRuntimeData.Npost, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	memset(managerRuntimeData.Npre, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
+	memset(managerRuntimeData.Npre_plastic, 0, sizeof(short) * networkConfigs[netId].numNAssigned);
 	for (std::list<ConnectionInfo>::iterator connIt = connectionLists[netId].begin(); connIt != connectionLists[netId].end(); connIt++) {
 		connIt->srcGLoffset = GLoffset[connIt->grpSrc];
 		if (managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]] == SYNAPSE_ID_MASK) {
@@ -3957,7 +4154,7 @@ void SNN::deleteRuntimeData() {
 	CUDA_CHECK_ERRORS(cudaThreadSynchronize());
 #endif
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 		cpu_set_t cpus;	
 		ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -3969,7 +4166,7 @@ void SNN::deleteRuntimeData() {
 			if (netId < CPU_RUNTIME_BASE) // GPU runtime
 				deleteRuntimeData_GPU(netId);
 			else{ // CPU runtime
-				#if defined(WIN32) || defined(WIN64)
+				#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 					deleteRuntimeData_CPU(netId);
 				#else // Linux or MAC
 					pthread_attr_t attr;
@@ -3993,7 +4190,7 @@ void SNN::deleteRuntimeData() {
 		}
 	}
 
-	#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+	#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 		// join all the threads
 		for (int i=0; i<threadCount; i++){
 			pthread_join(threads[i], NULL);
@@ -4342,14 +4539,17 @@ void SNN::fetchNetworkSpikeCount() {
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		if (!groupPartitionLists[netId].empty()) {
 
-			if (netId < CPU_RUNTIME_BASE)
+			if (netId < CPU_RUNTIME_BASE) {
 				copyNetworkSpikeCount(netId, cudaMemcpyDeviceToHost,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
-			else
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			} else {
 				copyNetworkSpikeCount(netId,
-									  &spikeCountD1, &spikeCountD2,
-									  &spikeCountExtD1, &spikeCountExtD2);
+					&spikeCountD1, &spikeCountD2,
+					&spikeCountExtD1, &spikeCountExtD2);
+				//printf("netId:%d, D1:%d/D2:%d, extD1:%d/D2:%d\n", netId, spikeCountD1, spikeCountD2, spikeCountExtD1, spikeCountExtD2);
+			}
 
 			managerRuntimeData.spikeCountD2 += spikeCountD2 - spikeCountExtD2;
 			managerRuntimeData.spikeCountD1 += spikeCountD1 - spikeCountExtD1;
@@ -4366,6 +4566,13 @@ void SNN::fetchSpikeTables(int netId) {
 		copySpikeTables(netId, cudaMemcpyDeviceToHost);
 	else
 		copySpikeTables(netId);
+}
+
+void SNN::fetchNeuronStateBuffer(int netId, int lGrpId) {
+	if (netId < CPU_RUNTIME_BASE)
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], cudaMemcpyDeviceToHost, false);
+	else
+		copyNeuronStateBuffer(netId, lGrpId, &managerRuntimeData, &runtimeData[netId], false);
 }
 
 void SNN::fetchExtFiringTable(int netId) {
@@ -4446,8 +4653,9 @@ void SNN::routeSpikes() {
 		firingTableIdxD2 = managerRuntimeData.timeTableD2[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		firingTableIdxD1 = managerRuntimeData.timeTableD1[simTimeMs + glbNetworkConfig.maxDelay + 1];
 		//KERNEL_DEBUG("GPU1 D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
+		//printf("srcNetId %d,destNetId %d, D1:%d/D2:%d\n", srcNetId, destNetId, firingTableIdxD1, firingTableIdxD2);
 
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 			cpu_set_t cpus;	
 			ThreadStruct argsThreadRoutine[(2 * networkConfigs[srcNetId].numGroups) + 1]; // same as above, +1 array size
@@ -4477,7 +4685,7 @@ void SNN::routeSpikes() {
 							GtoLOffset); // [StartIdx, EndIdx)
 					}
 					else{// CPU runtime
-							#if defined(WIN32) || defined(WIN64)
+							#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 								convertExtSpikesD2_CPU(destNetId, firingTableIdxD2,
 									firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
 									GtoLOffset); // [StartIdx, EndIdx)
@@ -4526,7 +4734,7 @@ void SNN::routeSpikes() {
 							GtoLOffset); // [StartIdx, EndIdx)
 					}
 					else{// CPU runtime
-						#if defined(WIN32) || defined(WIN64)
+						#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 								convertExtSpikesD1_CPU(destNetId, firingTableIdxD1,
 									firingTableIdxD1 + managerRuntimeData.extFiringTableEndIdxD1[lGrpId],
 									GtoLOffset); // [StartIdx, EndIdx)
@@ -4555,7 +4763,7 @@ void SNN::routeSpikes() {
 			//KERNEL_DEBUG("GPU1 New D1:%d/D2:%d", firingTableIdxD1, firingTableIdxD2);
 		}
 
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			// join all the threads
 			for (int i=0; i<threadCount; i++){
 				pthread_join(threads[i], NULL);
@@ -5363,8 +5571,13 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	int gGrpId = groupConfigs[netId][lGrpId].gGrpId; // get global group id
 	assert(lNId < networkConfigs[netId].numNReg);
 
-	if (groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a == -1) {
+	if (groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_a == -1 && groupConfigMap[gGrpId].isLIF == 0) {
 		KERNEL_ERROR("setNeuronParameters must be called for group %s (G:%d,L:%d)",groupConfigMap[gGrpId].grpName.c_str(), gGrpId, lGrpId);
+		exitSimulation(1);
+	}
+
+	if (groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m == -1 && groupConfigMap[gGrpId].isLIF == 1) {
+		KERNEL_ERROR("setNeuronParametersLIF must be called for group %s (G:%d,L:%d)",groupConfigMap[gGrpId].grpName.c_str(), gGrpId, lGrpId);
 		exitSimulation(1);
 	}
 
@@ -5377,8 +5590,22 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.Izh_vr[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr_sd * (float)drand48();
 	managerRuntimeData.Izh_vt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd * (float)drand48();
 	managerRuntimeData.Izh_vpeak[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd * (float)drand48();
+	managerRuntimeData.lif_tau_m[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m;
+	managerRuntimeData.lif_tau_ref[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref;
+	managerRuntimeData.lif_tau_ref_c[lNId] = 0;
+	managerRuntimeData.lif_vTh[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vTh;
+	managerRuntimeData.lif_vReset[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_vReset;
+	
+	// calculate gain and bias for the lif neuron
+	if (groupConfigs[netId][lGrpId].isLIF){
+		// gain an bias of the LIF neuron is calculated based on Membrane resistance
+		float rmRange = (float)(groupConfigMap[gGrpId].neuralDynamicsConfig.lif_maxRmem - groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem);
+		float minRmem = (float)groupConfigMap[gGrpId].neuralDynamicsConfig.lif_minRmem;
+		managerRuntimeData.lif_bias[lNId] = 0.0f;
+		managerRuntimeData.lif_gain[lNId] = minRmem + rmRange * (float)drand48();
+	}
 
-	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId];
+	managerRuntimeData.nextVoltage[lNId] = managerRuntimeData.voltage[lNId] = groupConfigs[netId][lGrpId].isLIF ? managerRuntimeData.lif_vReset[lNId] : (groupConfigs[netId][lGrpId].withParamModel_9 ? managerRuntimeData.Izh_vr[lNId] : managerRuntimeData.Izh_c[lNId]);
 	managerRuntimeData.recovery[lNId] = groupConfigs[netId][lGrpId].withParamModel_9 ? 0.0f : managerRuntimeData.Izh_b[lNId] * managerRuntimeData.voltage[lNId];
 
  	if (groupConfigs[netId][lGrpId].WithHomeostasis) {
@@ -5421,6 +5648,13 @@ void SNN::resetMonitors(bool deallocate) {
 	for (int i=0; i<numSpikeMonitor; i++) {
 		if (spikeMonList[i]!=NULL && deallocate) delete spikeMonList[i];
 		spikeMonList[i]=NULL;
+	}
+
+	// delete all NeuronMonitor objects
+	// don't kill NeuronMonitorCore objects, they will get killed automatically
+	for (int i = 0; i<numNeuronMonitor; i++) {
+		if (neuronMonList[i] != NULL && deallocate) delete neuronMonList[i];
+		neuronMonList[i] = NULL;
 	}
 
 	// delete all GroupMonitor objects
@@ -5478,9 +5712,14 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.recovery!=NULL) delete[] managerRuntimeData.recovery;
 	if (managerRuntimeData.current!=NULL) delete[] managerRuntimeData.current;
 	if (managerRuntimeData.extCurrent!=NULL) delete[] managerRuntimeData.extCurrent;
+	if (managerRuntimeData.totalCurrent != NULL) delete[] managerRuntimeData.totalCurrent;
 	if (managerRuntimeData.curSpike != NULL) delete[] managerRuntimeData.curSpike;
+	if (managerRuntimeData.nVBuffer != NULL) delete[] managerRuntimeData.nVBuffer;
+	if (managerRuntimeData.nUBuffer != NULL) delete[] managerRuntimeData.nUBuffer;
+	if (managerRuntimeData.nIBuffer != NULL) delete[] managerRuntimeData.nIBuffer;
 	managerRuntimeData.voltage=NULL; managerRuntimeData.recovery=NULL; managerRuntimeData.current=NULL; managerRuntimeData.extCurrent=NULL;
-	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.curSpike = NULL;
+	managerRuntimeData.nextVoltage = NULL; managerRuntimeData.totalCurrent = NULL; managerRuntimeData.curSpike = NULL;
+	managerRuntimeData.nVBuffer = NULL; managerRuntimeData.nUBuffer = NULL; managerRuntimeData.nIBuffer = NULL;
 
 	if (managerRuntimeData.Izh_a!=NULL) delete[] managerRuntimeData.Izh_a;
 	if (managerRuntimeData.Izh_b!=NULL) delete[] managerRuntimeData.Izh_b;
@@ -5494,6 +5733,17 @@ void SNN::deleteManagerRuntimeData() {
 	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
 	managerRuntimeData.Izh_C = NULL; managerRuntimeData.Izh_k = NULL; managerRuntimeData.Izh_vr = NULL; managerRuntimeData.Izh_vt = NULL; managerRuntimeData.Izh_vpeak = NULL;
 
+	if (managerRuntimeData.lif_tau_m!=NULL) delete[] managerRuntimeData.lif_tau_m;
+	if (managerRuntimeData.lif_tau_ref!=NULL) delete[] managerRuntimeData.lif_tau_ref;
+	if (managerRuntimeData.lif_tau_ref_c!=NULL) delete[] managerRuntimeData.lif_tau_ref_c;
+	if (managerRuntimeData.lif_vTh!=NULL) delete[] managerRuntimeData.lif_vTh;
+	if (managerRuntimeData.lif_vReset!=NULL) delete[] managerRuntimeData.lif_vReset;
+	if (managerRuntimeData.lif_gain!=NULL) delete[] managerRuntimeData.lif_gain;
+	if (managerRuntimeData.lif_bias!=NULL) delete[] managerRuntimeData.lif_bias;
+	managerRuntimeData.lif_tau_m=NULL; managerRuntimeData.lif_tau_ref=NULL; managerRuntimeData.lif_vTh=NULL;
+	managerRuntimeData.lif_vReset=NULL; managerRuntimeData.lif_gain=NULL; managerRuntimeData.lif_bias=NULL;
+	managerRuntimeData.lif_tau_ref_c=NULL;
+	
 	if (managerRuntimeData.Npre!=NULL) delete[] managerRuntimeData.Npre;
 	if (managerRuntimeData.Npre_plastic!=NULL) delete[] managerRuntimeData.Npre_plastic;
 	if (managerRuntimeData.Npost!=NULL) delete[] managerRuntimeData.Npost;
@@ -5621,7 +5871,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 	assert(gGrpId >= ALL);
 
 	if (gGrpId == ALL) {
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			pthread_t threads[numCores + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
 			cpu_set_t cpus;	
 			ThreadStruct argsThreadRoutine[numCores + 1]; // same as above, +1 array size
@@ -5633,7 +5883,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 				if (netId < CPU_RUNTIME_BASE) // GPU runtime
 					resetSpikeCnt_GPU(netId, ALL);
 				else{ // CPU runtime
-					#if defined(WIN32) || defined(WIN64)
+					#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 						resetSpikeCnt_CPU(netId, ALL);
 					#else // Linux or MAC
 						pthread_attr_t attr;
@@ -5657,7 +5907,7 @@ void SNN::resetSpikeCnt(int gGrpId) {
 			}
 		}
 
-		#if !defined(WIN32) && !defined(WIN64) // Linux or MAC
+		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			// join all the threads
 			for (int i=0; i<threadCount; i++){
 				pthread_join(threads[i], NULL);
@@ -6156,6 +6406,129 @@ void SNN::updateSpikeMonitor(int gGrpId) {
 
 		if (spkFileId!=NULL) // flush spike file
 			fflush(spkFileId);
+	}
+}
+
+// FIXME: modify this for multi-GPUs
+void SNN::updateNeuronMonitor(int gGrpId) {
+	// don't continue if no neuron monitors in the network
+	if (!numNeuronMonitor)
+		return;
+
+	//printf("The global group id is: %i\n", gGrpId);
+
+	if (gGrpId == ALL) {
+		for (int gGrpId = 0; gGrpId < numGroups; gGrpId++)
+			updateNeuronMonitor(gGrpId);
+	}
+	else {
+		//printf("UpdateNeuronMonitor is being executed!\n");
+		int netId = groupConfigMDMap[gGrpId].netId;
+		int lGrpId = groupConfigMDMap[gGrpId].lGrpId;
+		// update spike monitor of a specific group
+		// find index in spike monitor arrays
+		int monitorId = groupConfigMDMap[gGrpId].neuronMonitorId;
+
+		// don't continue if no spike monitor enabled for this group
+		if (monitorId < 0) return;
+
+		// find last update time for this group
+		NeuronMonitorCore* nrnMonObj = neuronMonCoreList[monitorId];
+		long int lastUpdate = nrnMonObj->getLastUpdated();
+
+		// don't continue if time interval is zero (nothing to update)
+		if (((long int)getSimTime()) - lastUpdate <= 0)
+			return;
+
+		if (((long int)getSimTime()) - lastUpdate > 1000)
+			KERNEL_ERROR("updateNeuronMonitor(grpId=%d) must be called at least once every second", gGrpId);
+
+		// AER buffer max size warning here.
+		// Because of C++ short-circuit evaluation, the last condition should not be evaluated
+		// if the previous conditions are false.
+		
+		/*if (nrnMonObj->getAccumTime() > LONG_NEURON_MON_DURATION \
+			&& this->getGroupNumNeurons(gGrpId) > LARGE_NEURON_MON_GRP_SIZE \
+			&& nrnMonObj->isBufferBig()) {
+			// change this warning message to correct message
+			KERNEL_WARN("updateNeuronMonitor(grpId=%d) is becoming very large. (>%lu MB)", gGrpId, (long int)MAX_NEURON_MON_BUFFER_SIZE / 1024);// make this better
+			KERNEL_WARN("Reduce the cumulative recording time (currently %lu minutes) or the group size (currently %d) to avoid this.", nrnMonObj->getAccumTime() / (1000 * 60), this->getGroupNumNeurons(gGrpId));
+		}*/
+
+		// copy the neuron information to manager runtime
+		fetchNeuronStateBuffer(netId, lGrpId);
+		
+		// find the time interval in which to update neuron state info
+		// usually, we call updateNeuronMonitor once every second, so the time interval is [0,1000)
+		// however, updateNeuronMonitor can be called at any time t \in [0,1000)... so we can have the cases
+		// [0,t), [t,1000), and even [t1, t2)
+		int numMsMin = lastUpdate % 1000; // lower bound is given by last time we called update
+		int numMsMax = getSimTimeMs(); // upper bound is given by current time
+		if (numMsMax == 0)
+			numMsMax = 1000; // special case: full second
+		assert(numMsMin < numMsMax);
+
+		// current time is last completed second in milliseconds (plus t to be added below)
+		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
+		int currentTimeSec = getSimTimeSec();
+		if (!getSimTimeMs())
+			currentTimeSec--;
+
+		// save current time as last update time
+		nrnMonObj->setLastUpdated((long int)getSimTime());
+
+		// prepare fast access
+		FILE* nrnFileId = neuronMonCoreList[monitorId]->getNeuronFileId();
+		bool writeNeuronStateToFile = nrnFileId != NULL;
+		bool writeNeuronStateToArray = nrnMonObj->isRecording();
+
+		// Read one neuron state value at a time from the buffer and put the neuron state values to an appopriate monitor buffer.
+		// Later the user may need need to dump these neuron state values to an output file
+		//printf("The numMsMin is: %i; and numMsMax is: %i\n", numMsMin, numMsMax);
+		for (int t = numMsMin; t < numMsMax; t++) {
+			//printf("The lStartN is: %i; and lEndN is: %i\n", groupConfigs[netId][lGrpId].lStartN, groupConfigs[netId][lGrpId].lEndN);
+			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) { 
+				float v, u, I;
+
+				// make sure neuron belongs to currently relevant group
+				int this_grpId = managerRuntimeData.grpIds[lNId];
+				if (this_grpId != lGrpId)
+					continue;
+
+				// adjust nid to be 0-indexed for each group
+				// this way, if a group has 10 neurons, their IDs in the spike file and spike monitor will be
+				// indexed from 0..9, no matter what their real nid is
+				int nId = lNId - groupConfigs[netId][lGrpId].lStartN;
+				assert(nId >= 0);
+
+				int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+				v = managerRuntimeData.nVBuffer[idxBase + nId];
+				u = managerRuntimeData.nUBuffer[idxBase + nId];
+				I = managerRuntimeData.nIBuffer[idxBase + nId];
+
+				//printf("Voltage recorded is: %f\n", v);
+
+				// current time is last completed second plus whatever is leftover in t
+				int time = currentTimeSec * 1000 + t;
+
+				// WRITE TO A TEXT FILE INSTEAD OF BINARY
+				if (writeNeuronStateToFile) {
+					int cnt;
+					cnt = fwrite(&nId, sizeof(int), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&time, sizeof(int), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&v, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&u, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+					cnt = fwrite(&I, sizeof(float), 1, nrnFileId); assert(cnt == 1);
+				}
+
+				if (writeNeuronStateToArray) {
+					nrnMonObj->pushNeuronState(nId, v, u, I);
+				}
+			}
+		}
+
+		if (nrnFileId != NULL) // flush spike file
+			fflush(nrnFileId);
 	}
 }
 

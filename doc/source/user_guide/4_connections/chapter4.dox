@@ -178,12 +178,14 @@ by omitting them default values are used.
 The function returns a connection ID, <tt>cId</tt>, which can be used to reference the connection in subsequent
 calls; for example, when setting up a ConnectionMonitor (see \ref ch7s2_connection_monitor).
 
-Alternatively, one can use the "full-no-direct" keyword to indicate that no self-connections shall be made:
+Alternatively, while connecting a group to itself with a recurrent connection, one can use the "full-no-direct" keyword to indicate that no self-connections shall be made.
+If two different groups are connected with this connection type, the connection will be equivalent to a full connection.
+
 \code
-short int cId = sim.connect(gIn, gOut, "full-no-direct", RangeWeight(0.25f), 0.1f);
+short int cId = sim.connect(gIn, gIn, "full-no-direct", RangeWeight(0.25f), 0.1f);
 \endcode
 This will prevent neuron <tt>i</tt> in the pre-synaptic group to be connected to neuron <tt>i</tt> in the post-synaptic
-group.
+group, if the pre and post synaptic groups are the same.
 
 
 \subsection ch4s1s6_random 4.1.6 Random Connectivity

@@ -149,6 +149,7 @@ with 10Hz mean firing rate, but this number will be gradually increased every se
 	for (int i=1; i<=10; i++) {
 		float inputRateHz = i*10.0f;
 		in.setRates(inputRateHz);
+		sim.setSpikeRate(gIn, &in);
 
 		// run for 1 second
 		sim.runNetwork(1,0);
