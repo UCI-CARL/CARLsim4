@@ -12,9 +12,9 @@
 CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail. CARLsim allows execution of networks of Izhikevich spiking neurons with realistic synaptic dynamics on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface in C/C++, which allows for details and parameters to be specified at the synapse, neuron, and network level.
 
 New features in CARLsim 4 include:
-- TODO
 - Multi-GPU support
 - Hybrid mode
+- Multi-compartment and LIF point neurons
 - etc.
 
 
