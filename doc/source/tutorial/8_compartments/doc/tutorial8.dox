@@ -1,0 +1,68 @@
+/*!
+
+\page tut8_compartments Tutorial 8: Multi-Compartment Models
+\tableofcontents
+\author Stanislav Listopad
+
+\section tut8s1_intro 8.1 Introduction
+
+In this tutorial we introduce generating multi-compartment models in CARLsim.
+We set-up a group of four compartment (four layer) neurons. We then proceed to 
+inject current into one of the compartments (soma) and then observe the effects of 
+this current injection on all of the connected compartments.
+
+The multi-compartment tutorial can be found at doc/source/tutorial/8_compartments/src/ directory.
+
+\section tut8s2_parameter_file 8.2 Setting-Up Multi-Compartment Neurons
+
+We first set-up several CARLsim groups. These groups must have the same number of neurons 
+and cannot be synaptically connected to each other. 
+
+\code
+int grpSoma = sim->createGroup("excit", N, EXCITATORY_NEURON);    // grpSoma 
+int grpD_one = sim->createGroup("excit", N, EXCITATORY_NEURON);   // grpD_one
+int grpD_two = sim->createGroup("excit", N, EXCITATORY_NEURON);   // grpD_two 
+int grpD_three = sim->createGroup("excit", N, EXCITATORY_NEURON); // grpD_three 
+\endcode
+
+We then set-up neuron parameters as we would normally with CARLsim groups. 
+Afterwards, we set-up coupling constants for the compartments via the setCompartmentParameters 
+method. 
+
+\code
+sim->setCompartmentParameters(grpD_one, 28.396f, 5.526f); // grpD_one 28 and 5
+sim->setCompartmentParameters(grpD_two, 50.474f, 0.0f);   // grpD_two 50 and 0
+sim->setCompartmentParameters(grpD_three, 0.0f, 49.14f);  // grpD_three 0 and 49
+sim->setCompartmentParameters(grpSoma, 116.861f, 4.60f);  // grpSoma (somatic) 116 and 4
+\endcode
+
+Now, each of the above defined groups is a compartment.
+ 
+The following formula is used to calculate the current going into each compartment: 
+Idendr = Gdown*(V - Vdown) + Sum(up)(Gup*(V - Vup))
+
+We then proceed to connect the compartment groups together.
+
+\code
+sim->connectCompartments(grpD_two, grpD_one);
+sim->connectCompartments(grpD_one, grpSoma);
+sim->connectCompartments(grpSoma, grpD_three);
+\endcode
+
+These four compartmentally connected CARLsim groups now represent N neurons 
+with four compartments each (1 soma compartment & 3 dendrite compartments).
+
+Note: Any given compartment group can only 
+be directly connected to at most 4 other compartment groups.
+
+Finally, we proceed to run the CARLsim network as we would normally.
+We inject current into the soma using the setExternalCurrent function:
+
+\code
+sim->setExternalCurrent(grpSoma, 600);
+\endcode
+
+The soma compartment and one neighbouring dendrite compartment will spike as a result.
+Changing the coupling constants, injection current, or neuron parameters will affect the results.
+
+*/

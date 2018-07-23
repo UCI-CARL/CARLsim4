@@ -67,8 +67,9 @@
       			</tab>
 			<tab type="usergroup" visible="yes" title="12. Advanced Topics" url="@ref ch12_advanced_topics">
 				<tab type="user" visible="no" title="12.1 Best Practices" url="@ref ch12s1_best_practices"/>
-				<tab type="user" visible="no" title="12.2 Multi-GPU" url="@ref ch12s2_multi_gpu"/>
-				<tab type="user" visible="no" title="12.3 On-Line Weight Tuning" url="@ref ch12s3_online_weight_tuning"/>
+				<tab type="user" visible="no" title="12.2 Numerical Integration Methods" url="@ref ch12s2_num_int"/>
+				<tab type="user" visible="no" title="12.3 Multi-GPU" url="@ref ch12s3_multi_gpu"/>
+				<tab type="user" visible="no" title="12.4 On-Line Weight Tuning" url="@ref ch12s4_online_weight_tuning"/>
 			</tab>
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
@@ -108,6 +109,9 @@
 				<tab type="user" visible="no" title="7.2 ECJ Parameter File" url="@ref tut7s2_parameter_file"/>
 				<tab type="user" visible="no" title="7.3 Parameter Tuning Interface (PTI)" url="@ref tut7s3_experiment_class"/>
 				<tab type="user" visible="no" title="7.4 Output Files" url="@ref tut7s4_output_files"/>
+			</tab>
+			<tab type="usergroup" visible="yes" title="8. Multi-Compartment Models" url="@ref tut8_compartments">
+				<tab type="user" visible="no" title="8.1 Introducton" url="@ref tut8s1_intro"/>
 			</tab>
 		</tab>
 		<tab type="modules" visible="yes" title="" intro=""/>
