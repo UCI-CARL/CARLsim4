@@ -278,7 +278,7 @@ TEST(ConnMon, takeSnapshot) {
 				std::vector< std::vector<float> > wt = CM->takeSnapshot();
 				for (int i=0; i<GRP_SIZE; i++) {
 					for (int j=0; j<GRP_SIZE; j++) {
-						EXPECT_FALSE(isnan(wt[i][j]));
+						EXPECT_FALSE(std::isnan(wt[i][j]));
 						EXPECT_FLOAT_EQ(wt[i][j], wtScale*i);
 					}
 				}
