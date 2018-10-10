@@ -110,7 +110,7 @@ endif
 
 
 # find NVCC version
-NVCC_MAJOR_NUM     := $(shell nvcc -V 2>/dev/null | grep -o 'release [0-9]\.' | grep -o '[0-9]')
+NVCC_MAJOR_NUM     := $(shell nvcc -V 2>/dev/null | grep -o 'release [0-9]\+\.' | grep -o '[0-9]\+')
 NVCCFL             += -D__CUDA$(NVCC_MAJOR_NUM)__
 
 # CUDA code generation flags
