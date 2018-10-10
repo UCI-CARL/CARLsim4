@@ -280,7 +280,7 @@ $ make test_nocuda
 
 To run the regression suite, you can type:
 \code
-$ ./carlsim/test_carlsim_tests
+$ ./carlsim/test/carlsim_tests
 \endcode
 
 
