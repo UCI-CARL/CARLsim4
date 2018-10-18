@@ -18,7 +18,7 @@ New features in CARLsim 4 include:
 
 If you use CARLsim 4 in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim4-IJCNN2018.pdf).
 
-Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165. (*co-first authors)
+Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165.
 
 ## Installation
 
