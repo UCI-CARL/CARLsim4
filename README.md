@@ -122,6 +122,9 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    The script will copy all files from `hello_world/` to `project_name/`, make all required
    file changes to compile the new project, and add all new files to git.
 
+#### Using nvidia docker
+1. Using CARLsim4 on an Nvidia-docker image follows the instructions above. Only important thing to keep in mind is to copy the $CUDA_PATH/samples directory to the docker, which does not come with the nvidia docker image. CARLsim4 uses "helper_functions.h" from the library.
+
 #### Using CMake
 
 1. Obtatin `CARLsim4`'s source code.
@@ -164,7 +167,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    ```
    make install
    ```
-
+   
 ### Windows
 
 Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" project file
