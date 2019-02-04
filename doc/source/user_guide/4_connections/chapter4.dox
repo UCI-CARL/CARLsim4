@@ -425,6 +425,7 @@ The following code snippet shows a simple example that creates a one-to-one conn
 
 // custom ConnectionGenerator
 class MyConnection : public ConnectionGenerator {
+public:
 	MyConnection() {}
 	~MyConnection() {}
 
@@ -451,7 +452,7 @@ int main() {
 	// ... etc. ...
 
 	// create an instance of MyConnection class and pass it to CARLsim::connect
-	MyConnection myConn;
+	MyConnection* myConn = new MyConnection;
 	sim.connect(g0, g1, myConn, SYN_PLASTIC);
 
 	sim.setupNetwork();
