@@ -1297,7 +1297,8 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	bool needToPrintDebug = (weight>maxWt || weight<minWt);
 
 	int netId = groupConfigMDMap[connectConfigMap[connId].grpDest].netId;
-	int lGrpId = groupConfigMDMap[connectConfigMap[connId].grpDest].lGrpId;
+	int postlGrpId = groupConfigMDMap[connectConfigMap[connId].grpDest].lGrpId;
+	int prelGrpId = groupConfigMDMap[connectConfigMap[connId].grpSrc].lGrpId;
 
 	fetchPreConnectionInfo(netId);
 	fetchConnIdsLookupArray(netId);
@@ -1324,8 +1325,8 @@ void SNN::setWeight(short int connId, int neurIdPre, int neurIdPost, float weigh
 	}
 
 	// find real ID of pre- and post-neuron
-	int neurIdPreReal = groupConfigs[netId][lGrpId].lStartN + neurIdPre;
-	int neurIdPostReal = groupConfigs[netId][lGrpId].lStartN + neurIdPost;
+	int neurIdPreReal = groupConfigs[netId][prelGrpId].lStartN + neurIdPre;
+	int neurIdPostReal = groupConfigs[netId][postlGrpId].lStartN + neurIdPost;
 
 	// iterate over all presynaptic synapses until right one is found
 	bool synapseFound = false;

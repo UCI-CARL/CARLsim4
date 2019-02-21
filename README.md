@@ -18,7 +18,7 @@ New features in CARLsim 4 include:
 
 If you use CARLsim 4 in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim4-IJCNN2018.pdf).
 
-Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165. (*co-first authors)
+Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165.
 
 ## Installation
 
@@ -122,6 +122,9 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    The script will copy all files from `hello_world/` to `project_name/`, make all required
    file changes to compile the new project, and add all new files to git.
 
+#### Using nvidia docker
+1. Using CARLsim4 on an Nvidia-docker image follows the instructions above. Only important thing to keep in mind is to copy the $CUDA_PATH/samples directory to the docker, which does not come with the nvidia docker image. CARLsim4 uses "helper_functions.h" from the library.
+
 #### Using CMake
 
 1. Obtatin `CARLsim4`'s source code.
@@ -164,7 +167,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    ```
    make install
    ```
-
+   
 ### Windows
 
 Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" project file
