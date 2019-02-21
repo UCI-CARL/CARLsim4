@@ -44,19 +44,25 @@ SNN.
 \section ch10s2_installation 10.2 Installation
 
 The current version of the CARLsim paramter-tuning framework uses Evolutionary
-Computations in Java (ECJ) (version 22 or greater is required). For information
+Computations in Java (ECJ) (tested using version 23). For information
 on how to install ECJ, please go  <a href="http://cs.gmu.edu/~eclab/projects/ecj/">here</a>.
 
-After ECJ version 22 or greater has been installed the user then needs to set the <tt>ECJ_DIR</tt>
+After ECJ has been installed, the user then needs to set the <tt>ECJ_DIR</tt>
 and <tt>ECJ_PTI_DIR</tt> environment variables in the ~/.bashrc file. The
-<tt>ECJ_DIR</tt> environment variable points to the ECJ installation .jar file. The
+<tt>ECJ_DIR</tt> environment variable points to the ECJ installation .jar file (it should be inside a directory named jar and named as ecj.xx.jar). The
 <tt>ECJ_PTI_DIR</tt> environment variable points to the desired installation location of the CARLsim-ECJ PTI library.
 
-Users can set these environment variable in their ~/.bashrc file. The following example lines would be appended to .bashrc.
+We will also need to install apache ant (tested version is 1.9.6). Download the ant binary from <a href="https://archive.apache.org/dist/ant/binaries/">ant archive</a> and extract it.
+
+Users can set these environment variable in their ~/.bashrc file. The following example lines would be appended to .bashrc. For mac OS, these variables are placed in ~/.bash_profile.
 
 \code
-export ECJ_JAR=/opt/ecj/jar/ecj.22.jar
+export ECJ_JAR=/path to the ecj directory/jar/ecj.23.jar
 export ECJ_PTI_DIR=/path-to-carlsim4-installtion/carlsim_ecj_pti
+
+export ANT_HOME=/path to apache-ant-1.9.6 directory
+export PATH=$PATH:$ANT_HOME/bin
+export CLASSPATH=.:$ANT_HOME/lib/*
 \endcode
 
 \note You may have to open a new shell or reboot to get export these variables.
@@ -70,7 +76,6 @@ make install
 
 This will install the CARLsim-ECJ PTI static library into the location pointed to by
 <tt>ECJ_PTI_DIR</tt>.
-
 
 If you have already installed gtest in the CARLsim4 source tree, 
 you can run the unit tests for CARLsim-ECJ PTI's C++ components, as:
