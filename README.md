@@ -66,17 +66,14 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
 
 2. Clone the repo, where `YourUsername` is your actual GitHub user name:
    ```
-   $ git clone --recursive https://github.com/YourUsername/CARLsim4
+   $ git clone --recursive https://github.com/UCI-CARL/CARLsim4.git
    $ cd CARLsim4
    ```
    Note the `--recursive` option: It will make sure Google Test gets installed.
 
 3. Choose between stable release and latest development version:
-   - For the stable release, use the `stable` branch:
-     ```
-     $ git checkout stable
-     ```
    - For the latest development branch, you are already on the right branch (`master`).
+   - For stable release, choose from https://github.com/UCI-CARL/CARLsim4/releases
 
 4. Choose the installation directory: By default, the CARLsim library lives in `~/CARL/lib`, and CARLsim include files live in `~/CARL/include`.
     You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
@@ -87,7 +84,13 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
     ```
     $ export CARLSIM4_INSTALL_DIR=/usr/local
     ```
-    if you want to install CARLsim library for all users
+    if you want to install CARLsim library for all users.
+    
+    Also set the following evironment variable:
+    ```
+    $ export CUDA_PATH=/path/to/CUDA
+    ```
+    By default CUDA is installed to `/usr/local/cuda` in Linux systems.
 
 5. Make and install:
    ```
@@ -191,7 +194,7 @@ CARLsim 4 comes with the following requirements:
 As of CARLsim 3.1 it is no longer necessary to have the CUDA framework installed. However, CARLsim development 
 will continue to focus on the GPU implementation.
 
-The current release has been tested on the following platforms:
+The latest release was tested on the following platforms:
 - Ubuntu 16.04
 - Mac OS X 10.11 (El Capitan)
 - Windows 7/10
