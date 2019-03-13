@@ -29,7 +29,7 @@ the file <tt>helper_cuda.h</tt>, which usually resides in
 
 \subsection ch1s1s1_os 1.1.1 Supported Operating Systems
 CARLsim has been tested on the following platforms:
-- Windows 7/10
+- Mac OSX 10.11
 - Ubuntu 16.04
 
 
@@ -96,20 +96,12 @@ This can be done in three steps:
 -# Switch to a terminal (or <a href="https://desktop.github.com/">GitHub Desktop</a>)
    and clone the repository:
    \code
-   $ git clone --recursive https://github.com/UCI-CARL/YourUsername/CARLsim4
+   $ git clone --recursive https://github.com/UCI-CARL/CARLsim4.git
    $ cd CARLsim4
    \endcode
    where <tt>YourUsername</tt> is your GitHub user name.
    Note the <tt>--recursive</tt> option: It will make sure all external software
    dependencies get installed (e.g., Google Test).
-
--# Choose your software version:
-   - If you want the latest stable release, switch to the <tt>stable</tt> branch:
-     \code
-     $ git checkout stable
-     \endcode
-   - If you want the latest development version, simply stay on the <tt>master</tt>
-     branch.
 
 Alternatively, you may download the latest stable release from the 
 <a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
@@ -143,22 +135,13 @@ The following options are available:
   \endcode
   For advanced users or administrators, you could set the path to <tt>/usr/local</tt>
 
-- Custom CUDA paths: By default, CARLsim assumes that your CUDA library lives in
-  <tt>/usr/local/cuda</tt>. If this is not the case on your system, make sure to
-  set adjust an environment variable called <tt>CUDA_PATH</tt>:
+- Custom CUDA paths: Set an environment variable called <tt>CUDA_PATH</tt>. By default, your CUDA library lives in <tt>/usr/local/cuda</tt>
   \code
   $ export CUDA_PATH=/path/to/CUDA
   \endcode
 
-- ECJ support: By default, CARLsim assumes that the Parameter Tuning Interface
-  lives in <tt>/opt/CARL/carlsim_ecj_pti</tt>, with the JAR file located at
-  <tt>/opt/ecj/jar/ecj.23.jar</tt>. If these paths are not correct and you wish
-  to use the Parameter Tuning Interface (see \ref ch10_ecj), please update
-  your environment variables accordingly:
-  \code
-  $ export ECJ_JAR=/path/to/ECJ/JAR/file
-  $ export ECJ_PTI_DIR=/path/to/ECJ/PTI
-  \endcode
+- ECJ support: If you use the evolutionary computing based Parameter Tuning Interface,
+  additional variables are needed. See \ref ch10_ecj for the list of those additional variables.
 
 Once you have made changes to your <tt>~/.bashrc</tt>, make sure they go into
 effect by either typing:
