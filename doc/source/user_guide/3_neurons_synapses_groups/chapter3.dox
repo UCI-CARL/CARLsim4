@@ -142,10 +142,21 @@ Use Runge-Kutta instead (see \ref ch12s2s2_RK4).
 
 
 
-\subsection ch3s1s4_other_neurons 3.1.4 Other Neuron Types
-In the future, we plan to include other types of neuron models, such as the leaky integrate-and-fire model,
-the adaptive exponential integrate-and-fire model, and a compartmental model.
+\subsection ch3s1s4_other_neurons 3.1.4 Leaky Integrate-and-Fire (LIF) neurons
+\author Hirak J Kashyap
 
+The support for LIF neurons has been added in CARLSim 4.0.  LIF model and its variants are probably the 
+most well known model of spiking point neurons, largely due their to simple membrane voltage dynamics favored
+for dynamical system analysis and hardware implementation.
+
+The parameter \f$k\f$ is a rate constant of the membrane potential, and can be found using the rheobase and the input
+resistance of a neuron.
+The parameter \f$vr\f$ is the resting membrane potential.
+The parameter \f$R\f$ is the membrane resistance.
+
+\f{align*}{
+k \frac{dv}{dt}  = & ~  - [v - vr] + R I& \text{(10)}\\
+\f}
 
 
 \section ch3s2_synapses 3.2 Synapses
