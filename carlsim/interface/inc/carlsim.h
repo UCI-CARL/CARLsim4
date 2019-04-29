@@ -761,6 +761,37 @@ public:
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
 	/*!
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group in terms of mean and standard deviation (pre-synaptically)
+	 *
+	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
+	 * \f{eqnarray}
+	 * \frac{du}{dt} & = & \frac{-u}{STP\_tau\_u} + STP\_U  (1-u^-)  \delta(t-t_{spk}) \\
+	 * \frac{dx}{dt} & = & \frac{1-x}{STP\_tau\_x} - u^+  x^-  \delta(t-t_{spk}) \\
+	 * \frac{dI}{dt} & = & \frac{-I}{\tau_S} + A  u^+  x-  \delta(t-t_{spk}) \f}
+	 * where u- means value of variable u right before spike update, and x+ means value of variable x right after
+	 * the spike update, and A is the synaptic weight.
+	 * The STD effect is modeled by a normalized variable (0<=x<=1), denoting the fraction of resources that remain
+	 * available after neurotransmitter depletion.
+	 * The STF effect is modeled by a utilization parameter u, representing the fraction of available resources ready for
+	 * use (release probability). Following a spike, (i) u increases due to spike-induced calcium influx to the
+	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
+	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (tau_F), and x recovers to value one
+	 * with time constant STP_tau_x (tau_D).
+	 *
+	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpId       pre-synaptic group ID
+	 * \param[in] isSet       a flag whether to enable/disable STP
+	 * \param[in] STP_U       increment of u induced by a spike
+	 * \param[in] STP_tau_u   decay constant of u (tau_F)
+	 * \param[in] STP_tau_x   decay constant of x (tau_D)
+	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
+	 */
+	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
+
+	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
 	 *
 	 * This function enables/disables STP on a specific pre-synaptic group and assign default values to all STP

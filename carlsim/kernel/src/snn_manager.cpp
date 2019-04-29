@@ -4658,7 +4658,7 @@ void SNN::routeSpikes() {
 
 		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
-			cpu_set_t cpus;	
+			cpu_set_t cpus;
 			ThreadStruct argsThreadRoutine[(2 * networkConfigs[srcNetId].numGroups) + 1]; // same as above, +1 array size
 			int threadCount = 0;
 		#endif
