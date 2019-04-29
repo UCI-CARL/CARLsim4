@@ -761,7 +761,8 @@ public:
 	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
 
 	/*!
-	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group in terms of mean and standard deviation (pre-synaptically)
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group in 
+	 * terms of mean and standard deviation (pre-synaptically)
 	 *
 	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
 	 * \f{eqnarray}

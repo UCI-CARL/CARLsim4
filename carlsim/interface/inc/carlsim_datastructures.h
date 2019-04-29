@@ -318,19 +318,19 @@ struct STPu {
  * \brief a distribution struct for STP_tau_u parameters
  *
  * STP_tau_u parameter distribution specified using mean and standard deviation
- * \param[in] mean STP_tau_u value
- * \param[in] standard STP_tau_u value
+ * \param[double] mean STP_tau_u value
+ * \param[double] standard STP_tau_u value
  * Examples:
  *   STP_tau_u(2) => all STP_tau_u will be 2 
  *   STP_tau_u(1,10) => STP_tau_u will be from the normal distribution with mean 1 and SD 10
  */
 struct STP_tau_u {
-	STP_tau_u(int _mean) {
+	STP_tau_u(double _mean) {
 		mean = _mean;
 		std = 0.0;
 	}
 
-	STP_tau_u(int _mean, _sd) {
+	STP_tau_u(double _mean, double _sd) {
 		UserErrors::assertTrue(_sd>=0.0, UserErrors::CANNOT_BE_NEGATIVE, "STP_tau_u", "mean_STP_tau_u", "sd_STP_tau_u");
 		mean = _mean;
 		std = _sd;
@@ -346,19 +346,19 @@ struct STP_tau_u {
  * \brief a distribution struct for STP_tau_x parameters
  *
  * STP_tau_x parameter distribution specified using mean and standard deviation
- * \param[in] mean STP_tau_x value
- * \param[in] standard STP_tau_x value
+ * \param[double] mean STP_tau_x value
+ * \param[double] standard STP_tau_x value
  * Examples:
  *   STP_tau_x(2) => all STP_tau_x will be 2 
  *   STP_tau_x(1,10) => STP_tau_x will be from the normal distribution with mean 1 and SD 10
  */
 struct STP_tau_x {
-	STP_tau_x(int _mean) {
+	STP_tau_x(double _mean) {
 		mean = _mean;
 		std = 0.0;
 	}
 
-	STP_tau_x(int _mean, _sd) {
+	STP_tau_x(double _mean, double _sd) {
 		UserErrors::assertTrue(_sd>=0.0, UserErrors::CANNOT_BE_NEGATIVE, "STP_tau_x", "mean_STP_tau_x", "sd_STP_tau_x");
 		mean = _mean;
 		std = _sd;
