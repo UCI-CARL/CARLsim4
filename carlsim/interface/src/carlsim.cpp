@@ -786,44 +786,46 @@ public:
 	}
 
 	// set STP, default
-	void setSTP(int grpId, bool isSet) {
-		std::string funcName = "setSTP(\""+getGroupName(grpId)+"\")";
+	void setSTP(int preGrpId, int postGrpId, bool isSet) {
+		std::string funcName = "setSTP(\""+getGroupName(preGrpId)+ " ," + getGroupName(postGrpId)+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTPALL_ = preGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use default values
-			UserErrors::assertTrue(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
+			UserErrors::assertTrue(isExcitatoryGroup(preGrpId) || isInhibitoryGroup(preGrpId), UserErrors::WRONG_NEURON_TYPE,
 				funcName, "setSTP");
 
 			if (isExcitatoryGroup(grpId))
-				snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tau_u_exc_,def_STP_tau_x_exc_);
+				// snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tau_u_exc_,def_STP_tau_x_exc_);
+				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_exc_mean, def_STP_U_exc_std, def_STP_tau_u_exc_mean, def_STP_tau_u_exc_std, def_STP_tau_x_exc_mean, def_STP_tau_x_exc_std);
 			else if (isInhibitoryGroup(grpId))
-				snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tau_u_inh_,def_STP_tau_x_inh_);
+				//snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tau_u_inh_,def_STP_tau_x_inh_);
+				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_inh_mean, def_STP_U_inh_std, def_STP_tau_u_inh_mean, def_STP_tau_u_inh_std, def_STP_tau_x_inh_mean, def_STP_tau_x_inh_std);
 			else {
 				// some error message
 			}
 		} else { // disable STDP
-			snn_->setSTP(grpId,false,0.0f,0.0f,0.0f);
+			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
-	// set STP, custom
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
-		std::string funcName = "setSTP(\""+getGroupName(grpId)+"\")";
+	// set STP, custom normal distributed STP parameters
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x){
+		std::string funcName = "setSTP(\""+getGroupName(preGrpId)+ " ," + getGroupName(postGrpId)+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTPALL_ = preGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use default values
-			UserErrors::assertTrue(isExcitatoryGroup(grpId) || isInhibitoryGroup(grpId), UserErrors::WRONG_NEURON_TYPE,
+			UserErrors::assertTrue(isExcitatoryGroup(preGrpId) || isInhibitoryGroup(preGrpId), UserErrors::WRONG_NEURON_TYPE,
 				funcName,"setSTP");
 
-			snn_->setSTP(grpId,true,STP_U,STP_tau_u,STP_tau_x);
+			snn_->setSTP(preGrpId, postGrpId, isSet, STP_U.mean, STP_U.std, STP_tau_u.mean, STP_tau_u.std, STP_tau_x.mean, STP_tau_x.std);
 		} else { // disable STDP
-			snn_->setSTP(grpId,false,0.0f,0.0f,0.0f);
+			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -1543,25 +1545,32 @@ public:
 	}
 
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
-	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
+	// void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
+	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x){
 		std::string funcName = "setDefaultSTPparams()";
 		UserErrors::assertTrue(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
 			funcName);
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, funcName, "CONFIG.");
 
-		assert(STP_tau_u>0.0f);
-		assert(STP_tau_x>0.0f);
+		assert(STP_tau_u.mean>0.0f);
+		assert(STP_tau_x.mean>0.0f);
 
 		switch (neurType) {
 			case EXCITATORY_NEURON:
-			def_STP_U_exc_ = STP_U;
-			def_STP_tau_u_exc_ = STP_tau_u;
-			def_STP_tau_x_exc_ = STP_tau_x;
+			def_STP_U_exc_mean = STP_U.mean;
+			def_STP_tau_u_exc_mean = STP_tau_u.mean;
+			def_STP_tau_x_exc_mean = STP_tau_x.mean;
+			def_STP_U_exc_std = STP_U.std;
+			def_STP_tau_u_exc_std = STP_tau_u.std;
+			def_STP_tau_x_exc_std = STP_tau_x.std;
 			break;
 		case INHIBITORY_NEURON:
-			def_STP_U_inh_ = STP_U;
-			def_STP_tau_u_inh_ = STP_tau_u;
-			def_STP_tau_x_inh_ = STP_tau_x;
+			def_STP_U_inh_mean = STP_U.mean;
+			def_STP_tau_u_inh_mean = STP_tau_u.mean;
+			def_STP_tau_x_inh_mean = STP_tau_x.mean;
+			def_STP_U_inh_std = STP_U.std;
+			def_STP_tau_u_inh_std = STP_tau_u.std;
+			def_STP_tau_x_inh_std = STP_tau_x.std;
 			break;
 		default:
 			// some error message instead of assert
@@ -1697,12 +1706,19 @@ private:
 	float def_STDP_delta_;			//!< default value for interval of LTD
 
 	// all default values for STP
-	float def_STP_U_exc_;			//!< default value for STP U excitatory
-	float def_STP_tau_u_exc_;		//!< default value for STP u decay (\tau_F) excitatory (ms)
-	float def_STP_tau_x_exc_;		//!< default value for STP x decay (\tau_D) excitatory (ms)
-	float def_STP_U_inh_;			//!< default value for STP U inhibitory
-	float def_STP_tau_u_inh_;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
-	float def_STP_tau_x_inh_;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
+	float def_STP_U_exc_mean;			//!< default value for STP U excitatory
+	float def_STP_tau_u_exc_mean;		//!< default value for STP u decay (\tau_F) excitatory (ms)
+	float def_STP_tau_x_exc_mean;		//!< default value for STP x decay (\tau_D) excitatory (ms)
+	float def_STP_U_exc_std;			//!< default value for STP U excitatory
+	float def_STP_tau_u_exc_std;		//!< default value for STP u decay (\tau_F) excitatory (ms)
+	float def_STP_tau_x_exc_std;		//!< default value for STP x decay (\tau_D) excitatory (ms)
+
+	float def_STP_U_inh_mean;			//!< default value for STP U inhibitory
+	float def_STP_tau_u_inh_mean;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
+	float def_STP_tau_x_inh_mean;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
+	float def_STP_U_inh_std;			//!< default value for STP U inhibitory
+	float def_STP_tau_u_inh_std;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
+	float def_STP_tau_x_inh_std;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
 
 	// all default values for homeostasis
 	float def_homeo_scale_;			//!< default homeoScale

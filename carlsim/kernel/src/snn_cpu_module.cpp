@@ -473,15 +473,31 @@ void SNN::copyExtFiringTable(int netId) {
 #endif
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
-	//decay the STP variables before adding new spikes.
+	// decay the STP variables before adding new spikes.
+
+	// update stpu and stpx for connections with STP
+
+
+	// decay conductances 
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
-			if (groupConfigs[netId][lGrpId].WithSTP) {
-				int ind_plus  = STP_BUF_POS(lNId, simTime, glbNetworkConfig.maxDelay);
-				int ind_minus = STP_BUF_POS(lNId, (simTime - 1), glbNetworkConfig.maxDelay);
-				runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - groupConfigs[netId][lGrpId].STP_tau_u_inv);
-				runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * groupConfigs[netId][lGrpId].STP_tau_x_inv;
+			assert(lNId < networkConfigs[netId].numNReg);
+			unsigned int offset = runtimeData[netId].cumulativePre[lNId];
+			for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
+				lSID = offset + j;
+				if (runtimeData[netId].withSTP[lSID]) {
+					int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
+					int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
+					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].STP_tau_u_inv[lSID]);
+					runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * runtimeData[netId].STP_tau_x_inv[lSID];
+				}
 			}
+			// if (groupConfigs[netId][lGrpId].WithSTP) {
+			// 	int ind_plus  = STP_BUF_POS(lNId, simTime, glbNetworkConfig.maxDelay);
+			// 	int ind_minus = STP_BUF_POS(lNId, (simTime - 1), glbNetworkConfig.maxDelay);
+			// 	runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - groupConfigs[netId][lGrpId].STP_tau_u_inv);
+			// 	runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * groupConfigs[netId][lGrpId].STP_tau_x_inv;
+			// }
 
 			// decay conductances
 			if (networkConfigs[netId].sim_with_conductances && IS_REGULAR_NEURON(lNId, networkConfigs[netId].numNReg, networkConfigs[netId].numNPois)) {
@@ -677,16 +693,28 @@ void SNN::updateLTP(int lNId, int lGrpId, int netId) {
 }
 
 void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
-	// update the spike-dependent part of du/dt and dx/dt
-	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-	int ind_plus = STP_BUF_POS(lNId, simTime, networkConfigs[netId].maxDelay); // index of right after the spike, such as in u^+
-	int ind_minus = STP_BUF_POS(lNId, (simTime - 1), networkConfigs[netId].maxDelay); // index of right before the spike, such as in u^-
+	// // update the spike-dependent part of du/dt and dx/dt
+	// // we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
+	// int ind_plus = STP_BUF_POS(lNId, simTime, networkConfigs[netId].maxDelay); // index of right after the spike, such as in u^+
+	// int ind_minus = STP_BUF_POS(lNId, (simTime - 1), networkConfigs[netId].maxDelay); // index of right before the spike, such as in u^-
 
-	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-	runtimeData[netId].stpu[ind_plus] += groupConfigs[netId][lGrpId].STP_U * (1.0f - runtimeData[netId].stpu[ind_minus]);
+	// // du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+	// runtimeData[netId].stpu[ind_plus] += groupConfigs[netId][lGrpId].STP_U * (1.0f - runtimeData[netId].stpu[ind_minus]);
 
-	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-	runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
+	// // dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+	// runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
+
+	assert(lNId < networkConfigs[netId].numNReg);
+	unsigned int offset = runtimeData[netId].cumulativePre[lNId];
+	for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
+		lSID = offset + j;
+		if (runtimeData[netId].withSTP[lSID]) {
+			int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
+			int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
+			runtimeData[netId].stpu[ind_plus] += runtimeData[netId].stp_U[lSID] * (1.0f - runtimeData[netId].stpu[ind_minus]);
+			runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus]  * runtimeData[netId].stpx[ind_minus];
+			}
+		}
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
@@ -1627,6 +1655,24 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 		if(allocateMem)
 			dest->maxSynWt = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
+
+		// allocate synapse stp parameters to runtime data
+		if(allocateMem) {
+			dest->stp_U = new float[networkConfigs[netId].numPreSynNet];
+			dest->stp_tau_u_inv = new float[networkConfigs[netId].numPreSynNet];
+			dest->stp_tau_x_inv = new float[networkConfigs[netId].numPreSynNet];
+			dest->withSTP = new bool[networkConfigs[netId].numPreSynNet];
+			dest->stp_stpu = new float[networkConfigs[netId].numPreSynNet * 2];
+			dest->stp_stpx = new float[networkConfigs[netId].numPreSynNet * 2];
+
+		}
+		memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet);
+		memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
+		memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
+			
 	}
 }
 

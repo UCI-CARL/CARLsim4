@@ -363,12 +363,17 @@ public:
 	 * presynaptic terminal, after which (ii) a fraction u of available resources is consumed to produce the post-synaptic
 	 * current. Between spikes, u decays back to zero with time constant STP_tau_u (\tau_F), and x recovers to value one
 	 * with time constant STP_tau_x (\tau_D).
-	 * \param[in] grpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] preGrpId       pre-synaptic group id. STP will apply to all neurons of that group!
+	 * \param[in] postGrpId      post-synaptic group id. STP will apply to all neurons of that group!
 	 * \param[in] isSet       a flag whether to enable/disable STP
-	 * \param[in] STP_tau_u   decay constant of u (\tau_F)
-	 * \param[in] STP_tau_x   decay constant of x (\tau_D)
+	 * \param[in] STP_U_mean  mean of STP_U (\STP_U)
+	 * \param[in] STP_U_std  mean of STP_std (\STP_std)
+	 * \param[in] STP_tau_u_mean  mean of decay constant of u (\tau_F)
+	 * \param[in] STP_tau_u_std   sd of decay constant of u (\tau_F)
+	 * \param[in] STP_tau_x_mean  mean of decay constant of x (\tau_D)
+	 * \param[in] STP_tau_x_std   sd of decay constant of x (\tau_D)
 	 */
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
+	void setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std);
 
 	//! Sets the weight and weight change update parameters
 	/*!

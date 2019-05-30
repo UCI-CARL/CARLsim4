@@ -102,6 +102,10 @@ typedef struct ConnectionInfo_s {
 	int preSynId;
 	short int connId;
 	uint8_t delay;
+	float STP_U;
+	float STP_tau_u_inv;
+	float STP_tau_x_inv;
+	bool withSTP;
 
 	bool operator== (const struct ConnectionInfo_s& conn) {
 		return (nSrc + srcGLoffset == conn.nSrc);
@@ -134,6 +138,13 @@ typedef struct ConnectConfig_s {
 	float                    connProbability; //!< connection probability
 	short int                connId; //!< connectID of the element in the linked list
 	int                      numberOfConnections; // ToDo: move to ConnectConfigMD
+	float					 STP_U_mean;
+	float					 STP_U_std;
+	float					 STP_tau_u_mean;
+	float					 STP_tau_u_std;
+	float					 STP_tau_x_mean;
+	float					 STP_tau_x_std;
+	STPConfig 				 stpConfig;
 } ConnectConfig;
 
 /*!
@@ -248,14 +259,14 @@ typedef struct STDPConfig_s {
 
 //!< short-term plasiticity configurations
 typedef struct STPConfig_s {
-	STPConfig_s() : WithSTP(false), STP_A(-1.0f), STP_U(-1.0f), STP_tau_u_inv(-1.0f), STP_tau_x_inv(-1.0f)
+	STPConfig_s() : WithSTP(false)
 	{}
 
 	bool WithSTP;
-	float STP_A; // scaling factor
-	float STP_U;
-	float STP_tau_u_inv; // facilitatory
-	float STP_tau_x_inv; // depressive
+	// float STP_A; // scaling factor
+	// float STP_U;
+	// float STP_tau_u_inv; // facilitatory
+	// float STP_tau_x_inv; // depressive
 } STPConfig;
 
 //!< homeostatic plasticity configurations
@@ -320,7 +331,7 @@ typedef struct GroupConfig_s {
 	Grid3D grid; //<! location information of neurons
 	NeuralDynamicsConfig neuralDynamicsConfig;
 	STDPConfig stdpConfig;
-	STPConfig stpConfig;
+	// STPConfig stpConfig;
 	HomeostasisConfig homeoConfig;
 	NeuromodulatorConfig neuromodulatorConfig;
 } GroupConfig;
@@ -510,6 +521,11 @@ typedef struct RuntimeData_s {
 	   maxDelay_ (time constant for recovery from depression), and F (time constant for recovery from facilitation). */
 	float* stpx;
 	float* stpu;
+
+	float* stp_U;
+	float* stp_tau_u_inv;
+	float* stp_tau_x_inv;
+	bool* withSTP;
 
 	unsigned short*	Npre;				//!< stores the number of input connections to a neuron
 	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections to a neuron
