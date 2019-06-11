@@ -285,7 +285,8 @@ struct RangeDelay {
 		min = _min;
 		max = _max;
 	}
-
+	int min, max;
+};
 /*!
  * \brief a distribution struct for STPu parameters
  *
@@ -297,12 +298,12 @@ struct RangeDelay {
  *   STpu(1,10) => STPu will be from the normal distribution with mean 1 and SD 10
  */
 struct STPu {
-	STPu(int _mean) {
+	STPu(double _mean) {
 		mean = _mean;
 		std = 0.0;
 	}
 
-	STPu(int _mean, _sd) {
+	STPu(double _mean, double _sd) {
 		UserErrors::assertTrue(_sd>=0.0, UserErrors::CANNOT_BE_NEGATIVE, "STPu", "mean_STPu", "sd_STPu");
 		mean = _mean;
 		std = _sd;
@@ -311,7 +312,7 @@ struct STPu {
 	friend std::ostream& operator<<(std::ostream &strm, const STPu &u) {
 		return strm << "STPu=[" << u.mean << "," << u.std << "]";
 	}
-	float mean, std;
+	double mean, std;
 };
 
 /*!
@@ -339,7 +340,7 @@ struct STP_tau_u {
 	friend std::ostream& operator<<(std::ostream &strm, const STP_tau_u &tau_u) {
 		return strm << "STP_tau_u=[" << tau_u.mean << "," << tau_u.std << "]";
 	}
-	float mean, std;
+	double mean, std;
 };
 
 /*!
@@ -367,7 +368,7 @@ struct STP_tau_x {
 	friend std::ostream& operator<<(std::ostream &strm, const STP_tau_x &tau_x) {
 		return strm << "STP_tau_x=[" << tau_x.mean << "," << tau_x.std << "]";
 	}
-	float mean, std;
+	double mean, std;
 };
 
 

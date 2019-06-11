@@ -112,6 +112,18 @@ typedef struct ConnectionInfo_s {
 	}
 } ConnectionInfo;
 
+//!< short-term plasiticity configurations
+typedef struct STPConfig_s {
+	STPConfig_s() : WithSTP(false)
+	{}
+
+	bool WithSTP;
+	// float STP_A; // scaling factor
+	// float STP_U;
+	// float STP_tau_u_inv; // facilitatory
+	// float STP_tau_x_inv; // depressive
+} STPConfig;
+
 /*!
  * \brief The configuration of a connection
  *
@@ -256,18 +268,6 @@ typedef struct STDPConfig_s {
 	float        LAMBDA;
 	float        DELTA;
 } STDPConfig;
-
-//!< short-term plasiticity configurations
-typedef struct STPConfig_s {
-	STPConfig_s() : WithSTP(false)
-	{}
-
-	bool WithSTP;
-	// float STP_A; // scaling factor
-	// float STP_U;
-	// float STP_tau_u_inv; // facilitatory
-	// float STP_tau_x_inv; // depressive
-} STPConfig;
 
 //!< homeostatic plasticity configurations
 typedef struct HomeostasisConfig_s {

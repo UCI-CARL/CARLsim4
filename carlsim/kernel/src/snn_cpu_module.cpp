@@ -484,12 +484,12 @@ void SNN::copyExtFiringTable(int netId) {
 			assert(lNId < networkConfigs[netId].numNReg);
 			unsigned int offset = runtimeData[netId].cumulativePre[lNId];
 			for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
-				lSID = offset + j;
-				if (runtimeData[netId].withSTP[lSID]) {
+				int lSId = offset + j;
+				if (runtimeData[netId].withSTP[lSId]) {
 					int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
 					int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
-					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].STP_tau_u_inv[lSID]);
-					runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * runtimeData[netId].STP_tau_x_inv[lSID];
+					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].stp_tau_u_inv[lSId]);
+					runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * runtimeData[netId].stp_tau_x_inv[lSId];
 				}
 			}
 			// if (groupConfigs[netId][lGrpId].WithSTP) {
@@ -707,14 +707,14 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 	assert(lNId < networkConfigs[netId].numNReg);
 	unsigned int offset = runtimeData[netId].cumulativePre[lNId];
 	for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
-		lSID = offset + j;
-		if (runtimeData[netId].withSTP[lSID]) {
+		int lSId = offset + j;
+		if (runtimeData[netId].withSTP[lSId]) {
 			int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
 			int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
-			runtimeData[netId].stpu[ind_plus] += runtimeData[netId].stp_U[lSID] * (1.0f - runtimeData[netId].stpu[ind_minus]);
+			runtimeData[netId].stpu[ind_plus] += runtimeData[netId].stp_U[lSId] * (1.0f - runtimeData[netId].stpu[ind_minus]);
 			runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus]  * runtimeData[netId].stpx[ind_minus];
-			}
 		}
+	}
 }
 
 void SNN::resetFiredNeuron(int lNId, short int lGrpId, int netId) {
@@ -1662,8 +1662,8 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 			dest->stp_tau_u_inv = new float[networkConfigs[netId].numPreSynNet];
 			dest->stp_tau_x_inv = new float[networkConfigs[netId].numPreSynNet];
 			dest->withSTP = new bool[networkConfigs[netId].numPreSynNet];
-			dest->stp_stpu = new float[networkConfigs[netId].numPreSynNet * 2];
-			dest->stp_stpx = new float[networkConfigs[netId].numPreSynNet * 2];
+			dest->stpu = new float[networkConfigs[netId].numPreSynNet * 2];
+			dest->stpx = new float[networkConfigs[netId].numPreSynNet * 2];
 
 		}
 		memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet);
