@@ -812,7 +812,7 @@ public:
 	}
 
 	// set STP, custom normal distributed STP parameters
-	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x){
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x){
 		std::string funcName = "setSTP(\""+getGroupName(preGrpId)+ " ," + getGroupName(postGrpId)+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
@@ -1546,7 +1546,7 @@ public:
 
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
 	// void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
-	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x){
+	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x){
 		std::string funcName = "setDefaultSTPparams()";
 		UserErrors::assertTrue(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
 			funcName);
@@ -1906,7 +1906,7 @@ void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
 }
 
 // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x) {
+void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x) {
 	_impl->setSTP(preGrpId, postGrpId, isSet, STP_U, STP_tau_u, STP_tau_x);
 }
 

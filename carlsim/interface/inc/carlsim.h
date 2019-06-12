@@ -760,7 +760,7 @@ public:
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group. Each neuron in the group will have individual STP parameters drawn from the normal distribution.
 	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 */
-	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U = STPu(0.0f), const STP_tau_u& STP_tau_u = STP_tau_u(0.0f), const STP_tau_x& STP_tau_x = STP_tau_x(0.0f));
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U = STPu(0.0f), const STPtauU& STP_tau_u = STPtauU(0.0f), const STPtauX& STP_tau_x = STPtauX(0.0f));
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values

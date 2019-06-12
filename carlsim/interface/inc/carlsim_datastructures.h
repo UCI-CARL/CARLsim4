@@ -325,19 +325,19 @@ struct STPu {
  *   STP_tau_u(2) => all STP_tau_u will be 2 
  *   STP_tau_u(1,10) => STP_tau_u will be from the normal distribution with mean 1 and SD 10
  */
-struct STP_tau_u {
-	STP_tau_u(double _mean) {
+struct STPtauU {
+	STPtauU(double _mean) {
 		mean = _mean;
 		std = 0.0;
 	}
 
-	STP_tau_u(double _mean, double _sd) {
+	STPtauU(double _mean, double _sd) {
 		UserErrors::assertTrue(_sd>=0.0, UserErrors::CANNOT_BE_NEGATIVE, "STP_tau_u", "mean_STP_tau_u", "sd_STP_tau_u");
 		mean = _mean;
 		std = _sd;
 	}
 
-	friend std::ostream& operator<<(std::ostream &strm, const STP_tau_u &tau_u) {
+	friend std::ostream& operator<<(std::ostream &strm, const STPtauU &tau_u) {
 		return strm << "STP_tau_u=[" << tau_u.mean << "," << tau_u.std << "]";
 	}
 	double mean, std;
@@ -353,19 +353,19 @@ struct STP_tau_u {
  *   STP_tau_x(2) => all STP_tau_x will be 2 
  *   STP_tau_x(1,10) => STP_tau_x will be from the normal distribution with mean 1 and SD 10
  */
-struct STP_tau_x {
-	STP_tau_x(double _mean) {
+struct STPtauX {
+	STPtauX(double _mean) {
 		mean = _mean;
 		std = 0.0;
 	}
 
-	STP_tau_x(double _mean, double _sd) {
+	STPtauX(double _mean, double _sd) {
 		UserErrors::assertTrue(_sd>=0.0, UserErrors::CANNOT_BE_NEGATIVE, "STP_tau_x", "mean_STP_tau_x", "sd_STP_tau_x");
 		mean = _mean;
 		std = _sd;
 	}
 
-	friend std::ostream& operator<<(std::ostream &strm, const STP_tau_x &tau_x) {
+	friend std::ostream& operator<<(std::ostream &strm, const STPtauX &tau_x) {
 		return strm << "STP_tau_x=[" << tau_x.mean << "," << tau_x.std << "]";
 	}
 	double mean, std;
