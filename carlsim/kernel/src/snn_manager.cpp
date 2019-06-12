@@ -3689,10 +3689,31 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 		connectionLists[externalNetId].push_back(connInfo);
 }
 
-inline void SNN::generateNormalSample(float mean, float std, float min_limit, float max_limit){
-	std::default_random_engine generator;
-  std::normal_distribution<double> distribution(mean,std);
-	float number = float(distribution(generator));
+inline double SNN::marsaglia_polar_gaussian_generator(const double& mean, const double &stdDev) {
+	static bool hasSpare = false;
+	static double spare;
+
+	if(hasSpare) {
+		hasSpare = false;
+		return mean + stdDev * spare;
+	}
+
+	hasSpare = true;
+	static double u, v, s;
+	do {
+		u = (rand() / ((double) RAND_MAX)) * 2.0 - 1.0;
+		v = (rand() / ((double) RAND_MAX)) * 2.0 - 1.0;
+		s = u * u + v * v;
+	}
+	while( (s >= 1.0) || (s == 0.0) );
+
+	s = sqrt(-2.0 * log(s) / s);
+	spare = v * s;
+	return mean + stdDev * u * s;
+}
+
+inline float SNN::generateNormalSample(float mean, float std, float min_limit, float max_limit){
+	float number = float(marsaglia_polar_gaussian_generator(double(mean), double(std)));
 	number = std::max(number, min_limit);
 	if (max_limit > 0) {
 		number = std::min(number, max_limit);
