@@ -5849,7 +5849,13 @@ void SNN::deleteManagerRuntimeData() {
 
 	if (managerRuntimeData.stpu!=NULL) delete[] managerRuntimeData.stpu;
 	if (managerRuntimeData.stpx!=NULL) delete[] managerRuntimeData.stpx;
+	if (managerRuntimeData.stp_U!=NULL) delete[] managerRuntimeData.stp_U;
+	if (managerRuntimeData.stp_tau_u_inv!=NULL) delete[] managerRuntimeData.stp_tau_u_inv;
+	if (managerRuntimeData.stp_tau_x_inv!=NULL) delete[] managerRuntimeData.stp_tau_x_inv;
+	if (managerRuntimeData.withSTP!=NULL) delete[] managerRuntimeData.withSTP;
 	managerRuntimeData.stpu=NULL; managerRuntimeData.stpx=NULL;
+	managerRuntimeData.stp_U=NULL; managerRuntimeData.stp_tau_u_inv=NULL;
+	managerRuntimeData.stp_tau_x_inv=NULL; managerRuntimeData.withSTP=NULL;
 
 	if (managerRuntimeData.avgFiring!=NULL) delete[] managerRuntimeData.avgFiring;
 	if (managerRuntimeData.baseFiring!=NULL) delete[] managerRuntimeData.baseFiring;
