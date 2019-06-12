@@ -2962,7 +2962,7 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
 			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxOutgoingDelay;
-			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
+			// groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
 			// groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
 			// groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
 			// groupConfigs[netId][lGrpId].STP_tau_x_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv;
@@ -3346,9 +3346,9 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.stpx[2*pre_pos] = 1.0f;
 				managerRuntimeData.stpx[2*pre_pos+1] = 1.0f;
 
-				managerRuntimeData.stp_U[pre_pos] = connIt->stp_U;
-				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->stp_tau_u_inv;
-				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->stp_tau_x_inv;
+				managerRuntimeData.stp_U[pre_pos] = connIt->STP_U;
+				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->STP_tau_u_inv;
+				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->STP_tau_x_inv;
 				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
 				// 
 				parsedConnections++;
@@ -3689,6 +3689,17 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 		connectionLists[externalNetId].push_back(connInfo);
 }
 
+inline void SNN::generateNormalSample(float mean, float std, float min_limit, float max_limit){
+	std::default_random_engine generator;
+  std::normal_distribution<double> distribution(mean,std);
+	float number = float(distribution(generator));
+	number = std::max(number, min_limit);
+	if (max_limit > 0) {
+		number = std::min(number, max_limit);
+	}
+	return number;
+}
+
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
@@ -3711,23 +3722,12 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	if (externalNetId >= 0)
 		connectionLists[externalNetId].push_back(connInfo);
 	
-	if (connectConfigMap[connId].stpConfig.WithSTP){
-			connInfo.STP_U = generateNormalSample(connectConfigMap[connId].STP_U_mean, connectConfigMap[connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
-			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[connId].STP_tau_u_mean, connectConfigMap[connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
-			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[connId].STP_tau_x_mean, connectConfigMap[connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+	if (connectConfigMap[_connId].stpConfig.WithSTP){
+			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
+			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.withSTP = true;
 	}
-}
-
-inline void SNN::generateNormalSample(float mean, float std, float min_limit, float max_limit){
-	std::default_random_engine generator;
-  std::normal_distribution<double> distribution(mean,std);
-	float number = float(distribution(generator));
-	number = std::max(number, min_limit);
-	if (max_limit > 0) {
-		number = std::min(number, max_limit);
-	}
-	return number;
 }
 
 // make 'C' full connections from grpSrc to grpDest

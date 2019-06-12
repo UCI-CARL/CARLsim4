@@ -221,10 +221,6 @@ void SNN::printGroupInfo(int gGrpId) {
 
 	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {
 		KERNEL_INFO("  - STP:");
-		KERNEL_INFO("      - STP_A                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_A);
-		KERNEL_INFO("      - STP_U                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_U);
-		KERNEL_INFO("      - STP_tau_u              = %8d", (int) (1.0f/groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv));
-		KERNEL_INFO("      - STP_tau_x              = %8d", (int) (1.0f/groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv));
 	}
 
 	if(groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
@@ -267,10 +263,6 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 
 	if (groupConfigMap[gGrpId].stpConfig.WithSTP) {
 		KERNEL_INFO("    |-+ STP:");
-		KERNEL_INFO("      |- STP_A                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_A);
-		KERNEL_INFO("      |- STP_U                  = %8.5f", groupConfigMap[gGrpId].stpConfig.STP_U);
-		KERNEL_INFO("      |- STP_tau_u              = %8d", (int)(1.0f / groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv));
-		KERNEL_INFO("      |- STP_tau_x              = %8d", (int)(1.0f / groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv));
 	}
 
 	if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {

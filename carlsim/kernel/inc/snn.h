@@ -82,6 +82,7 @@
 #include <cassert>
 #include <cstdio>
 #include <climits>
+#include <limits>
 
 #include <carlsim.h>
 #include <callback_core.h>
@@ -688,6 +689,7 @@ private:
 	void connectNetwork();
 	inline void connectNeurons(int netId, int srcGrp, int destGrp, int srcN, int destN, short int connId, int externalNetId);
 	inline void connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId);
+	inline void generateNormalSample(float mean, float std, float min_limit, float max_limit);
 	void connectFull(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectOneToOne(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);
 	void connectRandom(int netId, std::list<ConnectConfig>::iterator connIt, bool isExternal);

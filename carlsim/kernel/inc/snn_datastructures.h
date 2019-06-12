@@ -331,7 +331,7 @@ typedef struct GroupConfig_s {
 	Grid3D grid; //<! location information of neurons
 	NeuralDynamicsConfig neuralDynamicsConfig;
 	STDPConfig stdpConfig;
-	// STPConfig stpConfig;
+	STPConfig stpConfig;
 	HomeostasisConfig homeoConfig;
 	NeuromodulatorConfig neuromodulatorConfig;
 } GroupConfig;
