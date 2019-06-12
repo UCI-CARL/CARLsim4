@@ -797,14 +797,14 @@ public:
 			UserErrors::assertTrue(isExcitatoryGroup(preGrpId) || isInhibitoryGroup(preGrpId), UserErrors::WRONG_NEURON_TYPE,
 				funcName, "setSTP");
 
-			if (isExcitatoryGroup(grpId))
+			if (isExcitatoryGroup(preGrpId))
 				// snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tau_u_exc_,def_STP_tau_x_exc_);
 				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_exc_mean, def_STP_U_exc_std, def_STP_tau_u_exc_mean, def_STP_tau_u_exc_std, def_STP_tau_x_exc_mean, def_STP_tau_x_exc_std);
-			else if (isInhibitoryGroup(grpId))
+			else if (isInhibitoryGroup(preGrpId))
 				//snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tau_u_inh_,def_STP_tau_x_inh_);
 				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_inh_mean, def_STP_U_inh_std, def_STP_tau_u_inh_mean, def_STP_tau_u_inh_std, def_STP_tau_x_inh_mean, def_STP_tau_x_inh_std);
 			else {
-				// some error message
+				// otherwise it will fail the assert anyway
 			}
 		} else { // disable STDP
 			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -1906,12 +1906,12 @@ void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
 }
 
 // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-void CARLsim::setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
-	_impl->setSTP(grpId, isSet, STP_U, STP_tau_u, STP_tau_x);
+void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STP_tau_u& STP_tau_u, const STP_tau_x& STP_tau_x) {
+	_impl->setSTP(preGrpId, postGrpId, isSet, STP_U, STP_tau_u, STP_tau_x);
 }
 
 // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
-void CARLsim::setSTP(int grpId, bool isSet) { _impl->setSTP(grpId, isSet); }
+void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet) { _impl->setSTP(preGrpId, postGrpId, isSet); }
 
 // Sets the weight and weight change update parameters
 void CARLsim::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, 
