@@ -2867,6 +2867,11 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.synSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
 
+	memset(managerRuntimeData.stp_U, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_tau_u_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_tau_x_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.withSTP, 0, sizeof(bool) * managerRTDSize.maxNumPreSynNet);
+
 	mulSynFast = new float[managerRTDSize.maxNumConnections];
 	mulSynSlow = new float[managerRTDSize.maxNumConnections];
 	memset(mulSynFast, 0, sizeof(float) * managerRTDSize.maxNumConnections);
@@ -3737,11 +3742,10 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0*fabs(maxWt);
 	connInfo.delay = delay;
 
-	connectionLists[netId].push_back(connInfo);
-
-	// If the connection is external, copy the connection info to the external network
-	if (externalNetId >= 0)
-		connectionLists[externalNetId].push_back(connInfo);
+	connInfo.STP_U = 0.01f;
+	connInfo.STP_tau_u_inv = 1.0f;
+	connInfo.STP_tau_x_inv = 1.0f;
+	connInfo.withSTP = false;
 	
 	if (connectConfigMap[_connId].stpConfig.WithSTP){
 			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
@@ -3749,6 +3753,12 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.withSTP = true;
 	}
+
+	connectionLists[netId].push_back(connInfo);
+
+	// If the connection is external, copy the connection info to the external network
+	if (externalNetId >= 0)
+		connectionLists[externalNetId].push_back(connInfo);
 }
 
 // make 'C' full connections from grpSrc to grpDest

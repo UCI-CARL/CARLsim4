@@ -471,6 +471,7 @@ void SNN::copyExtFiringTable(int netId) {
 #else // POSIX
 	void* SNN::doSTPUpdateAndDecayCond_CPU(int netId) {
 #endif
+	// KERNEL_INFO("Inside SNN::doSTPUpdateAndDecayCond_CPU(int netId)");
 	assert(runtimeData[netId].memType == CPU_MEM);
 	// ToDo: This can be further optimized using multiple threads allocated on mulitple CPU cores
 	// decay the STP variables before adding new spikes.
@@ -481,11 +482,14 @@ void SNN::copyExtFiringTable(int netId) {
 	// decay conductances 
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
-			assert(lNId < networkConfigs[netId].numNReg);
+			//KERNEL_INFO("lNId < networkConfigs[netId].numNReg: %d - %d - %d\n", lNId, networkConfigs[netId].numNReg, groupConfigs[netId][lGrpId].lEndN);
+			assert(lNId < networkConfigs[netId].numN);
 			unsigned int offset = runtimeData[netId].cumulativePre[lNId];
 			for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
 				int lSId = offset + j;
+				//KERNEL_INFO("outside: %d", lSId);
 				if (runtimeData[netId].withSTP[lSId]) {
+					//KERNEL_INFO("inside: %d", lSId);
 					int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
 					int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
 					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].stp_tau_u_inv[lSId]);
@@ -525,7 +529,7 @@ void SNN::copyExtFiringTable(int netId) {
 	// Static multithreading subroutine method - helper for the above method  
 	void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
-		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
+		
 		((SNN *)args->snn_pointer) -> doSTPUpdateAndDecayCond_CPU(args->netId);
 		pthread_exit(0);
 	}
@@ -1655,25 +1659,22 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 		if(allocateMem)
 			dest->maxSynWt = new float[networkConfigs[netId].numPreSynNet];
 		memcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet);
-
-		// allocate synapse stp parameters to runtime data
-		if(allocateMem) {
-			dest->stp_U = new float[networkConfigs[netId].numPreSynNet];
-			dest->stp_tau_u_inv = new float[networkConfigs[netId].numPreSynNet];
-			dest->stp_tau_x_inv = new float[networkConfigs[netId].numPreSynNet];
-			dest->withSTP = new bool[networkConfigs[netId].numPreSynNet];
-			dest->stpu = new float[networkConfigs[netId].numPreSynNet * 2];
-			dest->stpx = new float[networkConfigs[netId].numPreSynNet * 2];
-
-		}
-		memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet);
-		memcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
-		memcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
-		memcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet);
-		memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
-		memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
-			
 	}
+	// allocate synapse stp parameters to runtime data
+	if(allocateMem) {
+		dest->stp_U = new float[networkConfigs[netId].numPreSynNet];
+		dest->stp_tau_u_inv = new float[networkConfigs[netId].numPreSynNet];
+		dest->stp_tau_x_inv = new float[networkConfigs[netId].numPreSynNet];
+		dest->withSTP = new bool[networkConfigs[netId].numPreSynNet];
+		// dest->stpu = new float[networkConfigs[netId].numPreSynNet * 2];
+		// dest->stpx = new float[networkConfigs[netId].numPreSynNet * 2];
+	}
+	memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet);
+	memcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
+	memcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
+	memcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet);
+	// memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
+	// memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
 }
 
 /*!
