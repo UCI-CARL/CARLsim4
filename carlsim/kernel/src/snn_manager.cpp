@@ -715,7 +715,7 @@ void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, floa
 	assert(postGrpId >= -1);
 	if (isSet) {
 		assert(STP_U_mean > 0 && STP_U_mean <= 1); assert(STP_tau_u_mean > 0); assert(STP_tau_x_mean > 0);
-		assert(STP_U_std > 0); assert(STP_tau_u_std > 0); assert(STP_tau_x_std > 0);
+		assert(STP_U_std >= 0); assert(STP_tau_u_std >= 0); assert(STP_tau_x_std >= 0);
 	}
 
 	// set STDP for a given group
@@ -863,14 +863,21 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i = 0; i < runDurationMs; i++) {
+		//KERNEL_INFO("beforeAbvSimStep");
+
 		advSimStep();
+		//KERNEL_INFO("afterAbvSimStep");
+
 		//KERNEL_INFO("Executed an advSimStep!");
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
 			wtANDwtChangeUpdateIntervalCnt_ = 0; // reset counter
+			//KERNEL_INFO("close to update weights");
+
 			if (!sim_in_testing) {
 				// keep this if statement separate from the above, so that the counter is updated correctly
+				//KERNEL_INFO("call update weights");
 				updateWeights();
 			}
 		}
@@ -2169,6 +2176,8 @@ void SNN::advSimStep() {
 	//KERNEL_INFO("globalStateUpdate!");
 
 	clearExtFiringTable();
+	//KERNEL_INFO("clearExtFT");
+
 }
 
 void SNN::doSTPUpdateAndDecayCond() {

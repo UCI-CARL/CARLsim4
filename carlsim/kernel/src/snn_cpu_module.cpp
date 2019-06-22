@@ -613,7 +613,7 @@ void SNN::copyExtFiringTable(int netId) {
 				}
 
 				// update STP for neurons that fire
-				if (groupConfigs[netId][lGrpId].WithSTP) {
+				if (groupConfigs[netId][lGrpId].WithSTP && (!groupConfigs[netId][lGrpId].Type & POISSON_NEURON)) {
 					firingUpdateSTP(lNId, lGrpId, netId);
 				}
 
