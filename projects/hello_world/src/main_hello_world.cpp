@@ -118,17 +118,17 @@ int main() {
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
-	for (int isRunLong=0; isRunLong<=1; isRunLong++) {
+	for (int isRunLong=0; isRunLong<1; isRunLong++) {
 	//int isRunLong = 1;
-		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
+		for (int hasCOBA=0; hasCOBA<1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int mode = 0; mode < TESTED_MODES; mode++) {
+			for (int mode = 0; mode < 1; mode++) {
 			//int isGPUmode = 1;
 				// compare
 				float rateG2noSTP = -1.0f;
 				float rateG3noSTP = -1.0f;
 
-				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
+				for (int hasSTP=0; hasSTP<1; hasSTP++) {
 				//int hasSTP = 1;
 					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,USER,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
@@ -167,7 +167,7 @@ int main() {
 
 					spkMonG2->startRecording();
 					spkMonG3->startRecording();
-					int runTimeMs = isRunLong ? 2000 : 100;
+					int runTimeMs = isRunLong ? 2000 : 10;
 					sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
 					spkMonG2->stopRecording();
 					spkMonG3->stopRecording();
@@ -179,6 +179,8 @@ int main() {
 						//spkMonG3->print(true);
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
+						//printf("spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f\n", rateG2noSTP);
+						//printf("spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f\n", rateG3noSTP);
 					} else {
 						//spkMonG2->print(true);
 						//spkMonG3->print(true);
@@ -207,11 +209,10 @@ int main() {
 						}
 					}
 
-					delete spkGenG0, spkGenG1;
+					delete spkGenG0;//, spkGenG1;
 					delete sim;
 				}
 			}
 		}
 	}
 }
-

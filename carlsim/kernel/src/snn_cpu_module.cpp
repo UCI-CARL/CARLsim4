@@ -483,17 +483,27 @@ void SNN::copyExtFiringTable(int netId) {
 	for (int lGrpId = 0; lGrpId < networkConfigs[netId].numGroups; lGrpId++) {
 		for(int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
 			//KERNEL_INFO("lNId < networkConfigs[netId].numNReg: %d - %d - %d\n", lNId, networkConfigs[netId].numNReg, groupConfigs[netId][lGrpId].lEndN);
-			assert(lNId < networkConfigs[netId].numN);
-			unsigned int offset = runtimeData[netId].cumulativePre[lNId];
-			for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
+			//assert(lNId < networkConfigs[netId].numN);
+			unsigned int offset = runtimeData[netId].cumulativePost[lNId];
+			//KERNEL_INFO("lGrpId: %d -- lNId: %d ", lGrpId, lNId);
+			//KERNEL_INFO("runtimeData[netId].Npre[lNId]: %d", runtimeData[netId].Npre[lNId]);
+			// if (groupConfigs[netId][lGrpId].isSpikeGenerator){
+			// 	KERNEL_INFO("%d is a spike generator", lNId);
+			// }
+			for (int j = 0; j < runtimeData[netId].Npost[lNId]; j++) {
 				int lSId = offset + j;
-				//KERNEL_INFO("outside: %d", lSId);
+				//KERNEL_INFO("lGrpId: %d -- lNId: %d -- lSId: %d ", lGrpId, lNId, lSId);
 				if (runtimeData[netId].withSTP[lSId]) {
 					//KERNEL_INFO("inside: %d", lSId);
 					int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
 					int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
 					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].stp_tau_u_inv[lSId]);
 					runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * runtimeData[netId].stp_tau_x_inv[lSId];
+
+					//KERNEL_INFO("lGrpId: %d -- lNId: %d -- lSId: %d -- stpu: %f -- stpx: %f", lGrpId, lNId, lSId, runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_plus]);
+					KERNEL_INFO("\ndoSTPUpdateAndDecayCond_CPU, group id: %d, neuron id: %d, Synapse id: %d, minus: %d, plus: %d, netid: %d", lGrpId, lNId, lSId, ind_minus, ind_plus, netId);
+					KERNEL_INFO("stpu: %f/%f -- stpx: %f/%f", runtimeData[netId].stpu[ind_minus], runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_minus], runtimeData[netId].stpx[ind_plus]);
+					KERNEL_INFO("tau_u_inv: %f -- tau_x_inv: %f", runtimeData[netId].stp_tau_u_inv[lSId], runtimeData[netId].stp_tau_x_inv[lSId]);
 				}
 			}
 			// if (groupConfigs[netId][lGrpId].WithSTP) {
@@ -612,8 +622,10 @@ void SNN::copyExtFiringTable(int netId) {
 					assert(extFireId != -1);
 				}
 
+				//KERNEL_INFO("before calling firingupdateSTP");
 				// update STP for neurons that fire
-				if (groupConfigs[netId][lGrpId].WithSTP && (!groupConfigs[netId][lGrpId].Type & POISSON_NEURON)) {
+				if (groupConfigs[netId][lGrpId].WithSTP){ // && (!groupConfigs[netId][lGrpId].Type & POISSON_NEURON)) {
+					//KERNEL_INFO("after calling firingupdateSTP");
 					firingUpdateSTP(lNId, lGrpId, netId);
 				}
 
@@ -708,15 +720,20 @@ void SNN::firingUpdateSTP(int lNId, int lGrpId, int netId) {
 	// // dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
 	// runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
 
-	assert(lNId < networkConfigs[netId].numNReg);
-	unsigned int offset = runtimeData[netId].cumulativePre[lNId];
-	for (int j = 0; j < runtimeData[netId].Npre[lNId]; j++) {
+	//assert(lNId < networkConfigs[netId].numNReg);
+	unsigned int offset = runtimeData[netId].cumulativePost[lNId];
+	//KERNEL_INFO("inside firingUpdateSTP -- Npost: %d -- offset: %d\n", runtimeData[netId].Npost[lNId], offset);
+	for (int j = 0; j < runtimeData[netId].Npost[lNId]; j++) {
 		int lSId = offset + j;
 		if (runtimeData[netId].withSTP[lSId]) {
 			int ind_plus  = STP_BUF_POS(lSId, simTime, glbNetworkConfig.maxDelay);
 			int ind_minus = STP_BUF_POS(lSId, (simTime - 1), glbNetworkConfig.maxDelay);
 			runtimeData[netId].stpu[ind_plus] += runtimeData[netId].stp_U[lSId] * (1.0f - runtimeData[netId].stpu[ind_minus]);
 			runtimeData[netId].stpx[ind_plus] -= runtimeData[netId].stpu[ind_plus]  * runtimeData[netId].stpx[ind_minus];
+
+			KERNEL_INFO("Firing Update STP -- grpId: %d -- nId: %d -- lSid: %d\n", lGrpId, lNId, lSId);
+			KERNEL_INFO("stpu: %f/%f -- stpx: %f/%f\n", runtimeData[netId].stpu[ind_minus], runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_minus], runtimeData[netId].stpx[ind_plus]);
+			KERNEL_INFO("tau_u_inv: %f -- tau_x_inv: %f -- stp_U:%f\n", runtimeData[netId].stp_tau_u_inv[lSId], runtimeData[netId].stp_tau_x_inv[lSId], runtimeData[netId].stp_U[lSId]);
 		}
 	}
 }
@@ -789,10 +806,13 @@ void SNN::generatePostSynapticSpike(int preNId, int postNId, int synId, int tD, 
 
 		// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
 		// I noticed that for connect(.., RangeDelay(1), ..) tD will be 0
-		int ind_minus = STP_BUF_POS(preNId, (simTime-tD-1), networkConfigs[netId].maxDelay);
-		int ind_plus  = STP_BUF_POS(preNId, (simTime-tD), networkConfigs[netId].maxDelay);
-
-		change *= groupConfigs[netId][pre_grpId].STP_A * runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
+		int ind_minus = STP_BUF_POS(pos, (simTime-tD-1), networkConfigs[netId].maxDelay);
+		int ind_plus  = STP_BUF_POS(pos, (simTime-tD), networkConfigs[netId].maxDelay);
+		
+		float STP_A = (runtimeData[netId].stp_U[pos] > 0.0f) ? 1.0 / runtimeData[netId].stp_U[pos] : 1.0f;
+		change *= STP_A * runtimeData[netId].stpu[ind_plus] * runtimeData[netId].stpx[ind_minus];
+		KERNEL_INFO("change: %f -- pos:%d -- preNId:%d -- postNId:%d -- netId:%d\n", change, pos, preNId, postNId, netId);
+		KERNEL_INFO("STP_A: %f -- stpu:%f -- stpx:%f", STP_A, runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_minus]);
 
 		//printf("%d: %d[%d], numN=%d, td=%d, maxDelay_=%d, ind-=%d, ind+=%d, stpu=[%f,%f], stpx=[%f,%f], change=%f, wt=%f\n",
 		//	simTime, pre_grpId, preNId,
@@ -1483,6 +1503,13 @@ void SNN::allocateSNN_CPU(int netId) {
 
 	// allocation of CPU runtime data is done
 	runtimeData[netId].allocated = true;
+	// KERNEL_INFO("After Allocation, runtimedata");
+	// KERNEL_INFO("stpx 8: %f, stpx 9: %f", runtimeData[0].stpx[8], runtimeData[0].stpx[9]);
+	// KERNEL_INFO("stpx 10: %f, stpx 11: %f", runtimeData[0].stpx[10], runtimeData[0].stpx[11]);
+
+	// KERNEL_INFO("After Allocation, manager runtimedata");
+	// KERNEL_INFO("stpx 8: %f, stpx 9: %f", managerRuntimeData.stpx[8], managerRuntimeData.stpx[9]);
+	// KERNEL_INFO("stpx 10: %f, stpx 11: %f", managerRuntimeData.stpx[10], managerRuntimeData.stpx[11]);
 }
 
 /*!
@@ -2191,13 +2218,14 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 	}
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
+	KERNEL_INFO("copySTPState, nPre: %d, nPost: %d, maxNPre: %d, maxNPost: %d", networkConfigs[netId].numPreSynNet, networkConfigs[netId].numPostSynNet, networkConfigs[netId].maxNumPreSynN, networkConfigs[netId].maxNumPostSynN);
 	if(allocateMem)
-		dest->stpu = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
-	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
+		dest->stpu = new float[networkConfigs[netId].numPostSynNet * (networkConfigs[netId].maxDelay + 1)];
+	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPostSynNet * (networkConfigs[netId].maxDelay + 1));
 
 	if(allocateMem)
-		dest->stpx = new float[networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1)];
-	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numN * (networkConfigs[netId].maxDelay + 1));
+		dest->stpx = new float[networkConfigs[netId].numPostSynNet * (networkConfigs[netId].maxDelay + 1)];
+	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPostSynNet * (networkConfigs[netId].maxDelay + 1));
 }
 
 // ToDo: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData

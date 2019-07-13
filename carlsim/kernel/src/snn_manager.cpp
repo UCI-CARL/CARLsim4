@@ -3364,6 +3364,10 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->STP_tau_u_inv;
 				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->STP_tau_x_inv;
 				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
+
+				KERNEL_INFO("pre_pos: %d -- stpu:%f/%f -- stpx:%f/%f", pre_pos, managerRuntimeData.stpu[2*pre_pos], managerRuntimeData.stpu[2*pre_pos+1],
+				managerRuntimeData.stpx[2*pre_pos],managerRuntimeData.stpx[2*pre_pos+1]);
+
 				// 
 				parsedConnections++;
 
@@ -3669,40 +3673,6 @@ void SNN::connectNetwork() {
 	}
 }
 
-//! set one specific connection from neuron id 'src' to neuron id 'dest'
-inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
-	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
-	ConnectionInfo connInfo;
-	connInfo.grpSrc = _grpSrc;
-	connInfo.grpDest = _grpDest;
-	connInfo.nSrc = _nSrc;
-	connInfo.nDest = _nDest;
-	connInfo.srcGLoffset = 0;
-	connInfo.connId = _connId;
-	connInfo.preSynId = -1;
-	connInfo.initWt = 0.0f;
-	connInfo.maxWt = 0.0f;
-	connInfo.delay = 0;
-
-	// generate the delay vaule
-	connInfo.delay = connectConfigMap[_connId].minDelay + rand() % (connectConfigMap[_connId].maxDelay - connectConfigMap[_connId].minDelay + 1);
-	assert((connInfo.delay >= connectConfigMap[_connId].minDelay) && (connInfo.delay <= connectConfigMap[_connId].maxDelay));
-	// generate the max weight and initial weight
-	//float initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
-	float initWt = connectConfigMap[_connId].initWt;
-	float maxWt = connectConfigMap[_connId].maxWt;
-	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
-	// this access is fine, isExcitatoryGroup() use global grpId
-	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
-	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
-
-	connectionLists[netId].push_back(connInfo);
-
-	// If the connection is external, copy the connection info to the external network
-	if (externalNetId >= 0)
-		connectionLists[externalNetId].push_back(connInfo);
-}
-
 inline double SNN::marsaglia_polar_gaussian_generator(const double& mean, const double &stdDev) {
 	static bool hasSpare = false;
 	static double spare;
@@ -3736,6 +3706,54 @@ inline float SNN::generateNormalSample(float mean, float std, float min_limit, f
 }
 
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
+inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
+	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
+	ConnectionInfo connInfo;
+	connInfo.grpSrc = _grpSrc;
+	connInfo.grpDest = _grpDest;
+	connInfo.nSrc = _nSrc;
+	connInfo.nDest = _nDest;
+	connInfo.srcGLoffset = 0;
+	connInfo.connId = _connId;
+	connInfo.preSynId = -1;
+	connInfo.initWt = 0.0f;
+	connInfo.maxWt = 0.0f;
+	connInfo.delay = 0;
+
+	// generate the delay vaule
+	connInfo.delay = connectConfigMap[_connId].minDelay + rand() % (connectConfigMap[_connId].maxDelay - connectConfigMap[_connId].minDelay + 1);
+	assert((connInfo.delay >= connectConfigMap[_connId].minDelay) && (connInfo.delay <= connectConfigMap[_connId].maxDelay));
+	// generate the max weight and initial weight
+	//float initWt = generateWeight(connectConfigMap[it->connId].connProp, connectConfigMap[it->connId].initWt, connectConfigMap[it->connId].maxWt, it->nSrc, it->grpSrc);
+	float initWt = connectConfigMap[_connId].initWt;
+	float maxWt = connectConfigMap[_connId].maxWt;
+	// adjust sign of weight based on pre-group (negative if pre is inhibitory)
+	// this access is fine, isExcitatoryGroup() use global grpId
+	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
+	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
+
+	connInfo.STP_U = 0.01f;
+	connInfo.STP_tau_u_inv = 1.0f;
+	connInfo.STP_tau_x_inv = 1.0f;
+	connInfo.withSTP = false;
+	
+	//KERNEL_INFO("outside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	if (connectConfigMap[_connId].stpConfig.WithSTP){
+			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
+			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.withSTP = true;
+			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	}
+
+	connectionLists[netId].push_back(connInfo);
+
+	// If the connection is external, copy the connection info to the external network
+	if (externalNetId >= 0)
+		connectionLists[externalNetId].push_back(connInfo);
+}
+
+//! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
 	ConnectionInfo connInfo;
@@ -3756,11 +3774,13 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.STP_tau_x_inv = 1.0f;
 	connInfo.withSTP = false;
 	
+	//KERNEL_INFO("outside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
 	if (connectConfigMap[_connId].stpConfig.WithSTP){
 			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
 			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.withSTP = true;
+			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
 	}
 
 	connectionLists[netId].push_back(connInfo);
