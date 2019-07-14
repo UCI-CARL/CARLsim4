@@ -202,7 +202,7 @@ TEST(STP, firingRateSTDvsSTF) {
 }
 
 #ifndef __NO_CUDA__
-TEST(STP, spikeTimesCPUvsGPU) {
+TEST(STP, stpSpikeTimesCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim *sim = NULL;

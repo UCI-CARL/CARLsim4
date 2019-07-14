@@ -122,13 +122,13 @@ int main() {
 	//int isRunLong = 1;
 		for (int hasCOBA=0; hasCOBA<1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int mode = 0; mode < 1; mode++) {
+			for (int mode = 0; mode <= 1; mode++) {
 			//int isGPUmode = 1;
 				// compare
 				float rateG2noSTP = -1.0f;
 				float rateG3noSTP = -1.0f;
 
-				for (int hasSTP=0; hasSTP<1; hasSTP++) {
+				for (int hasSTP=1; hasSTP<=1; hasSTP++) {
 				//int hasSTP = 1;
 					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,USER,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
