@@ -2505,7 +2505,7 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
 	size_t STP_Pitch;
-	size_t widthInBytes = sizeof(float) * networkConfigs[netId].numN;
+	size_t widthInBytes = sizeof(float) * networkConfigs[netId].numPostSynNet;
 
 	//	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpu, sizeof(float)*networkConfigs[0].numN));
 	//	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[0], &src->stpu[0], sizeof(float)*networkConfigs[0].numN, kind));
@@ -2682,6 +2682,18 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaM
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet));
 		CUDA_CHECK_ERRORS(cudaMemcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
 	}
+
+	// allocate synapse stp parameters to runtime data
+	if(allocateMem) {
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_U, sizeof(float) * networkConfigs[netId].numPostSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPostSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPostSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->withSTP, sizeof(bool) * networkConfigs[netId].numPostSynNet));
+	}
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPostSynNet, kind));
 }
 
 /*!

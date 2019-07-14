@@ -1689,17 +1689,17 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
 	}
 	// allocate synapse stp parameters to runtime data
 	if(allocateMem) {
-		dest->stp_U = new float[networkConfigs[netId].numPreSynNet];
-		dest->stp_tau_u_inv = new float[networkConfigs[netId].numPreSynNet];
-		dest->stp_tau_x_inv = new float[networkConfigs[netId].numPreSynNet];
-		dest->withSTP = new bool[networkConfigs[netId].numPreSynNet];
+		dest->stp_U = new float[networkConfigs[netId].numPostSynNet];
+		dest->stp_tau_u_inv = new float[networkConfigs[netId].numPostSynNet];
+		dest->stp_tau_x_inv = new float[networkConfigs[netId].numPostSynNet];
+		dest->withSTP = new bool[networkConfigs[netId].numPostSynNet];
 		// dest->stpu = new float[networkConfigs[netId].numPreSynNet * 2];
 		// dest->stpx = new float[networkConfigs[netId].numPreSynNet * 2];
 	}
-	memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet);
-	memcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
-	memcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet);
-	memcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet);
+	memcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPostSynNet);
+	memcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPostSynNet);
+	memcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPostSynNet);
+	memcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPostSynNet);
 	// memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
 	// memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet* 2);
 }
