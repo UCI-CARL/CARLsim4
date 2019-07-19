@@ -109,7 +109,7 @@ TEST(STP, firingRateSTDvsSTF) {
 	//int isRunLong = 1;
 		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int mode = 1; mode < TESTED_MODES; mode++) {
+			for (int mode = 0; mode < TESTED_MODES; mode++) {
 			//int isGPUmode = 1;
 		
 				// compare
@@ -120,10 +120,10 @@ TEST(STP, firingRateSTDvsSTF) {
 				//int hasSTP = 1;
 					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
 					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
-					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
+					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON, 1, mode?GPU_CORES:CPU_CORES);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
+					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON, 1, mode?GPU_CORES:CPU_CORES);
 					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
 
 					float wt = hasCOBA ? 0.2f : 18.0f;
