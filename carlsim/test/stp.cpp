@@ -109,8 +109,9 @@ TEST(STP, firingRateSTDvsSTF) {
 	//int isRunLong = 1;
 		for (int hasCOBA=0; hasCOBA<=1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int mode = 0; mode < TESTED_MODES; mode++) {
+			for (int mode = 1; mode < TESTED_MODES; mode++) {
 			//int isGPUmode = 1;
+		
 				// compare
 				float rateG2noSTP = -1.0f;
 				float rateG3noSTP = -1.0f;
@@ -118,12 +119,12 @@ TEST(STP, firingRateSTDvsSTF) {
 				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
 				//int hasSTP = 1;
 					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
-					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
-					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
+					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
+					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
-					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
+					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
+					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON, 0, mode?GPU_CORES:CPU_CORES);
 
 					float wt = hasCOBA ? 0.2f : 18.0f;
 					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
@@ -166,6 +167,7 @@ TEST(STP, firingRateSTDvsSTF) {
 						//spkMonG3->print(true);
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
+						// printf("IN NO STP, rateG2noSTP: %f, rateG3noSTP: %f \n", rateG2noSTP, rateG3noSTP);
 					} else {
 						//spkMonG2->print(true);
 						//spkMonG3->print(true);
@@ -183,6 +185,9 @@ TEST(STP, firingRateSTDvsSTF) {
 						// if STP is on: compare spike rate to the one recorded without STP
 						if (isRunLong) {
 							// the run time was relatively long, so STP should have its expected effect
+							printf("Long run -- spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f -- %f\n", spkMonG2->getPopMeanFiringRate(), rateG2noSTP);
+							printf("Long run -- spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f -- %f\n", spkMonG3->getPopMeanFiringRate(), rateG3noSTP);
+
 							EXPECT_TRUE( spkMonG2->getPopMeanFiringRate() < rateG2noSTP); // depressive
 							EXPECT_TRUE( spkMonG3->getPopMeanFiringRate() > rateG3noSTP); // facilitative
 						} else {

@@ -526,6 +526,7 @@ typedef struct RuntimeData_s {
 	float* stp_tau_u_inv;
 	float* stp_tau_x_inv;
 	bool* withSTP;
+	int* delay;
 
 	unsigned short*	Npre;				//!< stores the number of input connections to a neuron
 	unsigned short*	Npre_plastic;		//!< stores the number of plastic input connections to a neuron

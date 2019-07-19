@@ -2168,7 +2168,7 @@ void SNN::advSimStep() {
 	routeSpikes();
 
 	doCurrentUpdate();
-
+	
 	//KERNEL_INFO("doCurrentUpdate!");
 
 	globalStateUpdate();
@@ -2865,6 +2865,7 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.stp_tau_u_inv           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.stp_tau_x_inv           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.withSTP           = new bool[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.delay             = new int[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wt           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wtChange     = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.maxSynWt     = new float[managerRTDSize.maxNumPreSynNet];
@@ -2875,11 +2876,12 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.synSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
-
 	memset(managerRuntimeData.stp_U, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.stp_tau_u_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.stp_tau_x_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.withSTP, 0, sizeof(bool) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.delay, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
+
 
 	mulSynFast = new float[managerRTDSize.maxNumConnections];
 	mulSynSlow = new float[managerRTDSize.maxNumConnections];
@@ -3364,6 +3366,7 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->STP_tau_u_inv;
 				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->STP_tau_x_inv;
 				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
+				managerRuntimeData.delay[pre_pos] = connIt->delay;
 
 				KERNEL_INFO("pre_pos: %d -- stpu:%f/%f -- stpx:%f/%f", pre_pos, managerRuntimeData.stpu[2*pre_pos], managerRuntimeData.stpu[2*pre_pos+1],
 				managerRuntimeData.stpx[2*pre_pos],managerRuntimeData.stpx[2*pre_pos+1]);
