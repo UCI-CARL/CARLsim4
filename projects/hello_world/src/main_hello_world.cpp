@@ -118,29 +118,31 @@ int main() {
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
 	PeriodicSpikeGenerator *spkGenG0 = NULL, *spkGenG1 = NULL;
 
-	for (int isRunLong=0; isRunLong<1; isRunLong++) {
+	for (int isRunLong=1; isRunLong<=1; isRunLong++) {
 	//int isRunLong = 1;
-		for (int hasCOBA=0; hasCOBA<1; hasCOBA++) {
+		for (int hasCOBA=1; hasCOBA<=1; hasCOBA++) {
 		//int hasCOBA = 1;
-			for (int mode = 0; mode <= 1; mode++) {
+			for (int mode = 1; mode <= 1; mode++) {
 			//int isGPUmode = 1;
 				// compare
 				float rateG2noSTP = -1.0f;
 				float rateG3noSTP = -1.0f;
 
-				for (int hasSTP=1; hasSTP<=1; hasSTP++) {
+				for (int hasSTP=0; hasSTP<=1; hasSTP++) {
 				//int hasSTP = 1;
-					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,USER,1,randSeed);
-					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON);
-					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON);
+					Stopwatch watch(false);
+					watch.start();
+					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
+					int g2=sim->createGroup("STD", 1000, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
+					int g3=sim->createGroup("STF", 1000, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-					int g0=sim->createSpikeGeneratorGroup("input0", 1, EXCITATORY_NEURON);
-					int g1=sim->createSpikeGeneratorGroup("input1", 1, EXCITATORY_NEURON);
+					int g0=sim->createSpikeGeneratorGroup("input0", 1000, EXCITATORY_NEURON, 0, GPU_CORES);// mode?GPU_CORES:CPU_CORES);
+					int g1=sim->createSpikeGeneratorGroup("input1", 1000, EXCITATORY_NEURON, 0, GPU_CORES);// mode?GPU_CORES:CPU_CORES);
 
 					float wt = hasCOBA ? 0.2f : 18.0f;
-					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
-					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(10));
+					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(10));
 
 					if (hasCOBA)
 						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
@@ -157,6 +159,7 @@ int main() {
 					sim->setSpikeGenerator(g0, spkGenG0);
 					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g1, spkGenG1);
+					watch.lap();
 
 					sim->setupNetwork();
 
@@ -168,7 +171,10 @@ int main() {
 					spkMonG2->startRecording();
 					spkMonG3->startRecording();
 					int runTimeMs = isRunLong ? 2000 : 10;
+
+					watch.lap();
 					sim->runNetwork(runTimeMs/1000, runTimeMs%1000);
+					watch.stop(false);
 					spkMonG2->stopRecording();
 					spkMonG3->stopRecording();
 
@@ -179,6 +185,8 @@ int main() {
 						//spkMonG3->print(true);
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
+						printf("no stp config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
+
 						//printf("spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f\n", rateG2noSTP);
 						//printf("spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f\n", rateG3noSTP);
 					} else {
@@ -198,18 +206,21 @@ int main() {
 						// if STP is on: compare spike rate to the one recorded without STP
 						if (isRunLong) {
 							// the run time was relatively long, so STP should have its expected effect
+							printf("with stp long config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
+
 							printf("Long run -- spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f -- %f\n", spkMonG2->getPopMeanFiringRate(), rateG2noSTP);
 							printf("Long run -- spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f -- %f\n", spkMonG3->getPopMeanFiringRate(), rateG3noSTP);
 						 // facilitative
 						} else {
 							// the run time was really short, so STP should have no effect (because we scale STP_A so
 							// that STP has no weakening/strengthening effect on the first spike)
+							printf("with stp short config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
 							printf("Short run -- spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f -- %f\n", spkMonG2->getPopMeanFiringRate(), rateG2noSTP);
 							printf("Short run -- spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f -- %f\n", spkMonG3->getPopMeanFiringRate(), rateG3noSTP);
 						}
 					}
 
-					delete spkGenG0;//, spkGenG1;
+					delete spkGenG0, spkGenG1;
 					delete sim;
 				}
 			}

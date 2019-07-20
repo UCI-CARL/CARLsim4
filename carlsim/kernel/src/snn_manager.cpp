@@ -2168,7 +2168,7 @@ void SNN::advSimStep() {
 	routeSpikes();
 
 	doCurrentUpdate();
-	
+
 	//KERNEL_INFO("doCurrentUpdate!");
 
 	globalStateUpdate();
@@ -3368,8 +3368,8 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
 				managerRuntimeData.delay[pre_pos] = connIt->delay;
 
-				KERNEL_INFO("pre_pos: %d -- stpu:%f/%f -- stpx:%f/%f", pre_pos, managerRuntimeData.stpu[2*pre_pos], managerRuntimeData.stpu[2*pre_pos+1],
-				managerRuntimeData.stpx[2*pre_pos],managerRuntimeData.stpx[2*pre_pos+1]);
+				//KERNEL_INFO("pre_pos: %d -- stpu:%f/%f -- stpx:%f/%f", pre_pos, managerRuntimeData.stpu[2*pre_pos], managerRuntimeData.stpu[2*pre_pos+1],
+				//managerRuntimeData.stpx[2*pre_pos],managerRuntimeData.stpx[2*pre_pos+1]);
 
 				// 
 				parsedConnections++;
@@ -4984,10 +4984,10 @@ void SNN::verifyNetwork() {
 
 	// make sure maxDelay == 1 if STP is enableed
 	// \FIXME: need to figure out STP buffer for delays > 1
-	if (sim_with_stp && glbNetworkConfig.maxDelay > 1) {
-		KERNEL_ERROR("STP with delays > 1 ms is currently not supported.");
-		exitSimulation(1);
-	}
+	// if (sim_with_stp && glbNetworkConfig.maxDelay > 1) {
+	// 	KERNEL_ERROR("STP with delays > 1 ms is currently not supported.");
+	// 	exitSimulation(1);
+	// }
 
 	if (glbNetworkConfig.maxDelay > MAX_SYN_DELAY) {
 		KERNEL_ERROR("You are using a synaptic delay (%d) greater than MAX_SYN_DELAY defined in config.h", glbNetworkConfig.maxDelay);
