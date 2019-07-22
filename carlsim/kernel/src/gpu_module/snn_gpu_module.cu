@@ -826,10 +826,10 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 							float STP_A = (runtimeDataGPU.stp_U[pos] > 0.0f) ? 1.0 / runtimeDataGPU.stp_U[pos] : 1.0f;
 							change *= STP_A * runtimeDataGPU.stpx[ind_minus] * runtimeDataGPU.stpu[ind_plus];
 
-							if(simTime % 100 && pos == 0){
-								printf("spike update:: simtime:%d, postNid:%d -- pos:%d -- stpu: %f/%f -- stpx: %f/%f -- imin: %d -- iplus: %d\n", simTime, postNId, pos, runtimeDataGPU.stpu[ind_minus], runtimeDataGPU.stpu[ind_plus],
-								runtimeDataGPU.stpx[ind_minus], runtimeDataGPU.stpx[ind_plus], ind_minus, ind_plus);
-							}
+							// if((simTime % 100) && pos == 0){
+							// 	printf("spike update:: simtime:%d, postNid:%d -- pos:%d -- stpu: %f/%f -- stpx: %f/%f -- imin: %d -- iplus: %d\n", simTime, postNId, pos, runtimeDataGPU.stpu[ind_minus], runtimeDataGPU.stpu[ind_plus],
+							// 	runtimeDataGPU.stpx[ind_minus], runtimeDataGPU.stpx[ind_plus], ind_minus, ind_plus);
+							// }
 						}
 					}
 

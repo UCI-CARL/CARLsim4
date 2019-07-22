@@ -2241,12 +2241,12 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 
 	KERNEL_INFO("copySTPState, nPre: %d, nPost: %d, maxNPre: %d, maxNPost: %d", networkConfigs[netId].numPreSynNet, networkConfigs[netId].numPostSynNet, networkConfigs[netId].maxNumPreSynN, networkConfigs[netId].maxNumPostSynN);
 	if(allocateMem)
-		dest->stpu = new float[networkConfigs[netId].numPreSynNet * (networkConfigs[netId].maxDelay + 1)];
-	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet * (networkConfigs[netId].maxDelay + 1));
+		dest->stpu = new float[networkConfigs[netId].numPreSynNet * 2];
+	memcpy(dest->stpu, src->stpu, sizeof(float) * networkConfigs[netId].numPreSynNet * 2);
 
 	if(allocateMem)
-		dest->stpx = new float[networkConfigs[netId].numPreSynNet * (networkConfigs[netId].maxDelay + 1)];
-	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet * (networkConfigs[netId].maxDelay + 1));
+		dest->stpx = new float[networkConfigs[netId].numPreSynNet * 2];
+	memcpy(dest->stpx, src->stpx, sizeof(float) * networkConfigs[netId].numPreSynNet * 2);
 }
 
 // ToDo: move grpDA(5HT, ACh, NE)Buffer to copyAuxiliaryData

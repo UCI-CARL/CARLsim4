@@ -133,17 +133,17 @@ int main() {
 					Stopwatch watch(false);
 					watch.start();
 					int N = 1000;
-					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,USER,1,randSeed);
-					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON, 1, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
-					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
+					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
+					int g2=sim->createGroup("STD", N, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
+					int g3=sim->createGroup("STF", N, EXCITATORY_NEURON, 1, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-					int g0=sim->createSpikeGeneratorGroup("input0", N, EXCITATORY_NEURON, 0, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
-					int g1=sim->createSpikeGeneratorGroup("input1", N, EXCITATORY_NEURON, 1, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
+					int g0=sim->createSpikeGeneratorGroup("input0", N, EXCITATORY_NEURON, 1, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
+					int g1=sim->createSpikeGeneratorGroup("input1", N, EXCITATORY_NEURON, 0, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
 
 					float wt = hasCOBA ? 0.001f : 18.0f;
-					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
-					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(18));
+					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(20));
 
 					if (hasCOBA)
 						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
