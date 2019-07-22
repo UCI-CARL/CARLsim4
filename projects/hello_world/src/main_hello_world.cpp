@@ -112,7 +112,7 @@ int main() {
 	// watch.stop();
 	
 	// return 0;
-	int randSeed = 100;	// randSeed must not interfere with STP
+	int randSeed = 1000;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
@@ -141,9 +141,9 @@ int main() {
 					int g0=sim->createSpikeGeneratorGroup("input0", N, EXCITATORY_NEURON, 1, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
 					int g1=sim->createSpikeGeneratorGroup("input1", N, EXCITATORY_NEURON, 0, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
 
-					float wt = hasCOBA ? 0.001f : 18.0f;
-					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(18));
-					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(20));
+					float wt = hasCOBA ? 0.01f : 18.0f;
+					sim->connect(g0,g2,"random",RangeWeight(wt),0.1f,RangeDelay(1));
+					sim->connect(g1,g3,"random",RangeWeight(wt),0.1f,RangeDelay(1));
 
 					if (hasCOBA)
 						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
