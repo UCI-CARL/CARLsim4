@@ -112,7 +112,7 @@ int main() {
 	// watch.stop();
 	
 	// return 0;
-	int randSeed = 1000;	// randSeed must not interfere with STP
+	int randSeed = 100;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;
 	SpikeMonitor *spkMonG2 = NULL, *spkMonG3 = NULL;
@@ -132,17 +132,18 @@ int main() {
 				//int hasSTP = 1;
 					Stopwatch watch(false);
 					watch.start();
-					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,SILENT,1,randSeed);
-					int g2=sim->createGroup("STD", 1000, EXCITATORY_NEURON, 1, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
-					int g3=sim->createGroup("STF", 1000, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
+					int N = 1000;
+					sim = new CARLsim("STP.firingRateSTDvsSTF",mode?GPU_MODE:CPU_MODE,USER,1,randSeed);
+					int g2=sim->createGroup("STD", 1, EXCITATORY_NEURON, 1, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
+					int g3=sim->createGroup("STF", 1, EXCITATORY_NEURON, 0, GPU_CORES);//mode?GPU_CORES:CPU_CORES);
 					sim->setNeuronParameters(g2, 0.02f, 0.2f, -65.0f, 8.0f);
 					sim->setNeuronParameters(g3, 0.02f, 0.2f, -65.0f, 8.0f);
-					int g0=sim->createSpikeGeneratorGroup("input0", 1000, EXCITATORY_NEURON, 0, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
-					int g1=sim->createSpikeGeneratorGroup("input1", 1000, EXCITATORY_NEURON, 1, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
+					int g0=sim->createSpikeGeneratorGroup("input0", N, EXCITATORY_NEURON, 0, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
+					int g1=sim->createSpikeGeneratorGroup("input1", N, EXCITATORY_NEURON, 1, CPU_CORES);// mode?GPU_CORES:CPU_CORES);
 
 					float wt = hasCOBA ? 0.001f : 18.0f;
-					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(10));
-					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(10));
+					sim->connect(g0,g2,"full",RangeWeight(wt),1.0f,RangeDelay(1));
+					sim->connect(g1,g3,"full",RangeWeight(wt),1.0f,RangeDelay(1));
 
 					if (hasCOBA)
 						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
@@ -155,6 +156,7 @@ int main() {
 					}
 
 					bool spikeAtZero = true;
+
 					spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
 					sim->setSpikeGenerator(g0, spkGenG0);
 					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
@@ -162,6 +164,11 @@ int main() {
 					watch.lap();
 
 					sim->setupNetwork();
+
+					//setup some baseline input
+					// PoissonRate spkGenG0(N);
+					// spkGenG0.setRates(100.0f);
+					// sim -> setSpikeRate(g0, &spkGenG0);
 
 					sim->setSpikeMonitor(g0,"NULL");
 					sim->setSpikeMonitor(g1,"NULL");

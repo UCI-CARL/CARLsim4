@@ -500,7 +500,7 @@ void SNN::copyExtFiringTable(int netId) {
 					runtimeData[netId].stpu[ind_plus] = runtimeData[netId].stpu[ind_minus] * (1.0f - runtimeData[netId].stp_tau_u_inv[lSId]);
 					runtimeData[netId].stpx[ind_plus] = runtimeData[netId].stpx[ind_minus] + (1.0f - runtimeData[netId].stpx[ind_minus]) * runtimeData[netId].stp_tau_x_inv[lSId];
 
-					//KERNEL_INFO("lGrpId: %d -- lNId: %d -- lSId: %d -- stpu: %f -- stpx: %f", lGrpId, lNId, lSId, runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_plus]);
+					// KERNEL_INFO("lGrpId: %d -- lNId: %d -- lSId: %d -- stpu: %f -- stpx: %f", lGrpId, lNId, lSId, runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_plus]);
 					// KERNEL_INFO("\ndoSTPUpdateAndDecayCond_CPU, group id: %d, neuron id: %d, Synapse id: %d, minus: %d, plus: %d, netid: %d", lGrpId, lNId, lSId, ind_minus, ind_plus, netId);
 					// KERNEL_INFO("stpu: %f/%f -- stpx: %f/%f", runtimeData[netId].stpu[ind_minus], runtimeData[netId].stpu[ind_plus], runtimeData[netId].stpx[ind_minus], runtimeData[netId].stpx[ind_plus]);
 					// KERNEL_INFO("tau_u_inv: %f -- tau_x_inv: %f", runtimeData[netId].stp_tau_u_inv[lSId], runtimeData[netId].stp_tau_x_inv[lSId]);

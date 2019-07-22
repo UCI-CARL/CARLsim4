@@ -2859,8 +2859,8 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.preSynapticIds	= new SynInfo[managerRTDSize.maxNumPreSynNet];
 	memset(managerRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPreSynNet);
 
-	managerRuntimeData.stpu           = new float[managerRTDSize.maxNumPreSynNet * (glbNetworkConfig.maxDelay + 1)];
-	managerRuntimeData.stpx           = new float[managerRTDSize.maxNumPreSynNet * (glbNetworkConfig.maxDelay + 1)];
+	managerRuntimeData.stpu           = new float[managerRTDSize.maxNumPreSynNet * 2];
+	managerRuntimeData.stpx           = new float[managerRTDSize.maxNumPreSynNet * 2];
 	managerRuntimeData.stp_U           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.stp_tau_u_inv           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.stp_tau_x_inv           = new float[managerRTDSize.maxNumPreSynNet];
@@ -2870,8 +2870,8 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.wtChange     = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.maxSynWt     = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.synSpikeTime = new int[managerRTDSize.maxNumPreSynNet];
-	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
-	memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stpu, 0, 2 * sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stpx, 0, 2 * sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.wt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
