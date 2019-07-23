@@ -36,14 +36,15 @@
 * (KDC) Kristofor Carlson <kdcarlso@uci.edu>
 * (TSC) Ting-Shuo Chou <tingshuc@uci.edu>
 * (HK) Hirak J Kashyap <kashyaph@uci.edu>
+* (JX) Jinwei Xing <jinweix1@uci.edu>
 *
 * CARLsim v1.0: JM, MDR
 * CARLsim v2.0/v2.1/v2.2: JM, MDR, MA, MB, KDC
 * CARLsim3: MB, KDC, TSC
-* CARLsim4: TSC, HK
+* CARLsim4: TSC, HK, JX
 *
 * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
-* Ver 12/31/2016
+* Ver 07/23/2019
 */
 
 // include CARLsim user interface
@@ -61,57 +62,6 @@
 #endif
 
 int main() {
-	// keep track of execution time
-	// Stopwatch watch;
-	
-
-	// // ---------------- CONFIG STATE -------------------
-	
-	// // create a network on GPU
-	// int numGPUs = 1;
-	// int randSeed = 42;
-	// CARLsim sim("hello world", CPU_MODE, USER, numGPUs, randSeed);
-
-	// // configure the network
-	// // set up a COBA two-layer network with gaussian connectivity
-	// Grid3D gridIn(13,9,1); // pre is on a 13x9 grid
-	// Grid3D gridOut(3,3,1); // post is on a 3x3 grid
-	// int gin=sim.createSpikeGeneratorGroup("input", gridIn, EXCITATORY_NEURON);
-	// int gout=sim.createGroup("output", gridOut, EXCITATORY_NEURON);
-	// sim.setNeuronParameters(gout, 0.02f, 0.2f, -65.0f, 8.0f);
-	// sim.connect(gin, gout, "gaussian", RangeWeight(0.05), 1.0f, RangeDelay(1), RadiusRF(3,3,1));
-	// sim.setConductances(true);
-	// // sim.setIntegrationMethod(FORWARD_EULER, 2);
-
-	// // ---------------- SETUP STATE -------------------
-	// // build the network
-	// watch.lap("setupNetwork");
-	// sim.setupNetwork();
-
-	// // set some monitors
-	// sim.setSpikeMonitor(gin,"DEFAULT");
-	// sim.setSpikeMonitor(gout,"DEFAULT");
-	// sim.setConnectionMonitor(gin,gout,"DEFAULT");
-
-	// //setup some baseline input
-	// PoissonRate in(gridIn.N);
-	// in.setRates(30.0f);
-	// sim.setSpikeRate(gin,&in);
-
-
-	// // ---------------- RUN STATE -------------------
-	// watch.lap("runNetwork");
-
-	// // run for a total of 10 seconds
-	// // at the end of each runNetwork call, SpikeMonitor stats will be printed
-	// for (int i=0; i<10; i++) {
-	// 	sim.runNetwork(1,0);
-	// }
-
-	// // print stopwatch summary
-	// watch.stop();
-	
-	// return 0;
 	int randSeed = 1000;	// randSeed must not interfere with STP
 
 	CARLsim *sim = NULL;
@@ -151,15 +101,15 @@ int main() {
 						sim->setConductances(false);
 
 					if (hasSTP) {
-						sim->setSTP(g0, g2, true, STPu(0.45f), STPtauU(50.0f), STPtauX(750.0f)); // depressive
-						sim->setSTP(g1, g3, true, STPu(0.15f), STPtauU(750.0f), STPtauX(50.0f)); // facilitative
+						sim->setSTP(g0, g2, true, STPu(0.45f, 0.01f), STPtauU(50.0f, 0.03f), STPtauX(750.0f, 0.05f)); // depressive
+						sim->setSTP(g1, g3, true, STPu(0.15f, 0.02f), STPtauU(750.0f, 0.04f), STPtauX(50.0f, 0.06f)); // facilitative
 					}
 
 					bool spikeAtZero = true;
 
-					spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 10 Hz
 					sim->setSpikeGenerator(g0, spkGenG0);
-					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
+					spkGenG1 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 10 Hz
 					sim->setSpikeGenerator(g1, spkGenG1);
 					watch.lap();
 
@@ -186,30 +136,10 @@ int main() {
 					spkMonG3->stopRecording();
 
 					if (!hasSTP) {
-						// if STP is off: record spike rate, so that afterwards we can compare it to the one with STP
-						// enabled
-						//spkMonG2->print(true);
-						//spkMonG3->print(true);
 						rateG2noSTP = spkMonG2->getPopMeanFiringRate();
 						rateG3noSTP = spkMonG3->getPopMeanFiringRate();
 						printf("no stp config %ld, setup %ld, run %ld\n", watch.getLapTime(0),watch.getLapTime(1), watch.getLapTime(2));
-
-						//printf("spkMonG2->getPopMeanFiringRate(), rateG2noSTP: %f\n", rateG2noSTP);
-						//printf("spkMonG3->getPopMeanFiringRate(), rateG3noSTP: %f\n", rateG3noSTP);
 					} else {
-						//spkMonG2->print(true);
-						//spkMonG3->print(true);
-						//fprintf(stderr,"%s %s %s, G2 w/o=%f, G2 w/=%f\n", isRunLong?"long":"short",
-						//	isGPUmode?"GPU":"CPU",
-						//	hasCOBA?"COBA":"CUBA",
-						//	rateG2noSTP, spkMonG2->getPopMeanFiringRate());
-						//fprintf(stderr,"%s %s %s, G3 w/o=%f, G3 w/=%f\n", isRunLong?"long":"short",
-						//	isGPUmode?"GPU":"CPU",
-						//	hasCOBA?"COBA":"CUBA",
-						//	rateG3noSTP,
-						//	spkMonG3->getPopMeanFiringRate());
-
-
 						// if STP is on: compare spike rate to the one recorded without STP
 						if (isRunLong) {
 							// the run time was relatively long, so STP should have its expected effect
