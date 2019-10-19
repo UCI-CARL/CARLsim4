@@ -14,7 +14,7 @@
 ##   Version:   03/31/2016
 ##
 ##----------------------------------------------------------------------------##
-	
+
 # the following are filled in the include files and passed up
 objects_cpp :=
 objects_cu :=
@@ -45,9 +45,9 @@ help:
 	@ echo 
 	@ echo "make                Compiles CARLsim4 in default mode (release)"
 	@ echo "make release        Compiles CARLsim4 in release mode (-O3)"
-	@ echo "make release nocuda Compiles CARLsim4 in release mode without CUDA library"
+	@ echo "make release_nocuda Compiles CARLsim4 in release mode without CUDA library"
 	@ echo "make debug          Compiles CARLsim4 in debug mode (-O0 -g -Wall)"
-	@ echo "make debug nocuda   Compiles CARLsim4 in debug mode without CUDA library"
+	@ echo "make debug_nocuda   Compiles CARLsim4 in debug mode without CUDA library"
 	@ echo "make -E install     Installs CARLsim4 library (make sure -E is set; may"
 	@ echo "                    require root privileges)"
 	@ echo "make -E uninstall   Uninstalls CARLsim4 library (make sure -E is set; may"
