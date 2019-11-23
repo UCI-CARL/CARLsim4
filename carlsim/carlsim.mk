@@ -158,6 +158,8 @@ release_nocuda: prep_release prep_nocuda $(objects_cpp) archive_nocuda
 release_coverage: prep_release prep_coverage prep_cuda $(objects_cpp) $(objects_cu) archive
 release_nocuda_coverage: prep_release prep_coverage prep_nocuda $(objects_cpp) archive_nocuda
 
+debug: prep_debug prep_cuda $(objects_cpp) $(objects_cu) archive
+debug_nocuda: prep_debug prep_nocuda $(objects_cpp) $(objects_cu) archive_nocuda
 
 #------------------------------------------------------------------------------
 # CARLsim4 Rules

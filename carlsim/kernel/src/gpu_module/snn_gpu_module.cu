@@ -874,7 +874,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 				__syncthreads();
 			}
 
-			__syncthreads();
+			//__syncthreads();
 
 			// P6-2
 			if (networkConfigGPU.sim_with_conductances) {
