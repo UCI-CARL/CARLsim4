@@ -114,26 +114,38 @@ NVCC_MAJOR_NUM     := $(shell nvcc -V 2>/dev/null | grep -o 'release [0-9]\+\.' 
 NVCCFL             += -D__CUDA$(NVCC_MAJOR_NUM)__
 
 # CUDA code generation flags
-GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
+# GENCODE_SM20       := -gencode arch=compute_20,code=sm_20
+# GENCODE_SM30       := -gencode arch=compute_30,code=sm_30
+# GENCODE_SM35       := -gencode arch=compute_35,code=sm_35
+# GENCODE_SM50       := -gencode arch=compute_50,code=sm_50
+# GENCODE_SM52       := -gencode arch=compute_52,code=sm_52
+# GENCODE_SM60       := -gencode arch=compute_60,code=sm_60
+# GENCODE_SM61       := -gencode arch=compute_61,code=sm_61
+# GENCODE_SM70       := -gencode arch=compute_70,code=sm_70
+# # Common to all supported CUDA versions:
+# NVCCFL             += $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM52)
+# NVCCFL             += -Wno-deprecated-gpu-targets
+# # Additional CC for CUDA >= 8:
+# $(if $(shell [ $(NVCC_MAJOR_NUM) -ge 8 ] && echo "OK"), \
+# 	$(eval NVCCFL += $(GENCODE_SM60) $(GENCODE_SM61)) \
+# )
+# # Additional CC for CUDA >= 9 (CC2.0 is obsolete)
+# $(if $(shell [ $(NVCC_MAJOR_NUM) -ge 9 ] && echo "OK"), \
+# 	$(eval NVCCFL += $(GENCODE_SM70)), \
+# 	$(eval NVCCFL += $(GENCODE_SM20)) \
+# )
+
 GENCODE_SM30       := -gencode arch=compute_30,code=sm_30
 GENCODE_SM35       := -gencode arch=compute_35,code=sm_35
+GENCODE_SM37       := -gencode arch=compute_37,code=sm_37
 GENCODE_SM50       := -gencode arch=compute_50,code=sm_50
 GENCODE_SM52       := -gencode arch=compute_52,code=sm_52
 GENCODE_SM60       := -gencode arch=compute_60,code=sm_60
 GENCODE_SM61       := -gencode arch=compute_61,code=sm_61
 GENCODE_SM70       := -gencode arch=compute_70,code=sm_70
-# Common to all supported CUDA versions:
-NVCCFL             += $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM50) $(GENCODE_SM52)
-NVCCFL             += -Wno-deprecated-gpu-targets
-# Additional CC for CUDA >= 8:
-$(if $(shell [ $(NVCC_MAJOR_NUM) -ge 8 ] && echo "OK"), \
-	$(eval NVCCFL += $(GENCODE_SM60) $(GENCODE_SM61)) \
-)
-# Additional CC for CUDA >= 9 (CC2.0 is obsolete)
-$(if $(shell [ $(NVCC_MAJOR_NUM) -ge 9 ] && echo "OK"), \
-	$(eval NVCCFL += $(GENCODE_SM70)), \
-	$(eval NVCCFL += $(GENCODE_SM20)) \
-)
+GENCODE_SM75       := -gencode arch=compute_75,code=sm_75 -gencode arch=compute_75,code=compute_75
+
+NVCCFL          += $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM37) $(GENCODE_SM50) $(GENCODE_SM52) $(GENCODE_SM60) $(GENCODE_SM61) $(GENCODE_SM70) $(GENCODE_SM75)
 
 # OS-specific build flags
 ifneq ($(DARWIN),)
