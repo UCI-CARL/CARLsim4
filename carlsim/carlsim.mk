@@ -96,6 +96,14 @@ vs_cpp_obj      := $(patsubst %.cpp, %.o, $(vs_cpp_files))
 tools_cpp_obj    += $(vs_cpp_obj)
 SIMINCFL         += -I$(vs_dir)
 
+# parameter-tuning interface
+pti_dir 		:= $(tools_dir)/pti
+pti_inc_files    := $(wildcard $(pti_dir)/*h)
+pti_cpp_files    := $(wildcard $(pti_dir)/*.cpp)
+pti_cpp_obj      := $(patsubst %.cpp, %.o, $(pti_cpp_files))
+tools_cpp_obj    += $(pti_cpp_obj)
+SIMINCFL         += -I$(pti_dir)
+
 # prepare clean-up
 output += *.gcda *.gcno *.gcov coverage.info
 output += $(addprefix $(intf_dir)/*/,*.gcda *.gcno)
