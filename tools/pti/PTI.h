@@ -7,17 +7,22 @@
 #include <memory>
 #include <iostream>
 
+using namespace std;
+
+/*!
+ * 
+ */
 class PTI {
 public:
-    PTI(const int argc, const char * const argv[], std::ostream &outputStream);
-    PTI(const int argc, const char * const argv[], std::ostream &outputStream, std::istream &defaultInputStream);
+    PTI(const int argc, const char * const argv[], ostream &outputStream);
+    PTI(const int argc, const char * const argv[], ostream &outputStream, istream &defaultInputStream);
     ~PTI();
     void runExperiment(const Experiment &experiment) const;
-    std::string usage() const;
+    string usage() const;
     bool repOK() const;
 private:
     struct PTIImpl;
-    const std::unique_ptr<PTIImpl> impl;
+    const unique_ptr<PTIImpl> impl;
 };
 
 #endif // PTI_H

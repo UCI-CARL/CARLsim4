@@ -4,7 +4,7 @@
 #include <istream>
 #include <vector>
 
-/*! Receives a CSV of doubleing point values from an istream and interprets
+/*! Receives a CSV of double point values from an istream and interprets
     * them as minimum and maximum bounds on a number of parameters.
     */
 class ParameterInstances {
