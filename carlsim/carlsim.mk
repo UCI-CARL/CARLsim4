@@ -194,6 +194,8 @@ $(stp_dir)/%.o: $(stp_dir)/%.cpp $(stp_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 $(vs_dir)/%.o: $(vs_dir)/%.cpp $(vs_inc_files)
 	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
+$(pti_dir)/%.o: $(pti_dir)/%.cpp $(pti_inc_files)
+	$(CXX) $(CXXSHRFL) -c $(CXXINCFL) $(SIMINCFL) $(CXXFL) $< -o $@
 
 
 # archive
