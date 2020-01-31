@@ -12,24 +12,21 @@
 #include <cstdio>
 
 using namespace std;
-using namespace CARLsim_PTI;
 
-namespace CARLsim_PTI {
-    class ReprintExperiment : public Experiment {
-    public:
-        ReprintExperiment() {}
+class ReprintExperiment : public Experiment {
+public:
+    ReprintExperiment() {}
 
-        void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-            for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
-                for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
-                    const float p = parameters.getParameter(i, j);
-                    outputStream << p << "\t";
-                }
-                outputStream << endl;
+    void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
+        for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
+            for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
+                const float p = parameters.getParameter(i, j);
+                outputStream << p << "\t";
             }
+            outputStream << endl;
         }
-    };
-}
+    }
+};
 
 int main(int argc, char* argv[]) {
     /* First we Initialize an Experiment and a PTI object.  The PTI parses CLI

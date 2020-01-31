@@ -52,7 +52,7 @@ default: all
 all: $(targets)
 
 $(targets): %: obj/%.o
-	$(CXX) $(CARLSIM4_FLG) -L$(pti_lib_path) $< -o $@ $(CARLSIM4_LIB) $(pti_lib)
+	$(CXX) $(CARLSIM4_FLG) $< -o $@ $(CARLSIM4_LIB) $(pti_lib)
 
 obj/%.o: %.cpp
 	@test -d obj/ || mkdir -p obj/

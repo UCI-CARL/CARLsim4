@@ -34,7 +34,9 @@ vercomp () {
 }
 
 testvercomp () {
+    echo "Hi, comparing ${1} and ${2}"
     vercomp $1 $2
+    echo "Hi, compared ${1} and ${2} in ${0}"
     case $? in
         0) op='=';;
         1) op='>';;
@@ -42,6 +44,7 @@ testvercomp () {
     esac
     if [[ $op != $3 ]]
     then
+        echo "Hi, compared ${1} and ${2} with ${3} and op is ${op}"
         echo "FATAL ERROR:  Found Doxygen version ($1).
               Must be at least $2 to generate the docs.
               You can find pre-generated docs on our website:
@@ -55,6 +58,7 @@ doxVer="$(doxygen --version | grep ^[0-9]\.[0-9])"
 
 # require min version
 minVer=1.8
+echo "Passing ${doxVer} ${minVer} '>'"
 testvercomp $doxVer $minVer '>'
 
 doxygen CARLsim.config.doxy

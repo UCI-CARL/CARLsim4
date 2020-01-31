@@ -5,8 +5,6 @@
 #include <typeinfo>
 #include <ostream>
 
-using namespace CARLsim_PTI;
-
 Logger::Logger(const Level level, std::ostream &logStream)
 : loggerLevel(level), logStream(logStream) {}
 

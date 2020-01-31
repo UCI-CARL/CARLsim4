@@ -11,26 +11,24 @@
 #include <cstdio>
 
 using namespace std;
-using namespace CARLsim_PTI;
 
-namespace CARLsim_PTI {
-    class AbortExperiment : public Experiment {
-    public:
-        AbortExperiment() {}
+class AbortExperiment : public Experiment {
+public:
+    AbortExperiment() {}
 
-        void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-            for(unsigned int i = 0; i < parameters.getNumInstances() - 5; i++) {
-                for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
-                    const float p = parameters.getParameter(i, j);
-                    outputStream << p << "\t";
-                }
-                outputStream << endl;
+    void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
+        for(unsigned int i = 0; i < parameters.getNumInstances() - 5; i++) {
+            for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
+                const float p = parameters.getParameter(i, j);
+                outputStream << p << "\t";
             }
-	    std::cerr << "Abort!" << endl;
+            outputStream << endl;
         }
-    };
-}
+    std::cerr << "Abort!" << endl;
+    }
+};
 
+//! [PTI]
 int main(int argc, char* argv[]) {
     /* First we Initialize an Experiment and a PTI object.  The PTI parses CLI
      * arguments, and then loads the Parameters from a file (if one has been
@@ -45,3 +43,4 @@ int main(int argc, char* argv[]) {
 
     return 0;
 }
+//! [PTI]
