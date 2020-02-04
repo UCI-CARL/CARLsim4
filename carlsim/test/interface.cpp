@@ -568,8 +568,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
-	EXPECT_DEATH({sim->setSTP(g1, true);},"");
+	EXPECT_DEATH({sim->setSTP(g1, g2, true, STPu(1.0), STPtauU(2.0), STPtauX(3.0));},"");
+	EXPECT_DEATH({sim->setSTP(g1, g2, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setupNetwork();},"");
 	EXPECT_DEATH({sim->loadSimulation(NULL);},"");
@@ -610,8 +610,8 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
 	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setSTP(g1, true, 1.0, 2.0, 3.0);},"");
-	EXPECT_DEATH({sim->setSTP(g1, true);},"");
+	EXPECT_DEATH({sim->setSTP(g1, g2, true, STPu(1.0), STPtauU(2.0), STPtauX(3.0));},"");
+	EXPECT_DEATH({sim->setSTP(g1, g2, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
 	EXPECT_DEATH({sim->setConnectionMonitor(0, 1, "Default");},"");
 	EXPECT_DEATH({sim->setGroupMonitor(0, "Default");},"");

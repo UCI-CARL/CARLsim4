@@ -155,8 +155,9 @@ __device__ inline unsigned int* getFiringBitGroupPtr(int lNId, int synId) {
 	return (((unsigned int*)((char*)runtimeDataGPU.I_set + synId * networkConfigGPU.I_setPitch)) + lNId);
 }
 
-__device__ inline int getSTPBufPos(int lNId, int simTime) {
-	return (((simTime + 1) % (networkConfigGPU.maxDelay + 1)) * networkConfigGPU.STP_Pitch + lNId);
+__device__ inline int getSTPBufPos(int lSId, int simTime) {
+	//return (((simTime + 1) % (networkConfigGPU.maxDelay + 1)) + lNId * ((networkConfigGPU.maxDelay + 1)));
+	return ((simTime + 1) % 2 * networkConfigGPU.STP_Pitch + lSId);
 }
 
 __device__ inline int2 getStaticThreadLoad(int bufPos) {
@@ -341,20 +342,37 @@ int SNN::allocateStaticLoad(int netId, int bufSize) {
 // update the STPU and STPX variable after firing                             ///
 /////////////////////////////////////////////////////////////////////////////////
 
-// update the spike-dependent part of du/dt and dx/dt
+/* // update the spike-dependent part of du/dt and dx/dt
 __device__ void firingUpdateSTP (int nid, int simTime, short int grpId) {
+	unsigned int offset = runtimeDataGPU.cumulativePost[nid];
+	for (int j = 0; j < runtimeDataGPU.Npost[nid]; j++) {
+		int lSId = offset + j;
+		if (runtimeDataGPU.withSTP[lSId]){
+			int ind_minus = getSTPBufPos(lSId, (simTime - 1)); // \FIXME should be adjusted for delay
+			int ind_plus = getSTPBufPos(lSId, (simTime));
+
+			// at this point, stpu[ind_plus] has already been assigned, and the decay applied
+			// so add the spike-dependent part to that
+			// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+			runtimeDataGPU.stpu[ind_plus] += runtimeDataGPU.stp_U[lSId] * (1.0f - runtimeDataGPU.stpu[ind_minus]);
+
+			// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+			runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
+		}
+	}
+
 	// we need to retrieve the STP values from the right buffer position (right before vs. right after the spike)
-	int ind_plus  = getSTPBufPos(nid, simTime);
-	int ind_minus = getSTPBufPos(nid, (simTime - 1));
+	// int ind_plus  = getSTPBufPos(nid, simTime);
+	// int ind_minus = getSTPBufPos(nid, (simTime - 1));
 
-	// at this point, stpu[ind_plus] has already been assigned, and the decay applied
-	// so add the spike-dependent part to that
-	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
-	runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[grpId].STP_U * (1.0f - runtimeDataGPU.stpu[ind_minus]);
+	// // at this point, stpu[ind_plus] has already been assigned, and the decay applied
+	// // so add the spike-dependent part to that
+	// // du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+	// runtimeDataGPU.stpu[ind_plus] += groupConfigsGPU[grpId].STP_U * (1.0f - runtimeDataGPU.stpu[ind_minus]);
 
-	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
-	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
-}
+	// // dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+	// runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
+} */
 
 __device__ void resetFiredNeuron(int lNId, short int lGrpId, int simTime) {
 	// \FIXME \TODO: convert this to use coalesced access by grouping into a
@@ -460,8 +478,8 @@ __device__ int updateNewFirings(int* fireTablePtr, short int* fireGrpId,
 		if (groupConfigsGPU[fireGrpId[i]].hasExternalConnect)
 			updateExtFiringTable(lNId, fireGrpId[i]);
 
-		if (groupConfigsGPU[fireGrpId[i]].WithSTP)
-			firingUpdateSTP(lNId, simTime, fireGrpId[i]);
+		// if (groupConfigsGPU[fireGrpId[i]].WithSTP)
+		// 	firingUpdateSTP(lNId, simTime, fireGrpId[i]);
 
 		// keep track of number spikes per neuron
 		runtimeDataGPU.nSpikeCnt[lNId]++;
@@ -789,12 +807,30 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 
 					// Adjust the weight according to STP scaling
 					if (groupConfigsGPU[preGrpId].WithSTP) {
-						int tD = 0; // \FIXME find delay
+						//int tD = 0; // \FIXME find delay
+						int pos = cum_pos + wtId;
 						// \FIXME I think pre_nid needs to be adjusted for the delay
-						int ind_minus = getSTPBufPos(preNId, (simTime - tD - 1)); // \FIXME should be adjusted for delay
-						int ind_plus = getSTPBufPos(preNId, (simTime - tD));
+						int ind_minus = getSTPBufPos(pos, (simTime - 1)); // \FIXME should be adjusted for delay
+						int ind_plus = getSTPBufPos(pos, (simTime));
 						// dI/dt = -I/tau_S + A * u^+ * x^- * \delta(t-t_{spk})
-						change *= groupConfigsGPU[preGrpId].STP_A * runtimeDataGPU.stpx[ind_minus] * runtimeDataGPU.stpu[ind_plus];
+
+						if (runtimeDataGPU.withSTP[pos]){
+							// at this point, stpu[ind_plus] has already been assigned, and the decay applied
+							// so add the spike-dependent part to that
+							// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+							runtimeDataGPU.stpu[ind_plus] += runtimeDataGPU.stp_U[pos] * (1.0f - runtimeDataGPU.stpu[ind_minus]);
+
+							// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+							runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
+
+							float STP_A = (runtimeDataGPU.stp_U[pos] > 0.0f) ? 1.0 / runtimeDataGPU.stp_U[pos] : 1.0f;
+							change *= STP_A * runtimeDataGPU.stpx[ind_minus] * runtimeDataGPU.stpu[ind_plus];
+
+							// if((simTime % 100) && pos == 0){
+							// 	printf("spike update:: simtime:%d, postNid:%d -- pos:%d -- stpu: %f/%f -- stpx: %f/%f -- imin: %d -- iplus: %d\n", simTime, postNId, pos, runtimeDataGPU.stpu[ind_minus], runtimeDataGPU.stpu[ind_plus],
+							// 	runtimeDataGPU.stpx[ind_minus], runtimeDataGPU.stpx[ind_plus], ind_minus, ind_plus);
+							// }
+						}
 					}
 
 					if (networkConfigGPU.sim_with_conductances) {
@@ -838,7 +874,7 @@ __global__ void kernel_conductanceUpdate (int simTimeMs, int simTimeSec, int sim
 				__syncthreads();
 			}
 
-			__syncthreads();
+			//__syncthreads();
 
 			// P6-2
 			if (networkConfigGPU.sim_with_conductances) {
@@ -1221,7 +1257,7 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 		int2 threadLoad = getStaticThreadLoad(bufPos);
 		int nid			= (STATIC_LOAD_START(threadLoad) + threadIdx.x);
 		int lastId		= STATIC_LOAD_SIZE(threadLoad);
-		int grpId		= STATIC_LOAD_GROUP(threadLoad);
+		//int grpId		= STATIC_LOAD_GROUP(threadLoad);
 
 
 		// update the conductane parameter of the current neron
@@ -1242,11 +1278,48 @@ __global__ void kernel_STPUpdateAndDecayConductances (int t, int sec, int simTim
 			}
 		}
 
-		if (groupConfigsGPU[grpId].WithSTP && (threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
-			int ind_plus  = getSTPBufPos(nid, simTime);
-			int ind_minus = getSTPBufPos(nid, (simTime-1)); // \FIXME sure?
-			runtimeDataGPU.stpu[ind_plus] = runtimeDataGPU.stpu[ind_minus]*(1.0f-groupConfigsGPU[grpId].STP_tau_u_inv);
-			runtimeDataGPU.stpx[ind_plus] = runtimeDataGPU.stpx[ind_minus] + (1.0f-runtimeDataGPU.stpx[ind_minus])*groupConfigsGPU[grpId].STP_tau_x_inv;
+		// printf("outside decay update:: simtime:%d, postNid:%d, grpId:%d, groupConfigsGPU[grpId].withSTP: %s \n", simTime, nid, grpId, groupConfigsGPU[grpId].WithSTP ? "True" : "False");
+
+		// if (groupConfigsGPU[grpId].WithSTP && (threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
+		// 	unsigned int offset = runtimeDataGPU.cumulativePre[nid];
+		// 	printf("outside decay update loop:: simtime:%d -- postNid:%d -- offset:%d -- npre:%d\n", simTime, nid, offset, runtimeDataGPU.Npre[nid]);
+		// 	for (int j = 0; j < runtimeDataGPU.Npre[nid]; j++) {
+		// 		printf("inside decay update loop:: simtime:%d -- postNid:%d -- offset:%d -- npre:%d\n", simTime, nid, offset, runtimeDataGPU.Npre[nid]);
+		// 		int lSId = offset + j;
+		// 		if (runtimeDataGPU.withSTP[lSId]){
+		// 			int ind_minus = getSTPBufPos(lSId, (simTime - 1)); // \FIXME should be adjusted for delay
+		// 			int ind_plus = getSTPBufPos(lSId, (simTime));
+
+		// 			runtimeDataGPU.stpu[ind_plus] = runtimeDataGPU.stpu[ind_minus]*(1.0f- runtimeDataGPU.stp_tau_u_inv[lSId]);
+		// 			runtimeDataGPU.stpx[ind_plus] = runtimeDataGPU.stpx[ind_minus] + (1.0f-runtimeDataGPU.stpx[ind_minus])* runtimeDataGPU.stp_tau_x_inv[lSId];
+
+		// 			printf("decay update:: simtime:%d, postNid:%d -- pos:%d -- stpu: %f/%f -- stpx: %f/%f\n", simTime, nid, lSId, runtimeDataGPU.stpu[ind_minus], runtimeDataGPU.stpu[ind_plus],
+		// 			runtimeDataGPU.stpx[ind_minus], runtimeDataGPU.stpx[ind_plus]);
+					
+		// 		}
+		// 	}
+			if ((threadIdx.x < lastId) && (nid < networkConfigGPU.numN)) {
+				unsigned int offset = runtimeDataGPU.cumulativePre[nid];
+				// printf("outside decay update loop:: simtime:%d -- postNid:%d -- offset:%d -- npre:%d\n", simTime, nid, offset, runtimeDataGPU.Npre[nid]);
+				for (int j = 0; j < runtimeDataGPU.Npre[nid]; j++) {
+					// printf("inside decay update loop:: simtime:%d -- postNid:%d -- offset:%d -- npre:%d\n", simTime, nid, offset, runtimeDataGPU.Npre[nid]);
+					int lSId = offset + j;
+					if (runtimeDataGPU.withSTP[lSId]){
+						int ind_minus = getSTPBufPos(lSId, (simTime - 1)); // \FIXME should be adjusted for delay
+						int ind_plus = getSTPBufPos(lSId, (simTime));
+	
+						runtimeDataGPU.stpu[ind_plus] = runtimeDataGPU.stpu[ind_minus]*(1.0f- runtimeDataGPU.stp_tau_u_inv[lSId]);
+						runtimeDataGPU.stpx[ind_plus] = runtimeDataGPU.stpx[ind_minus] + (1.0f-runtimeDataGPU.stpx[ind_minus])* runtimeDataGPU.stp_tau_x_inv[lSId];
+						// if(simTime <10){
+						// 	printf("decay update:: simtime:%d, postNid:%d -- pos:%d -- stpu: %f/%f -- stpx: %f/%f -- tauu_inv: %f -- taux_inv: %f -- imin: %d -- iplus: %d\n", simTime, nid, lSId, runtimeDataGPU.stpu[ind_minus], runtimeDataGPU.stpu[ind_plus],
+						// 		runtimeDataGPU.stpx[ind_minus], runtimeDataGPU.stpx[ind_plus], runtimeDataGPU.stp_tau_u_inv[lSId], runtimeDataGPU.stp_tau_x_inv[lSId], ind_minus, ind_plus);
+						// }
+					}
+				}
+	
+
+			// int ind_plus  = getSTPBufPos(nid, simTime);
+			// int ind_minus = getSTPBufPos(nid, (simTime-1)); // \FIXME sure?
 		}
 	}
 }
@@ -1508,6 +1581,17 @@ __device__ void generatePostSynapticSpike(int simTime, int preNId, int postNId, 
 		atomicAdd(&(runtimeDataGPU.grpDA[postGrpId]), 0.04f);
 	}
 
+	// int ind_minus = getSTPBufPos(pos, (simTime - 1)); // \FIXME should be adjusted for delay
+	// int ind_plus = getSTPBufPos(pos, (simTime));
+	// if (runtimeDataGPU.withSTP[pos]){
+	// 	// at this point, stpu[ind_plus] has already been assigned, and the decay applied
+	// 	// so add the spike-dependent part to that
+	// 	// du/dt = -u/tau_F + U * (1-u^-) * \delta(t-t_{spk})
+	// 	runtimeDataGPU.stpu[ind_plus] += runtimeDataGPU.stp_U[pos] * (1.0f - runtimeDataGPU.stpu[ind_minus]);
+
+	// 	// dx/dt = (1-x)/tau_D - u^+ * x^- * \delta(t-t_{spk})
+	// 	runtimeDataGPU.stpx[ind_plus] -= runtimeDataGPU.stpu[ind_plus] * runtimeDataGPU.stpx[ind_minus];
+	// }
 	// P3
 	// STDP calculation: the post-synaptic neuron fires before the arrival of pre-synaptic neuron's spike
 	if (groupConfigsGPU[postGrpId].WithSTDP && !networkConfigGPU.sim_in_testing) {
@@ -2492,8 +2576,6 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, cudaMemcpyKind kind, bool allocateMem) {
 	checkAndSetGPUDevice(netId);
 	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId, 0); // check that the destination pointer is properly allocated..
-
-
 															   // STP feature is optional, do addtional check for memory space
 	if(allocateMem) {
 		assert(dest->stpu == NULL);
@@ -2505,7 +2587,7 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 	assert(src->stpu != NULL); assert(src->stpx != NULL);
 
 	size_t STP_Pitch;
-	size_t widthInBytes = sizeof(float) * networkConfigs[netId].numN;
+	size_t widthInBytes = sizeof(float) * networkConfigs[netId].numPreSynNet;
 
 	//	if(allocateMem)		CUDA_CHECK_ERRORS( cudaMalloc( (void**) &dest->stpu, sizeof(float)*networkConfigs[0].numN));
 	//	CUDA_CHECK_ERRORS( cudaMemcpy( &dest->stpu[0], &src->stpu[0], sizeof(float)*networkConfigs[0].numN, kind));
@@ -2515,46 +2597,49 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 
 	// allocate the stpu and stpx variable
 	if (allocateMem)
-		CUDA_CHECK_ERRORS(cudaMallocPitch((void**)&dest->stpu, &networkConfigs[netId].STP_Pitch, widthInBytes, networkConfigs[netId].maxDelay + 1));
+		CUDA_CHECK_ERRORS(cudaMallocPitch((void**)&dest->stpu, &networkConfigs[netId].STP_Pitch, widthInBytes, 2));
 	if (allocateMem)
-		CUDA_CHECK_ERRORS(cudaMallocPitch((void**)&dest->stpx, &STP_Pitch, widthInBytes, networkConfigs[netId].maxDelay + 1));
+		CUDA_CHECK_ERRORS(cudaMallocPitch((void**)&dest->stpx, &STP_Pitch, widthInBytes, 2));
 
 	assert(networkConfigs[netId].STP_Pitch > 0);
 	assert(STP_Pitch > 0);				// stp_pitch should be greater than zero
 	assert(STP_Pitch == networkConfigs[netId].STP_Pitch);	// we want same Pitch for stpu and stpx
 	assert(networkConfigs[netId].STP_Pitch >= widthInBytes);	// stp_pitch should be greater than the width
 																// convert the Pitch value to multiples of float
+
+	// printf("STP_Pitch: %zu\n", STP_Pitch);
+
 	assert(networkConfigs[netId].STP_Pitch % (sizeof(float)) == 0);
 	if (allocateMem)
 		networkConfigs[netId].STP_Pitch = networkConfigs[netId].STP_Pitch / sizeof(float);
 
 	//	fprintf(stderr, "STP_Pitch = %ld, STP_witdhInBytes = %d\n", networkConfigs[0].STP_Pitch, widthInBytes);
 
-	float* tmp_stp = new float[networkConfigs[netId].numN];
+	float* tmp_stp = new float[networkConfigs[netId].numPreSynNet];
 	// copy the already generated values of stpx and stpu to the GPU
-	for(int t = 0; t < networkConfigs[netId].maxDelay + 1; t++) {
+	for(int t = 0; t < 2; t++) {
 		if (kind == cudaMemcpyHostToDevice) {
 			// stpu in the CPU might be mapped in a specific way. we want to change the format
 			// to something that is okay with the GPU STP_U and STP_X variable implementation..
-			for (int n = 0; n < networkConfigs[netId].numN; n++) {
-				int idx = STP_BUF_POS(n, t, glbNetworkConfig.maxDelay);
+			for (int n = 0; n < networkConfigs[netId].numPreSynNet; n++) {
+				int idx = STP_BUF_POS(n, t, 1);
 				tmp_stp[n] = managerRuntimeData.stpu[idx];
 				//assert(tmp_stp[n] == 0.0f); // STP is not enabled for all groups
 			}
-			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpu[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
-			for (int n = 0; n < networkConfigs[netId].numN; n++) {
-				int idx = STP_BUF_POS(n, t, glbNetworkConfig.maxDelay);
+			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpu[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numPreSynNet, cudaMemcpyHostToDevice));
+			for (int n = 0; n < networkConfigs[netId].numPreSynNet; n++) {
+				int idx = STP_BUF_POS(n, t, 1);
 				tmp_stp[n] = managerRuntimeData.stpx[idx];
 				//assert(tmp_stp[n] == 1.0f); // STP is not enabled for all groups
 			}
-			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpx[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numN, cudaMemcpyHostToDevice));
+			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->stpx[t * networkConfigs[netId].STP_Pitch], tmp_stp, sizeof(float) * networkConfigs[netId].numPreSynNet, cudaMemcpyHostToDevice));
 		} else {
-			CUDA_CHECK_ERRORS(cudaMemcpy(tmp_stp, &dest->stpu[t * networkConfigs[netId].STP_Pitch], sizeof(float) * networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
-			for (int n = 0; n < networkConfigs[netId].numN; n++)
-				managerRuntimeData.stpu[STP_BUF_POS(n, t, glbNetworkConfig.maxDelay)] = tmp_stp[n];
-			CUDA_CHECK_ERRORS(cudaMemcpy(tmp_stp, &dest->stpx[t * networkConfigs[netId].STP_Pitch], sizeof(float) * networkConfigs[netId].numN, cudaMemcpyDeviceToHost));
-			for (int n = 0; n < networkConfigs[netId].numN; n++)
-				managerRuntimeData.stpx[STP_BUF_POS(n, t, glbNetworkConfig.maxDelay)] = tmp_stp[n];
+			CUDA_CHECK_ERRORS(cudaMemcpy(tmp_stp, &dest->stpu[t * networkConfigs[netId].STP_Pitch], sizeof(float) * networkConfigs[netId].numPreSynNet, cudaMemcpyDeviceToHost));
+			for (int n = 0; n < networkConfigs[netId].numPreSynNet; n++)
+				managerRuntimeData.stpu[STP_BUF_POS(n, t, 1)] = tmp_stp[n];
+			CUDA_CHECK_ERRORS(cudaMemcpy(tmp_stp, &dest->stpx[t * networkConfigs[netId].STP_Pitch], sizeof(float) * networkConfigs[netId].numPreSynNet, cudaMemcpyDeviceToHost));
+			for (int n = 0; n < networkConfigs[netId].numPreSynNet; n++)
+				managerRuntimeData.stpx[STP_BUF_POS(n, t, 1)] = tmp_stp[n];
 		}
 	}
 	delete [] tmp_stp;
@@ -2639,6 +2724,12 @@ void SNN::copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind) {
 		// copy synaptic weight derivative
 		CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.wtChange[posSyn], &runtimeData[netId].wtChange[posSyn], sizeof(float) * lengthSyn, cudaMemcpyDeviceToHost));
 	}
+
+	// CUDA_CHECK_ERRORS(cudaMemcpy(&managerRuntimeData.wt[posSyn], &runtimeData[netId].wt[posSyn], sizeof(float) * lengthSyn, cudaMemcpyDeviceToHost));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPostSynNet, kind));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPostSynNet, kind));
 }
 
 
@@ -2682,6 +2773,22 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, cudaM
 			CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet));
 		CUDA_CHECK_ERRORS(cudaMemcpy(dest->maxSynWt, src->maxSynWt, sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
 	}
+
+	// allocate synapse stp parameters to runtime data
+	if(allocateMem) {
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet));
+		CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet));
+		// CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stpu, 2 * sizeof(float) * networkConfigs[netId].numPreSynNet));
+		// CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->stpx, 2 * sizeof(float) * networkConfigs[netId].numPreSynNet));
+	}
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_U, src->stp_U, sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_u_inv, src->stp_tau_u_inv, sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->stp_tau_x_inv, src->stp_tau_x_inv, sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
+	CUDA_CHECK_ERRORS(cudaMemcpy(dest->withSTP, src->withSTP, sizeof(bool) * networkConfigs[netId].numPreSynNet, kind));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->stpu, src->stpu, 2 * sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
+	// CUDA_CHECK_ERRORS(cudaMemcpy(dest->stpx, src->stpx, 2 * sizeof(float) * networkConfigs[netId].numPreSynNet, kind));
 }
 
 /*!
