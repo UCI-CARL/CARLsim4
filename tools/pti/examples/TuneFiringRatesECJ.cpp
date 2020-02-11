@@ -4,6 +4,7 @@
 #include "PTI.h"
 #include <carlsim.h>
 #include <iostream>
+#include <cmath>
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
@@ -12,26 +13,28 @@ using namespace std;
 
 class TuneFiringRatesECJExperiment : public Experiment {
 public:
-	TuneFiringRatesECJExperiment() {}
+	// Decay constants
+	static const float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
+	
+	// Neurons
+	static const int NUM_NEURONS = 10;
+
+	// Simulation time in seconds
+	static const int runTime = 2;
+
+	// Target rates for the objective function
+	static const float INPUT_TARGET_HZ = 30.0f;
+	static const float EXC_TARGET_HZ   = 10.0f;
+	static const float INH_TARGET_HZ   = 20.0f;
+
+    const LoggerMode verbosity;
+
+	TuneFiringRatesECJExperiment(const LoggerMode verbosity): verbosity(verbosity) {}
 
 	void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-		// Decay constants
-		const float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
-
-		// Neurons
-		const int NUM_NEURONS = 10;
-
 		// Izhikevich parameters
 		const float REG_IZH[] = { 0.02f, 0.2f, -65.0f, 8.0f };
 		const float FAST_IZH[] = { 0.1f, 0.2f, -65.0f, 2.0f };
-
-		// Simulation time (each must be at least 1s due to bug in SpikeMonitor)
-		const int runTime = 2;
-
-		// Target rates for the objective function
-		const float INPUT_TARGET_HZ = 30.0f;
-		const float EXC_TARGET_HZ   = 10.0f;
-		const float INH_TARGET_HZ   = 20.0f;
 
 		int indiNum = parameters.getNumInstances();
 
@@ -45,9 +48,11 @@ public:
 		float excError[indiNum];
 		float inhError[indiNum];
 		float fitness[indiNum];
-		/** construct a CARLsim network on the heap. */
-		CARLsim* const network = new CARLsim("tuneFiringRatesECJ", CPU_MODE, SILENT);
 
+		/** construct a CARLsim network on the heap. */
+		CARLsim* const network = new CARLsim("tuneFiringRatesECJ", CPU_MODE, verbosity);
+
+		assert(parameters.getNumParameters() >= 4);
 		for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
 			/** Decode a genome*/
 			poissonGroup[i] = network->createSpikeGeneratorGroup("poisson", NUM_NEURONS, EXCITATORY_NEURON);
@@ -110,11 +115,29 @@ public:
 	}
 };
 
+/** Returns true iff the command-line arguments contain "-parameter". */
+const bool hasOpt(int argc, const char * const argv[], const char * const parameter) {
+  assert(argc >= 0);
+  assert(argv != NULL);
+  assert(parameter != NULL);
+
+  for (int i = 1; i < argc; i++) {
+    char dashParam[strlen(parameter) + 1];
+    strcpy(dashParam, "-");
+    strcat(dashParam, parameter);
+    if (0 == strcmp(dashParam, argv[i]))
+         return true;
+  }
+  return false;
+}
+
 int main(int argc, char* argv[]) {
 	/* First we Initialize an Experiment and a PTI object.  The PTI parses CLI
 	* arguments, and then loads the Parameters from a file (if one has been
 	* specified by the user) or else from a default istream (std::cin here). */
-	const TuneFiringRatesECJExperiment experiment;
+
+  	const LoggerMode verbosity = hasOpt(argc, argv, "v") ? USER : SILENT;
+	const TuneFiringRatesECJExperiment experiment(verbosity);
 	const PTI pti(argc, argv, std::cout, std::cin);
 
 	/* The PTI will now cheerfully iterate through all the Parameter sets and

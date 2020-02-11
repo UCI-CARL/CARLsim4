@@ -17,14 +17,14 @@ public:
     AbortExperiment() {}
 
     void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-        for(unsigned int i = 0; i < parameters.getNumInstances() - 5; i++) {
+        for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
             for (unsigned int j = 0; j < parameters.getNumParameters(); j++) {
                 const float p = parameters.getParameter(i, j);
                 outputStream << p << "\t";
             }
             outputStream << endl;
         }
-    std::cerr << "Abort!" << endl;
+        cerr << "Abort!" << endl;
     }
 };
 
