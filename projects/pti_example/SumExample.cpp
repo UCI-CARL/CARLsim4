@@ -1,5 +1,8 @@
-/*! \brief Using PTI to search for strings that maximize or minimize the sum
- * of all parameter values.
+/*! \brief A trivial example of the PTI interface.
+ * 
+ * This example simply creates an Experiment that aims to maximize the sum of the parameters it receives. 
+ * It does not run a CARLsim model, but demonstrates how the PTI, Experiment, and ParameterInstance classes
+ * define the structure of a parameter-tuning experiment.
  *
  */
 #include "PTI.h"

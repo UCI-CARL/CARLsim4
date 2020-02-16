@@ -6,6 +6,9 @@
 
 /*! Receives a CSV of double point values from an istream and interprets
     * them as minimum and maximum bounds on a number of parameters.
+    * 
+    * This class is used to receive and store a set of parameter configurations from 
+    * an external parameter tuning algorithm.
     */
 class ParameterInstances {
 public:

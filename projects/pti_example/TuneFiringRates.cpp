@@ -1,4 +1,17 @@
-/*! \brief
+/*! \brief An example of using the PTI interface to tune the initial weigh tranges of an SNN to produce a target 
+ *   average firing rate.
+ * 
+ *  We define an SNN with a single excitatory group, a single inhibitory group, and a group of Poisson inputs.
+ *  There are four groups of connections: two that connect the Poisson-spiking inputs to the internal groups 
+ *  (Poisson—>excitatory, Poisson—>inhibitory), and two for intra-group connections (excitatory—>excitatory, 
+ *  inhibitory, inhibitory).
+ * 
+ *  The model exposes four tunable parameters, one for each connection group. The aim is to execute many models 
+ *  at once in CARLsim with different parameter configuration (ex. to run them all in parallel on the same 
+ *  GPU), and to output their fitness values.
+ * 
+ *  The binary this file reduces too takes comma-delimited parameter lists on std::cin and outputs scalar fitness 
+ *  values to std::cout (which are a function of the difference between the observed and target average firing rates).
  *
  */
 #include "PTI.h"
@@ -11,13 +24,13 @@
 
 using namespace std;
 
-class TuneFiringRatesECJExperiment : public Experiment {
+class TuneFiringRatesExperiment : public Experiment {
 public:
 	// Decay constants
 	static const float COND_tAMPA=5.0, COND_tNMDA=150.0, COND_tGABAa=6.0, COND_tGABAb=150.0;
 	
-	// Neurons
-	static const int NUM_NEURONS = 10;
+	// Number of neurons in each group
+	static const int NUM_NEURONS_PER_GROUP = 100;
 
 	// Simulation time in seconds
 	static const int runTime = 2;
@@ -28,36 +41,49 @@ public:
 	static const float INH_TARGET_HZ   = 20.0f;
 
     const LoggerMode verbosity;
+	const SimMode simMode;
 
-	TuneFiringRatesECJExperiment(const LoggerMode verbosity): verbosity(verbosity) {}
+	/*!
+	 * Set up an experiment object for a given architecture and logging level.
+	 */
+	TuneFiringRatesExperiment(const SimMode simMode, const LoggerMode verbosity): simMode(simMode), verbosity(verbosity) {}
 
 	void run(const ParameterInstances &parameters, std::ostream &outputStream) const {
-		// Izhikevich parameters
+		// Define constant Izhikevich parameters for two types of neurons
 		const float REG_IZH[] = { 0.02f, 0.2f, -65.0f, 8.0f };
 		const float FAST_IZH[] = { 0.1f, 0.2f, -65.0f, 2.0f };
 
+		// The number of individuals (separate parameter configurations) we have received
 		int indiNum = parameters.getNumInstances();
 
+		// Groups for each individual
 		int poissonGroup[indiNum];
 		int excGroup[indiNum];
 		int inhGroup[indiNum];
+
+		// Measure spiking activity on each exc and inh group
 		SpikeMonitor* excMonitor[indiNum];
 		SpikeMonitor* inhMonitor[indiNum];
+
+		// We'll process the spiking activity into a fitness value
 		float excHz[indiNum];
 		float inhHz[indiNum];
 		float excError[indiNum];
 		float inhError[indiNum];
 		float fitness[indiNum];
 
-		/** construct a CARLsim network on the heap. */
-		CARLsim* const network = new CARLsim("tuneFiringRatesECJ", CPU_MODE, verbosity);
+		// Construct a CARLsim network on the heap.
+		CARLsim* const network = new CARLsim("tuneFiringRates", simMode, verbosity);
 
+		// We'll add groups for *all* the individuals to the same large CARLsim network object.
+		// This allows us to run multiple networks side-by-side on the same GPU: we treat them as
+		// a single mega-network with many non-interacting components.
 		assert(parameters.getNumParameters() >= 4);
 		for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
 			/** Decode a genome*/
-			poissonGroup[i] = network->createSpikeGeneratorGroup("poisson", NUM_NEURONS, EXCITATORY_NEURON);
-			excGroup[i] = network->createGroup("exc", NUM_NEURONS, EXCITATORY_NEURON);
-			inhGroup[i] = network->createGroup("inh", NUM_NEURONS, INHIBITORY_NEURON);
+			poissonGroup[i] = network->createSpikeGeneratorGroup("poisson", NUM_NEURONS_PER_GROUP, EXCITATORY_NEURON);
+			excGroup[i] = network->createGroup("exc", NUM_NEURONS_PER_GROUP, EXCITATORY_NEURON);
+			inhGroup[i] = network->createGroup("inh", NUM_NEURONS_PER_GROUP, INHIBITORY_NEURON);
 
 			network->setNeuronParameters(excGroup[i], REG_IZH[0], REG_IZH[1], REG_IZH[2], REG_IZH[3]);
 			network->setNeuronParameters(inhGroup[i], FAST_IZH[0], FAST_IZH[1], FAST_IZH[2], FAST_IZH[3]);
@@ -70,15 +96,14 @@ public:
 
 		}
 
-		// can't call setupNetwork() multiple times in the loop
+		// With all the groups and connections specified, we can now setup the mega-network
 		network->setupNetwork();
 
-		// it's unnecessary to do this in the loop
-		PoissonRate* const in = new PoissonRate(NUM_NEURONS);
-		/*for (int k=0;k<NUM_NEURONS;k++)*/
-			/*in->rates[k] = INPUT_TARGET_HZ;*/
+		// Configure the spiking rate for the Poisson inputs
+		PoissonRate* const in = new PoissonRate(NUM_NEURONS_PER_GROUP);
 		in->setRates(INPUT_TARGET_HZ);
 
+		// Assign the spiking rate and spikeMonitors for each sub-network
 		for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
 			network->setSpikeRate(poissonGroup[i],in);
 
@@ -93,9 +118,11 @@ public:
 			excError[i]=0; inhError[i]=0;
 			fitness[i]=0;
 		}
-		// again, we can't call this more than once.
+
+		// GO!
 		network->runNetwork(runTime,0);
 
+		// For each sub-network, extract the mean firing rate and compute a fitness value based on its difference from the target rate
 		for(unsigned int i = 0; i < parameters.getNumInstances(); i++) {
 
 			excMonitor[i]->stopRecording();
@@ -115,7 +142,7 @@ public:
 	}
 };
 
-/** Returns true iff the command-line arguments contain "-parameter". */
+/*! Some poor-man's CLI parsing: teturns true iff the command-line arguments contain "-parameter". */
 const bool hasOpt(int argc, const char * const argv[], const char * const parameter) {
   assert(argc >= 0);
   assert(argv != NULL);
@@ -136,8 +163,9 @@ int main(int argc, char* argv[]) {
 	* arguments, and then loads the Parameters from a file (if one has been
 	* specified by the user) or else from a default istream (std::cin here). */
 
+  	const SimMode simMode = hasOpt(argc, argv, "cpu") ? CPU_MODE : GPU_MODE;
   	const LoggerMode verbosity = hasOpt(argc, argv, "v") ? USER : SILENT;
-	const TuneFiringRatesECJExperiment experiment(verbosity);
+	const TuneFiringRatesExperiment experiment(simMode, verbosity);
 	const PTI pti(argc, argv, std::cout, std::cin);
 
 	/* The PTI will now cheerfully iterate through all the Parameter sets and
