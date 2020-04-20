@@ -138,6 +138,12 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	connConfig.connId = -1;
 	connConfig.conn = NULL;
 	connConfig.numberOfConnections = 0;
+	connConfig.STP_U_mean = 0.0f;
+	connConfig.STP_U_std = 0.0f;
+	connConfig.STP_tau_u_mean = 0.0f;
+	connConfig.STP_tau_u_std = 0.0f;
+	connConfig.STP_tau_x_mean = 0.0f;
+	connConfig.STP_tau_x_std = 0.0f;
 
 	if ( _type.find("random") != std::string::npos) {
 		connConfig.type = CONN_RANDOM;
@@ -198,6 +204,13 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	connConfig.connectionMonitorId = -1;
 	connConfig.connId = -1;
 	connConfig.numberOfConnections = 0;
+	connConfig.STP_U_mean = 0.0f;
+	connConfig.STP_U_std = 0.0f;
+	connConfig.STP_tau_u_mean = 0.0f;
+	connConfig.STP_tau_u_std = 0.0f;
+	connConfig.STP_tau_x_mean = 0.0f;
+	connConfig.STP_tau_x_std = 0.0f;
+	connConfig.stpConfig.WithSTP = false;
 
 	// assign a connection id
 	assert(connConfig.connId == -1);
@@ -696,28 +709,40 @@ void SNN::setISTDP(int gGrpId, bool isSet, STDPType type, STDPCurve curve, float
 }
 
 // set STP params
-void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
-	assert(gGrpId >= -1);
+void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std){
+//void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
+	assert(preGrpId >= -1);
+	assert(postGrpId >= -1);
 	if (isSet) {
-		assert(STP_U > 0 && STP_U <= 1); assert(STP_tau_u > 0); assert(STP_tau_x > 0);
+		assert(STP_U_mean > 0 && STP_U_mean <= 1); assert(STP_tau_u_mean > 0); assert(STP_tau_x_mean > 0);
+		assert(STP_U_std >= 0); assert(STP_tau_u_std >= 0); assert(STP_tau_x_std >= 0);
 	}
 
-	if (gGrpId == ALL) { // shortcut for all groups
-		for(int grpId = 0; grpId < numGroups; grpId++) {
-			setSTP(grpId, isSet, STP_U, STP_tau_u, STP_tau_x);
-		}
-	} else {
-		// set STDP for a given group
-		sim_with_stp									|= isSet;
-		groupConfigMap[gGrpId].stpConfig.WithSTP		= isSet;
-		groupConfigMap[gGrpId].stpConfig.STP_A			= (STP_U > 0.0f) ? 1.0 / STP_U : 1.0f; // scaling factor
-		groupConfigMap[gGrpId].stpConfig.STP_U 			= STP_U;
-		groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv	= 1.0f / STP_tau_u; // facilitatory
-		groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv	= 1.0f / STP_tau_x; // depressive
-
-		KERNEL_INFO("STP %s for %d (%s):\tA: %1.4f, U: %1.4f, tau_u: %4.0f, tau_x: %4.0f", isSet?"enabled":"disabled",
-					gGrpId, groupConfigMap[gGrpId].grpName.c_str(), groupConfigMap[gGrpId].stpConfig.STP_A, STP_U, STP_tau_u, STP_tau_x);
+	// set STDP for a given group
+	short int connId = getConnectId(preGrpId, postGrpId);
+	if (connId<0) {
+		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", preGrpId, getGroupName(preGrpId).c_str(),
+			postGrpId, getGroupName(postGrpId).c_str());
+		exitSimulation(1);
 	}
+	
+	connectConfigMap[connId].STP_U_mean = STP_U_mean;
+	connectConfigMap[connId].STP_U_std = STP_U_std;
+	connectConfigMap[connId].STP_tau_u_mean = STP_tau_u_mean;
+	connectConfigMap[connId].STP_tau_u_std = STP_tau_u_std;
+	connectConfigMap[connId].STP_tau_x_mean = STP_tau_x_mean;
+	connectConfigMap[connId].STP_tau_x_std = STP_tau_x_std;
+	connectConfigMap[connId].stpConfig.WithSTP = true;
+
+	sim_with_stp									|= isSet;
+	groupConfigMap[preGrpId].stpConfig.WithSTP		= isSet;
+	// groupConfigMap[gGrpId].stpConfig.STP_A			= (STP_U > 0.0f) ? 1.0 / STP_U : 1.0f; // scaling factor
+	// groupConfigMap[gGrpId].stpConfig.STP_U 			= STP_U;
+	// groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv	= 1.0f / STP_tau_u; // facilitatory 
+	// groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv	= 1.0f / STP_tau_x; // depressive
+
+	KERNEL_INFO("STP %s for %d to %d (%s):\t, mean of U: %1.4f, mean of tau_u: %4.0f, mean of tau_x: %4.0f", isSet?"enabled":"disabled",
+					preGrpId, postGrpId, groupConfigMap[preGrpId].grpName.c_str(), STP_U_mean, STP_tau_u_mean, STP_tau_x_mean);
 }
 
 void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
@@ -838,14 +863,21 @@ int SNN::runNetwork(int _nsec, int _nmsec, bool printRunSummary) {
 	// if nsec=0, simTimeMs=10, we need to run the simulator for 10 timeStep;
 	// if nsec=1, simTimeMs=10, we need to run the simulator for 1*1000+10, time Step;
 	for(int i = 0; i < runDurationMs; i++) {
+		//KERNEL_INFO("beforeAbvSimStep");
+
 		advSimStep();
+		//KERNEL_INFO("afterAbvSimStep");
+
 		//KERNEL_INFO("Executed an advSimStep!");
 
 		// update weight every updateInterval ms if plastic synapses present
 		if (!sim_with_fixedwts && wtANDwtChangeUpdateInterval_ == ++wtANDwtChangeUpdateIntervalCnt_) {
 			wtANDwtChangeUpdateIntervalCnt_ = 0; // reset counter
+			//KERNEL_INFO("close to update weights");
+
 			if (!sim_in_testing) {
 				// keep this if statement separate from the above, so that the counter is updated correctly
+				//KERNEL_INFO("call update weights");
 				updateWeights();
 			}
 		}
@@ -2144,6 +2176,8 @@ void SNN::advSimStep() {
 	//KERNEL_INFO("globalStateUpdate!");
 
 	clearExtFiringTable();
+	//KERNEL_INFO("clearExtFT");
+
 }
 
 void SNN::doSTPUpdateAndDecayCond() {
@@ -2801,10 +2835,10 @@ void SNN::allocateManagerRuntimeData() {
 	// STP can be applied to spike generators, too -> numN
 	// \TODO: The size of these data structures could be reduced to the max synaptic delay of all
 	// connections with STP. That number might not be the same as maxDelay_.
-	managerRuntimeData.stpu = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
-	managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
-	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
-	memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
+	// managerRuntimeData.stpu = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
+	// managerRuntimeData.stpx = new float[managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1)];
+	// memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
+	// memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumN * (glbNetworkConfig.maxDelay + 1));
 
 	managerRuntimeData.Npre           = new unsigned short[managerRTDSize.maxNumNAssigned];
 	managerRuntimeData.Npre_plastic   = new unsigned short[managerRTDSize.maxNumNAssigned];
@@ -2825,14 +2859,27 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.preSynapticIds	= new SynInfo[managerRTDSize.maxNumPreSynNet];
 	memset(managerRuntimeData.preSynapticIds, 0, sizeof(SynInfo) * managerRTDSize.maxNumPreSynNet);
 
+	managerRuntimeData.stpu           = new float[managerRTDSize.maxNumPreSynNet * (glbNetworkConfig.maxDelay + 1)];
+	managerRuntimeData.stpx           = new float[managerRTDSize.maxNumPreSynNet * (glbNetworkConfig.maxDelay + 1)];
+	managerRuntimeData.stp_U           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_tau_u_inv           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_tau_x_inv           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.withSTP           = new bool[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wt           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wtChange     = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.maxSynWt     = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.synSpikeTime = new int[managerRTDSize.maxNumPreSynNet];
+	memset(managerRuntimeData.stpu, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stpx, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.wt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.wtChange, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.maxSynWt, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.synSpikeTime, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
+
+	memset(managerRuntimeData.stp_U, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_tau_u_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_tau_x_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.withSTP, 0, sizeof(bool) * managerRTDSize.maxNumPreSynNet);
 
 	mulSynFast = new float[managerRTDSize.maxNumConnections];
 	mulSynSlow = new float[managerRTDSize.maxNumConnections];
@@ -2929,10 +2976,10 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
 			groupConfigs[netId][lGrpId].Noffset = grpIt->Noffset; // Note: Noffset is not valid at this time
 			groupConfigs[netId][lGrpId].MaxDelay = grpIt->maxOutgoingDelay;
-			groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
-			groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
-			groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
-			groupConfigs[netId][lGrpId].STP_tau_x_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv;
+			// groupConfigs[netId][lGrpId].STP_A = groupConfigMap[gGrpId].stpConfig.STP_A;
+			// groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
+			// groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
+			// groupConfigs[netId][lGrpId].STP_tau_x_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv;
 			groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC;
 			groupConfigs[netId][lGrpId].TAU_MINUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC;
 			groupConfigs[netId][lGrpId].ALPHA_PLUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC;
@@ -3308,6 +3355,20 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.connIdsPreIdx[pre_pos] = connIt->connId;
 
 				managerRuntimeData.Npost[connIt->nSrc + GLoffset[connIt->grpSrc]]++;
+				managerRuntimeData.stpu[2*pre_pos] = 0.0f;
+				managerRuntimeData.stpu[2*pre_pos+1] = 0.0f;
+				managerRuntimeData.stpx[2*pre_pos] = 1.0f;
+				managerRuntimeData.stpx[2*pre_pos+1] = 1.0f;
+
+				managerRuntimeData.stp_U[pre_pos] = connIt->STP_U;
+				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->STP_tau_u_inv;
+				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->STP_tau_x_inv;
+				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
+
+				KERNEL_INFO("pre_pos: %d -- stpu:%f/%f -- stpx:%f/%f", pre_pos, managerRuntimeData.stpu[2*pre_pos], managerRuntimeData.stpu[2*pre_pos+1],
+				managerRuntimeData.stpx[2*pre_pos],managerRuntimeData.stpx[2*pre_pos+1]);
+
+				// 
 				parsedConnections++;
 
 				// update the maximum number of and post-connections of a neuron in a group
@@ -3612,6 +3673,38 @@ void SNN::connectNetwork() {
 	}
 }
 
+inline double SNN::marsaglia_polar_gaussian_generator(const double& mean, const double &stdDev) {
+	static bool hasSpare = false;
+	static double spare;
+
+	if(hasSpare) {
+		hasSpare = false;
+		return mean + stdDev * spare;
+	}
+
+	hasSpare = true;
+	static double u, v, s;
+	do {
+		u = (rand() / ((double) RAND_MAX)) * 2.0 - 1.0;
+		v = (rand() / ((double) RAND_MAX)) * 2.0 - 1.0;
+		s = u * u + v * v;
+	}
+	while( (s >= 1.0) || (s == 0.0) );
+
+	s = sqrt(-2.0 * log(s) / s);
+	spare = v * s;
+	return mean + stdDev * u * s;
+}
+
+inline float SNN::generateNormalSample(float mean, float std, float min_limit, float max_limit){
+	float number = float(marsaglia_polar_gaussian_generator(double(mean), double(std)));
+	number = std::max(number, min_limit);
+	if (max_limit > 0) {
+		number = std::min(number, max_limit);
+	}
+	return number;
+}
+
 //! set one specific connection from neuron id 'src' to neuron id 'dest'
 inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, int externalNetId) {
 	//assert(destN <= CONN_SYN_NEURON_MASK); // total number of neurons is less than 1 million within a GPU
@@ -3639,6 +3732,20 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0 * fabs(maxWt);
 	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0 * fabs(initWt);
 
+	connInfo.STP_U = 0.01f;
+	connInfo.STP_tau_u_inv = 1.0f;
+	connInfo.STP_tau_x_inv = 1.0f;
+	connInfo.withSTP = false;
+	
+	//KERNEL_INFO("outside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	if (connectConfigMap[_connId].stpConfig.WithSTP){
+			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
+			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.withSTP = true;
+			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	}
+
 	connectionLists[netId].push_back(connInfo);
 
 	// If the connection is external, copy the connection info to the external network
@@ -3661,6 +3768,20 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.initWt = isExcitatoryGroup(_grpSrc) ? fabs(initWt) : -1.0*fabs(initWt);
 	connInfo.maxWt = isExcitatoryGroup(_grpSrc) ? fabs(maxWt) : -1.0*fabs(maxWt);
 	connInfo.delay = delay;
+
+	connInfo.STP_U = 0.01f;
+	connInfo.STP_tau_u_inv = 1.0f;
+	connInfo.STP_tau_x_inv = 1.0f;
+	connInfo.withSTP = false;
+	
+	//KERNEL_INFO("outside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	if (connectConfigMap[_connId].stpConfig.WithSTP){
+			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
+			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.withSTP = true;
+			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
+	}
 
 	connectionLists[netId].push_back(connInfo);
 
@@ -4658,7 +4779,7 @@ void SNN::routeSpikes() {
 
 		#if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
 			pthread_t threads[(2 * networkConfigs[srcNetId].numGroups) + 1]; // 1 additional array size if numCores == 0, it may work though bad practice
-			cpu_set_t cpus;	
+			cpu_set_t cpus;
 			ThreadStruct argsThreadRoutine[(2 * networkConfigs[srcNetId].numGroups) + 1]; // same as above, +1 array size
 			int threadCount = 0;
 		#endif
@@ -5628,13 +5749,13 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 
 	managerRuntimeData.lastSpikeTime[lNId] = MAX_SIMULATION_TIME;
 
-	if(groupConfigs[netId][lGrpId].WithSTP) {
-		for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
-			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
-			managerRuntimeData.stpu[index] = 0.0f;
-			managerRuntimeData.stpx[index] = 1.0f;
-		}
-	}
+	// if(groupConfigs[netId][lGrpId].WithSTP) {
+	// 	for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
+	// 		int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
+	// 		managerRuntimeData.stpu[index] = 0.0f;
+	// 		managerRuntimeData.stpx[index] = 1.0f;
+	// 	}
+	// }
 }
 
 void SNN::resetMonitors(bool deallocate) {
@@ -5767,7 +5888,13 @@ void SNN::deleteManagerRuntimeData() {
 
 	if (managerRuntimeData.stpu!=NULL) delete[] managerRuntimeData.stpu;
 	if (managerRuntimeData.stpx!=NULL) delete[] managerRuntimeData.stpx;
+	if (managerRuntimeData.stp_U!=NULL) delete[] managerRuntimeData.stp_U;
+	if (managerRuntimeData.stp_tau_u_inv!=NULL) delete[] managerRuntimeData.stp_tau_u_inv;
+	if (managerRuntimeData.stp_tau_x_inv!=NULL) delete[] managerRuntimeData.stp_tau_x_inv;
+	if (managerRuntimeData.withSTP!=NULL) delete[] managerRuntimeData.withSTP;
 	managerRuntimeData.stpu=NULL; managerRuntimeData.stpx=NULL;
+	managerRuntimeData.stp_U=NULL; managerRuntimeData.stp_tau_u_inv=NULL;
+	managerRuntimeData.stp_tau_x_inv=NULL; managerRuntimeData.withSTP=NULL;
 
 	if (managerRuntimeData.avgFiring!=NULL) delete[] managerRuntimeData.avgFiring;
 	if (managerRuntimeData.baseFiring!=NULL) delete[] managerRuntimeData.baseFiring;
@@ -5828,13 +5955,13 @@ void SNN::resetPoissonNeuron(int netId, int lGrpId, int lNId) {
 	if (groupConfigs[netId][lGrpId].WithHomeostasis)
 		managerRuntimeData.avgFiring[lNId] = 0.0f;
 
-	if (groupConfigs[netId][lGrpId].WithSTP) {
-		for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
-			int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
-			managerRuntimeData.stpu[index] = 0.0f;
-			managerRuntimeData.stpx[index] = 1.0f;
-		}
-	}
+	// if (groupConfigs[netId][lGrpId].WithSTP) {
+	// 	for (int j = 0; j < networkConfigs[netId].maxDelay + 1; j++) { // is of size maxDelay_+1
+	// 		int index = STP_BUF_POS(lNId, j, networkConfigs[netId].maxDelay);
+	// 		managerRuntimeData.stpu[index] = 0.0f;
+	// 		managerRuntimeData.stpx[index] = 1.0f;
+	// 	}
+	// }
 }
 
 void SNN::resetPropogationBuffer() {

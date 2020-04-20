@@ -730,7 +730,8 @@ public:
 	void setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve);
 
 	/*!
-	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group in 
+	 * terms of mean and standard deviation (pre-synaptically)
 	 *
 	 * CARLsim implements the short-term plasticity model of (Tsodyks & Markram, 1998; Mongillo, Barak, & Tsodyks, 2008)
 	 * \f{eqnarray}
@@ -750,15 +751,16 @@ public:
 	 * Source: Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., rev #136920
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \param[in] grpId       pre-synaptic group ID
+	 * \param[in] preGrpId       pre-synaptic group ID
+	 * \param[in] postGrpId      post-synaptic group ID
 	 * \param[in] isSet       a flag whether to enable/disable STP
-	 * \param[in] STP_U       increment of u induced by a spike
-	 * \param[in] STP_tau_u   decay constant of u (tau_F)
-	 * \param[in] STP_tau_x   decay constant of x (tau_D)
-	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
+	 * \param[in] STP_U       Normal distribution mean and sd of increment of u induced by a spike
+	 * \param[in] STP_tau_u   Normal distribution mean and sd of decay constant of u (tau_F)
+	 * \param[in] STP_tau_x   Normal distribution mean and sd of decay constant of x (tau_D)
+	 * \note STP will be applied to all outgoing synapses of all neurons in this group. Each neuron in the group will have individual STP parameters drawn from the normal distribution.
 	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 */
-	void setSTP(int grpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x);
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
@@ -773,7 +775,8 @@ public:
 	 * These default values can be overridden using setDefaultSTPparams.
 	 *
 	 * \STATE ::CONFIG_STATE
-	 * \param[in] grpId   pre-synaptic group ID
+	 * \param[in] preGrpId       pre-synaptic group ID
+	 * \param[in] postGrpId      post-synaptic group ID
 	 * \param[in] isSet   a flag whether to enable/disable STP
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group.
 	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
@@ -781,7 +784,7 @@ public:
 	 * \see setSTP(int, bool, float, float, float)
 	 * \since v3.0
 	 */
-	void setSTP(int grpId, bool isSet);
+	void setSTP(int preGrpId, int postGrpId, bool isSet);
 
 	/*!
 	 * \brief Sets the weight and weight change update parameters

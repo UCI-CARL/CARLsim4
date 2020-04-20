@@ -66,16 +66,19 @@ TEST(STP, setSTPdeath) {
 	CARLsim* sim = new CARLsim("STP.setSTPdeath",CPU_MODE,SILENT,1,42);
 	int g1=sim->createSpikeGeneratorGroup("excit", 10, EXCITATORY_NEURON);
 
+	int g2=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+	sim->setNeuronParameters(g2, 0.02f, 0.2f,-65.0f,8.0f);
+
 	// grpId
-	EXPECT_DEATH({sim->setSTP(-2,true,0.1f,10,10);},"");
+	EXPECT_DEATH({sim->setSTP(-2, g2, true, STPu(0.1f), STPtauU(10.0f), STPtauX(10.0f));},"");
 
 	// STP_U
-	EXPECT_DEATH({sim->setSTP(g1,true,0.0f,10,10);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,1.1f,10,10);},"");
+	EXPECT_DEATH({sim->setSTP(g1,g2,true,STPu(0.0f), STPtauU(10.0f), STPtauX(10.0f));},"");
+	EXPECT_DEATH({sim->setSTP(g1,g2,true,STPu(1.1f), STPtauU(10.0f), STPtauX(10.0f));},"");
 
 	// STP_tF / STP_tD
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,-10,10);},"");
-	EXPECT_DEATH({sim->setSTP(g1,true,0.1f,10,-10);},"");
+	EXPECT_DEATH({sim->setSTP(g1,g2,true,STPu(0.1f), STPtauU(-10.0f), STPtauX(10.0f));},"");
+	EXPECT_DEATH({sim->setSTP(g1,g2,true,STPu(0.1f), STPtauU(10.0f), STPtauX(-10.0f));},"");
 	
 	delete sim;
 }
@@ -132,8 +135,8 @@ TEST(STP, firingRateSTDvsSTF) {
 						sim->setConductances(false);
 
 					if (hasSTP) {
-						sim->setSTP(g0, true, 0.45f, 50.0f, 750.0f); // depressive
-						sim->setSTP(g1, true, 0.15f, 750.0f, 50.0f); // facilitative
+						sim->setSTP(g0, g2, true, STPu(0.45f), STPtauU(50.0f), STPtauX(750.0f)); // depressive
+						sim->setSTP(g1, g3, true, STPu(0.15f), STPtauU(750.0f), STPtauX(50.0f)); // facilitative
 					}
 
 					bool spikeAtZero = true;
@@ -199,7 +202,7 @@ TEST(STP, firingRateSTDvsSTF) {
 }
 
 #ifndef __NO_CUDA__
-TEST(STP, spikeTimesCPUvsGPU) {
+TEST(STP, stpSpikeTimesCPUvsGPU) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	CARLsim *sim = NULL;
@@ -230,8 +233,8 @@ TEST(STP, spikeTimesCPUvsGPU) {
 			else
 				sim->setConductances(false);
 
-			sim->setSTP(g0, true, 0.45f, 50.0f, 750.0f); // depressive
-			sim->setSTP(g1, true, 0.15f, 750.0f, 50.0f); // facilitative
+			sim->setSTP(g0, g2, true, STPu(0.45f), STPtauU(50.0f), STPtauX(750.0f)); // depressive
+			sim->setSTP(g1, g3, true, STPu(0.15f), STPtauU(750.0f), STPtauX(50.0f)); // facilitative
 
 			bool spikeAtZero = true;
 			spkGenG0 = new PeriodicSpikeGenerator(10.0f,spikeAtZero); // periodic spiking @ 15 Hz
