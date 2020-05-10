@@ -61,6 +61,7 @@
 
 #include <spike_buffer.h>
 #include <error_code.h>
+#include <iostream>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -1454,6 +1455,71 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 		strncpy(name,groupConfigMap[gGrpId].grpName.c_str(),100);
 		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	}
+
+	if (!saveSynapseInfo) return;
+
+	// std::cout << "Save Synapse";
+	// Save Weights For Each Local Network
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			// copy from runtimeData to managerRuntimeData
+			fetchPreConnectionInfo(netId);
+			fetchPostConnectionInfo(netId);
+
+			// read synapse info from managerRuntimData
+			for (int lNId = 0; lNId < networkConfigs[netId].numNAssigned; lNId++) {
+				unsigned int offset = managerRuntimeData.cumulativePost[lNId];
+
+				// save number of post synapses of local neuron lNId
+				unsigned int count = 0;
+				for (int t = 0; t < glbNetworkConfig.maxDelay; t++) {
+					DelayInfo dPar = managerRuntimeData.postDelayInfo[lNId*(glbNetworkConfig.maxDelay + 1)];
+					count += dPar.delay_length;
+				}
+				if (!fwrite(&count, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+
+				// save each synapse starting from from neuron lNId
+				for (int t = 0; t < glbNetworkConfig.maxDelay; t++) {
+					DelayInfo dPar = managerRuntimeData.postDelayInfo[lNId*(glbNetworkConfig.maxDelay + 1)];
+
+					for (int idx_d=dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d++) {
+						SynInfo post_info = managerRuntimeData.postSynapticIds[offset + idx_d];
+						int lNIdPost = GET_CONN_NEURON_ID(post_info);
+						int lGrpIdPost = GET_CONN_GRP_ID(post_info);
+						int preSynId = GET_CONN_SYN_ID(post_info);
+						int pre_pos = managerRuntimeData.cumulativePre[lNIdPost] + preSynId;
+						SynInfo pre_info = managerRuntimeData.preSynapticIds[pre_pos];
+						int lNIdPre = GET_CONN_NEURON_ID(pre_info);
+						int lGrpIdPre = GET_CONN_GRP_ID(pre_info);
+						float weight = managerRuntimeData.wt[pre_pos];
+						float maxWeight = managerRuntimeData.maxSynWt[pre_pos];
+						int connId = managerRuntimeData.connIdsPreIdx[pre_pos];
+						int delay = t+1;
+
+						// convert local group id to global group id
+						// convert local neuron id to neuron order in group
+						int gGrpIdPre = groupConfigs[netId][lGrpIdPre].gGrpId;
+						int gGrpIdPost = groupConfigs[netId][lGrpIdPost].gGrpId;
+						int grpNIdPre = lNId - groupConfigs[netId][lGrpIdPre].lStartN;
+						int grpNIdPost = lNIdPost - groupConfigs[netId][lGrpIdPost].lStartN;
+
+						// write order is based on function connectNeurons (no NetId & external_NetId)
+						// inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) 
+						// std::cout << gGrpIdPre << ", " << gGrpIdPost << ", " << grpNIdPre << ", " << grpNIdPost << ", " << connId << ", " << weight << ", " << maxWeight << ", " << delay << "\n";
+						if (!fwrite(&gGrpIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&gGrpIdPost, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&grpNIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&grpNIdPost, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&connId, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&weight, sizeof(float), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&maxWeight, sizeof(float), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						if (!fwrite(&delay, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+					}
+				}
+			}
+		}
+	}
+
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
