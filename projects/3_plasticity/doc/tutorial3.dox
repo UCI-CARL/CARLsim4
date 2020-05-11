@@ -1,0 +1,498 @@
+/*!
+
+\page tut3_plasticity Tutorial 3: Plasticity
+
+\tableofcontents
+
+\author Kristofor D. Carlson
+\see \ref ch5_synaptic_plasticity
+\see \ref ch5s2_spike_timing_dependent_plasticity
+\see \ref ch5s3_homeostasis
+\see \ref ch6_input
+\see \ref ch7_monitoring
+\see \ref ch9_matlab_oat
+\see <a
+href="http://www.scholarpedia.org/article/Spike-timing_dependent_plasticity"
+target="_blank"><b>Jesper Sjöström and Wulfram Gerstner (2010) Spike-timing dependent plasticity.
+Scholarpedia, 5(2):1362., revision #142314</b></a>
+\see <a href="http://www.socsci.uci.edu/~jkrichma/publications.html" target="_blank"><b>Biologically
+Plausible Models of Homeostasis and STDP: Stability and Learning in Spiking Neural Networks</b></a>
+(Carlson, et al., 2013)
+
+In this tutorial, we introduce how to use some plasticity mechanisms in CARLsim.
+We will cover:
+- Setting up connections with plasticity enabled.
+- Enabling E-STDP on a specific connection.
+- Adding homeostatic synaptic scaling to stabilize E-STDP.
+- Using SpikeMonitor and ConnectionMonitor to get spike and weight information.
+
+At the end of the tutorial, you will have:
+- Built a simple CARLsim program with E-STDP and homeostatic synaptic scaling.
+- Used SpikeMonitor and ConnectionMonitor to get spike and weight information.
+
+This tutorial assumes you have covered:
+- Tutorials \ref tut1_basic_concepts & \ref tut2_random_spnet
+
+
+The source code of this tutorial can be found in
+<tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>.
+
+\section tut3s1_overview 3.1 Overview
+Spike timing-dependent plasticity (STDP) is a popular learning rule in spiking neural networks
+(SNNs). STDP was first found in neurons in 1997 and is still under intense study (Sjöström
+Gerstner (2010)). SNNs are a unique class of neural network (NN) models that capture the
+temporal dynamics (spike times) of the network. Because of this, they are ideally sutied to
+implement STDP. However, STDP can often undergo 'runaway potentiation' or 'runaway depotentiation'
+where the synaptic weights increase or decrease without bound, respectively. To avoid this, CARLsim
+users can utilize a model of homeostatic synaptic scaling implemented in CARLsim. The homeostatic
+synaptic scaling model (Carlson et al., 2014) is biologically plausible and works as follows. The
+average firing rate of each neuron is calculated over a time period on the scale of minutes to
+hours. This average firing rate is compared to a user-defined target firing rate and the difference
+between these firing rates is used to scale all synapses on that neuron up or down multiplicatively.
+For instance, if a neuron has an average firing rate of 10 Hz and a target firing rate of 20 Hz, it
+will scale up all postsynaptic weights on that neuron in an effort to attain the target firing rate.
+
+In this tutorial, we will show users how to configure and enable both STDP and homeostasis in a
+simple model. This tutorial does not currently cover using short-term plasticity (STP). For more
+information on STP, please see: \ref ch5s1_short_term_plasticity. The network we construct will have
+100 Poisson input neurons connected to a single regular spiking (RS) output neuron. Every synaptic
+connection between the input neurons and the output neuron will be plastic and have both STDP and
+homeostasis enabled. Each input neuron will be assigned a different input firing rate in ascending
+order from 0.2 Hz to 20 Hz. The synaptic weights will be randomly initialized and the simulation
+will then run for 1000 seconds. The spike and synaptic
+weight data will be visualized using the MATLAB OAT scripts provided in the:
+<tt>%%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity/scripts</tt>. Users will see that
+homeostasis can successfully stabilize STDP by visualizing the weights before and after the 1000
+seconds of simulation.
+
+
+\section tut3s2_network_setup 3.2 Network Setup
+
+As always, the first step in setting up a CARLsim program is to include the <tt>libCARLsim</tt>
+library. We also include the vector library because we will be using the vector data structure.
+
+\code
+#include <carlsim.h>
+#include <stdio.h>
+#include <vector>
+\endcode
+
+\subsection tut3s2s1_config 3.2.1 CARLsim Program CONFIG State
+
+We first construct a simple SNN that has 100 Poisson input neurons (group ID = gPoiss) all connected
+to a single regular spiking (RS) Izhikevich output neuron (group ID = gExc) as shown below. Notice
+we passed the GPU_MODE argument in our CARLsim constructor call. This means our simulation will take
+place on the GPU. Also notice that the last argument for CARLsim::createSpikeGeneratorGroup is
+EXCITATORY_POISSON and not EXCITATORY_NEURON. The setNeuronParameters call assigns the RS spiking
+neuron parameter values to all neurons in the gExc group.
+
+\code
+// ---------------- CONFIG STATE -------------------
+// create a network with nPois Poisson neurons and nExc excitatory output
+// neurons
+CARLsim sim("plasticity simulation", GPU_MODE, USER);
+int nPois = 100; // 100 input neurons
+int nExc  = 1;   // 1 output neuron
+
+// set up our neuron groups
+int gPois = sim.createSpikeGeneratorGroup("input", nPois, EXCITATORY_POISSON);
+int gExc  = sim.createGroup("output", nExc, EXCITATORY_NEURON);
+sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f);
+\endcode
+
+We next connect neurons from the gPoiss group to neurons (just one for now) in the gExc group with
+full connectivity with a minimum weight value of 0.0, an initial value of 1.0f/100, and a maximum
+value of 20.0f/100. The connection probability is given as 1.0f, a delay of 1 is used for all
+synapses, and no receptive fields are specified (-1). Finally, the keyword 'SYN_PLASTIC' is used
+instead of 'SYN_FIXED' to enable plasticity for this connection. This is required. Also, the
+simulation is set to use conductances with default parameter values with the
+CARLsim::setConductances call.
+
+\code
+// connect our groups with SYN_PLASTIC as the final argument.
+sim.connect(gPois, gExc,  "full", 0.01f, 0.03f, 1.0, 1, 1, SYN_PLASTIC);
+
+// set conductances with default values
+sim.setConductances(true);
+\endcode
+
+A PoissonRate object is then created to use as an input to a SpikeGenerator group. It is the same
+size of as the SpikeGenerator group and is allocated on the GPU for efficiency.
+
+\code
+// create PoissonRate object of size nPoiss.
+PoissonRate poissRate(nPois, true); // allocate on GPU for minimal memory copies
+\endcode
+
+Next, enable excitatory STDP (E-STDP) with a call to CARLsim::setESTDP pass the postsynaptic group
+you want to enable it for and 'true' to enable it. Additionally, the 'STANDARD' keyword indicates
+that there will not be a neuromodulatory influence at this synapse. Finally, the STDP curve type is
+specified by passing the stdpCurve_t data type with the desired STDP parameters.
+alpha_LTP(alpha_LTD) represents the magnitude of the increase(decrease) in synaptic weight while
+tau_LTP(tau_LTD) represents the time constant, which defines the width of the LTP(LTD) curve with
+respect to time. Notice that alpha_LTD is passed as being negative. The alpha_ltp and alpha_ltd
+parameters are allowed to be positive or negative depending on the user's preference. This allows
+users to build the many different type of EXP_CURVE type STDP curves found in 
+\ref ch5s2_spike_timing_dependent_plasticity, Fig. 2(a-d) and 2(f-i). The tau_LTP/tau_LTD
+parameters, however, cannot be negative as they are time constants.
+
+\code
+// set E-STDP parameters.
+float alpha_LTP=0.001f/100; float tau_LTP=20.0f;
+float alpha_LTD=0.0015f/100; float tau_LTD=20.0f;
+
+// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
+sim.setESTDP(gExc, true, STANDARD, ExpCurve(alpha_LTP, tau_LTP, -alpha_LTD, tau_LTP));
+\endcode
+
+It should be noted that the function call CARLsim::setSTDP could have replaced the CARLsim::setESTDP
+function call, as it is a wrapper for this function call. However, the CARLsim::setESTDP is
+unambiguous and is therefore the preferred method.
+
+Homeostatic synaptic scaling parameters are next defined. The homeostatic scaling factor
+(homeoScale) defines how large the effect of homeostasis will have the synaptic weight change.
+The synaptic weight change is composed of two terms, the homeostatic term and the STDP term. Each
+term has a scaling factor associated with it. The STDP scaling term has a value of 1. Therefore,
+to give the homeostatic term a larger influence than the STDP term, increase the homeostatic
+scaling factor to a value greater than 1. The homeostatic time constant (avgTimeScale) term defines
+the length of time over which the average firing rate of neurons in this group are calculated during
+the homeostasis calculation. Finally the target firing rate (targetFiringRate) term defines the
+firing rate the neurons in the group will attempt to attain.
+
+\code
+// homeostasis constants
+float homeoScale= 1.0; // homeostatic scaling factor
+float avgTimeScale = 5.0; // homeostatic time constant
+float targetFiringRate = 35.0;
+\endcode
+
+To enable homeostasis, the CARLsim::setHomeostasis function is called with the postsynaptic group as
+the first argument, a boolean flag that enables/disables homeostasis as a the second argument, the
+homeostatic synaptic scaling constant as the third argument, and the homeostatic time constant as
+the fourth argument. The CARLsim::setHomeostasis function can be called with just the first two
+arguments, in which case the default values of homeoScale = 0.1 and avgTimeScale = 10 will be used.
+When homeostasis is enabled, users must also define the target firing rate neurons in the group.
+This is done with a call to CARLsim::setHomeoBaseFiringRate, where the postsynaptic group, value of
+the targetFiringRate, and the standard deviation of the targetFiringRate are specified by the user.
+Please note that the target firing rate is calculated once at the beginning of the simulation and
+remains the same throughout the simulation.
+
+\code
+sim.setHomeostasis(gExc,true,homeoScale,avgTimeScale);
+sim.setHomeoBaseFiringRate(gExc,targetFiringRate,0);
+\endcode
+
+\ref ch5_synaptic_plasticity
+
+
+\subsection tut3s2s2_setup 3.2.2 CARLsim Program SETUP State
+
+During the SETUP state of CARLsim, CARLsim::setupNetwork is called. Two SpikeMonitor pointers are
+declared and assigned SpikeMonitor objects created with the CARLsim::setSpikeMonitor function call.
+The first argument to these functions is the group for which the spike data will be recorded while
+the second argument is the filename of the spike data files. The argument of "DEFAULT" denotes that
+the default filename conventions will be used, namely: "results/spk_{group name}.dat". We also
+create a ConnectionMonitor to record the synaptic weights for the connection between the input group
+and the output group. The CARLsim::setConnectionMonitor function is used, with the first argument
+being the presynaptic group, the second argument being the postsynaptic group, and the third
+argument the name of the filename. We use 'DEFAULT' which assigns the string:
+"results/conn_{pre-group name}_{post-group name}.dat" to the filename. Finally, we disable the
+automatic output of ConnectionMonitor by using the function call
+ConnectionMonitor::setUpdateTimeIntervalSec with an argument of -1. We will output the weight values
+manually, later in the simulation.
+
+
+\code
+// ---------------- SETUP STATE -------------------
+sim.setupNetwork();
+SpikeMonitor* SpikeMonInput  = sim.setSpikeMonitor(gPois,"DEFAULT");
+SpikeMonitor* SpikeMonOutput = sim.setSpikeMonitor(gExc,"DEFAULT");
+ConnectionMonitor* CM = sim.setConnectionMonitor(gPois,gExc,"DEFAULT");
+// disable automatic output of synaptic weights from connection monitor
+CM->setUpdateTimeIntervalSec(-1);
+\endcode
+
+
+\subsection tut3s2s3_run 3.2.3 CARLsim Program RUN State
+
+During the RUN state, we set the firing rates of each of the nPois (100) neurons. We assign the
+first input neuron an average firing rate of 0.2 Hz, the second input neuron an average firing rate
+of 0.4 Hz, and so on. This gives our 100th input neuron an average firing rate of 20 Hz. We can
+now observe the weight change at each input/output synapse as a function of the average firing rate
+of the input neurons each having Poisson firing statistics.
+
+We first generate a vector that contains the average firing rate for each Poisson neuron with the
+following code:
+
+\code
+// ---------------- RUN STATE -------------------
+// set rate of each neuron
+std::vector <float> rates;
+for (int i=0; i<nPois; i++)
+	rates.push_back((i+1)*(20.0/100));
+\endcode
+
+The vector is then passed to the PoissRate object and the poissRate is assigned to the gPois group
+with the following two calls. Additionally, we define the runTimeSec and runTimeMs variables
+explicitly here. This is common practice as there are often multiple calls to runNetwork with
+different run times for each call.
+
+\code
+poissRate.setRates(rates);
+sim.setSpikeRate(gPois, &poissRate);
+
+// run the established network for 1 sec
+int runTimeSec = 1000; // seconds
+int runTimeMs  = 0; // milliseconds
+\endcode
+
+Finally, we take a snapshot of the weights between the input and output groups before we run the
+simulation, run the simulation, and then take a snapshot of the weights after the simulation
+has been run. This is shown in the code below:
+
+\code
+// take a snapshot of the weights before we run the simulation
+CM->takeSnapshot();
+
+sim.runNetwork(runTimeSec, runTimeMs);
+
+// take a snapshot of the weights after the simulation runs to completion
+CM->takeSnapshot();
+\endcode
+
+\section tut3s3_network_output 3.3 Network Output
+In Linux, after navigating to <tt>%%CARLSIM_ROOT_DIR%%/doc/source/tutorial/3_plasticity</tt>, the
+network can be compiled and run with the following commands:
+\code
+$ make
+$ ./plasticity
+\endcode
+
+In Windows, the <tt>.vcxproj</tt> file is already added to the <tt>CARLsim.sln</tt> solution file.
+Thus the project can be built simply by opening the solution file in Visual Studio, by right-clicking the
+project directory and choosing "Build project".
+
+Some of the CARLsim output is shown below:
+
+Notice that the simulator notifies you that E-STDP has been enabled for output(1). The (1) denotes
+the group ID. It also notifies you that homeostasis is enabled for the output group and details the
+exact parameter values being used.
+
+\code
+.********************************************************************************
+.*******************      Welcome to CARLsim 3.0      ***************************
+.********************************************************************************
+
+.*************************** Configuring Network ********************************
+Starting CARLsim simulation "plasticity simulation" in USER mode
+Random number seed: 1426032481
+CUDA devices Configuration:
+  - Number of CUDA devices          =         1
+  - CUDA device ID with max GFLOPs  =         0
+  - Use CUDA device[0]              = GeForce GTX 980
+  - CUDA Compute Capability (CC)    =       5.2
+
+Running COBA mode:
+  - AMPA decay time            =     5 ms
+  - NMDA rise time (disabled)  =     0 ms
+  - GABAa decay time           =     6 ms
+  - GABAb rise time (disabled) =     0 ms
+  - GABAb decay time           =   150 ms
+E-STDP enabled for output(1)
+Homeostasis parameters enabled for 1 (output):	homeoScale: 1.000000, avgTimeScale: 5.000000
+Homeostatic base firing rate set for 1 (output):	baseFiring: 35.000, baseFiringStd: 0.000
+...
+\endcode
+
+During the network setup, the simulator lists the parameter values for E-STDP. Here we see that
+'STANDARD' is selected as well. Notice that we are notified that two SpikeMonitors have been set,
+one for 0 and one for group 1. Finally, we are notified that a ConnectionMonitor has been set for
+the conncection between group 0 and group 1. The '...' denotes excluded output.
+
+\code
+
+.***************************** Setting up Network **********************************
+...
+- STDP:
+    - E-STDP TYPE            = STANDARD
+    - I-STDP TYPE            =  UNKNOWN
+    - ALPHA_PLUS_EXC         =  0.00020
+    - ALPHA_MINUS_EXC        = -0.00007
+    - TAU_PLUS_INV_EXC       =  0.05000
+    - TAU_MINUS_INV_EXC      =  0.05000
+    - BETA_LTP               =  0.00000
+    - BETA_LTD               =  0.00000
+    - LAMBDA                 =  0.00000
+    - DELTA                  =  0.00000
+...
+.****************      Initializing GPU Simulation      *************************
+...
+SpikeMonitor set for group 0 (input)
+SpikeMonitor set for group 1 (output)
+ConnectionMonitor 0 set for Connection 0: 0(input) => 1(output)
+\endcode
+
+CARLsim also outputs information about the synaptic weight strengths and their recent changes in
+synaptic weight. Below we see presynaptic neuron id and postsynaptic neuron id in brackets,
+indicating the specific synapse. For example [ 0, 0] indicates the synaptic connection from
+presynaptic neuron 0 to postsynaptic neuron 0. Here, you can see all synaptic connections have the
+same postsynaptic neuron id (0), meaning these are connections from many different presynaptic
+neurons to a single postsynaptic neuron. Next, is the value of the synaptic weight with the change
+in the last second in parenthesis. For example: 0.0016 (+0.0004) indicates that the weight has a
+value of 0.0016 and has increased 0.0004 in the past 1 second.
+
+\code
+.******************* Running GPU Simulation on GPU 0 ***************************
+
+(t=1000.000s) SpikeMonitor for group input(0) has 1010036 spikes in 1000ms (10100.36 +/- 5819.37 Hz)
+(t=1000.000s) SpikeMonitor for group output(1) has 37085 spikes in 1000ms (37085.00 +/- 0.00 Hz)
+(t=1000.000s) ConnectionMonitor ID=0 0(input) => 1(output): [preId,postId] wt (+/-wtChange in 1000ms) show first 100
+[ 0, 0] 0.0016 (+0.0004)   [ 1, 0] 0.0016 (+0.0000)   [ 2, 0] 0.0013 (-0.0002)   [ 3, 0] 0.0013 (-0.0001)   
+[ 4, 0] 0.0017 (-0.0000)   [ 5, 0] 0.0033 (+0.0002)   [ 6, 0] 0.0022 (+0.0002)   [ 7, 0] 0.0031 (-0.0003)   
+[ 8, 0] 0.0035 (+0.0000)   [ 9, 0] 0.0045 (+0.0001)   [10, 0] 0.0049 (-0.0002)   [11, 0] 0.0046 (-0.0002)   
+[12, 0] 0.0049 (-0.0001)   [13, 0] 0.0045 (-0.0001)   [14, 0] 0.0052 (+0.0003)   [15, 0] 0.0046 (-0.0004)   
+[16, 0] 0.0074 (-0.0002)   [17, 0] 0.0079 (+0.0004)   [18, 0] 0.0054 (-0.0002)   [19, 0] 0.0087 (+0.0004)   
+[20, 0] 0.0081 (+0.0001)   [21, 0] 0.0090 (+0.0014)   [22, 0] 0.0093 (+0.0005)   [23, 0] 0.0105 (+0.0003)   
+[24, 0] 0.0076 (-0.0002)   [25, 0] 0.0064 (+0.0002)   [26, 0] 0.0081 (-0.0004)   [27, 0] 0.0112 (+0.0004)   
+[28, 0] 0.0125 (-0.0003)   [29, 0] 0.0127 (-0.0004)   [30, 0] 0.0112 (-0.0004)   [31, 0] 0.0128 (+0.0010)   
+[32, 0] 0.0122 (+0.0001)   [33, 0] 0.0129 (+0.0006)   [34, 0] 0.0102 (+0.0003)   [35, 0] 0.0117 (-0.0009)   
+[36, 0] 0.0120 (-0.0003)   [37, 0] 0.0139 (+0.0005)   [38, 0] 0.0138 (-0.0001)   [39, 0] 0.0128 (+0.0000)   
+[40, 0] 0.0126 (+0.0003)   [41, 0] 0.0101 (-0.0009)   [42, 0] 0.0170 (+0.0011)   [43, 0] 0.0152 (-0.0002)   
+[44, 0] 0.0176 (-0.0003)   [45, 0] 0.0158 (+0.0006)   [46, 0] 0.0140 (-0.0009)   [47, 0] 0.0149 (+0.0002)   
+[48, 0] 0.0184 (+0.0002)   [49, 0] 0.0158 (+0.0002)   [50, 0] 0.0197 (+0.0009)   [51, 0] 0.0163 (+0.0005)   
+[52, 0] 0.0162 (+0.0001)   [53, 0] 0.0164 (+0.0003)   [54, 0] 0.0180 (+0.0003)   [55, 0] 0.0187 (+0.0001)   
+[56, 0] 0.0163 (+0.0001)   [57, 0] 0.0202 (+0.0004)   [58, 0] 0.0179 (+0.0006)   [59, 0] 0.0205 (+0.0013)   
+[60, 0] 0.0179 (-0.0009)   [61, 0] 0.0174 (-0.0007)   [62, 0] 0.0193 (-0.0007)   [63, 0] 0.0175 (+0.0003)   
+[64, 0] 0.0170 (-0.0011)   [65, 0] 0.0182 (-0.0012)   [66, 0] 0.0212 (-0.0016)   [67, 0] 0.0211 (+0.0000)   
+[68, 0] 0.0224 (-0.0010)   [69, 0] 0.0191 (-0.0001)   [70, 0] 0.0241 (-0.0008)   [71, 0] 0.0191 (-0.0011)   
+[72, 0] 0.0217 (+0.0001)   [73, 0] 0.0236 (-0.0002)   [74, 0] 0.0192 (-0.0010)   [75, 0] 0.0234 (+0.0003)   
+[76, 0] 0.0226 (-0.0002)   [77, 0] 0.0248 (-0.0002)   [78, 0] 0.0218 (+0.0007)   [79, 0] 0.0233 (-0.0005)   
+[80, 0] 0.0227 (+0.0003)   [81, 0] 0.0237 (+0.0014)   [82, 0] 0.0238 (-0.0006)   [83, 0] 0.0251 (+0.0005)   
+[84, 0] 0.0240 (-0.0006)   [85, 0] 0.0245 (-0.0010)   [86, 0] 0.0258 (+0.0002)   [87, 0] 0.0260 (-0.0003)   
+[88, 0] 0.0271 (-0.0008)   [89, 0] 0.0269 (-0.0009)   [90, 0] 0.0239 (+0.0003)   [91, 0] 0.0262 (-0.0013)   
+[92, 0] 0.0253 (-0.0005)   [93, 0] 0.0253 (-0.0007)   [94, 0] 0.0237 (+0.0005)   [95, 0] 0.0281 (-0.0001)   
+[96, 0] 0.0272 (+0.0013)   [97, 0] 0.0264 (-0.0020)   [98, 0] 0.0296 (+0.0017)   [99, 0] 0.0267 (-0.0002)
+\endcode
+
+Finally, we see the number of neurons involved in the total simulation (numNeurons = 101), the total
+number of synapses (numSynapses = 100), and the overall average firing rate: (Overall = 10.368 Hz).
+
+\code
+.*******************      GPU Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 101 (numNExcReg:numNInhReg = 1.0:0.0)
+			numSynapses = 100
+			maxDelay = 1
+Simulation Mode:	COBA
+Random Seed:		1426032481
+Timing:			Model Simulation Time = 1000 sec
+			Actual Execution Time = 53.43 sec
+Average Firing Rate:	2+ms delay = 0.000 Hz
+			1ms delay = inf Hz
+			Overall = 10.368 Hz
+Overall Firing Count:	2+ms delay = 0
+			1ms delay = 1047121
+			Total = 1047121
+.********************************************************************************
+\endcode
+
+\section tut3s4_network_vis 3.4 Network Visualization
+
+In order to plot network activity and observe weight changes in the network, we will make use of the
+MATLAB Offline Analysis Toolbox (OAT) (see \ref ch9_matlab_oat). The CARLsim simulation will output
+spike and synaptic weight data files to the results directory. To run, the network visualization
+scripts, simply open MATLAB, change the current directory to the <tt>"scripts/"</tt> directory and
+run:
+
+\code
+>> plasticityOAT
+\endcode
+
+The <tt>plasticityOAT.m</tt> script looks like this:
+\code
+% Tutorial 3 Plasticity OAT Scripts
+
+% First run initOAT script to set the correct path
+initOAT;
+
+% Read the spike files
+SR = SpikeReader('../results/spk_output.dat');
+
+% Bin the data into 1s (1000 ms) intervals
+spkData = SR.readSpikes(1000);
+
+% Generate time data
+time=linspace(1,1000,1000);
+
+% generate target firing rate data
+targetFR(1:1000)=35;
+figure(1);
+hold on;
+
+% plot the average output neuron firing rate in blue
+plot(time,spkData,'blue');
+
+% plot the target firing rate in red
+plot(time,targetFR,'red');
+
+% make labels and title
+xlabel('Time (sec)');
+ylabel('Average Firing Rate (Hz)');
+title('Average Firing Rate of Output Neuron vs. Time');
+
+% Read the synaptic weights using connectionReader
+CR = ConnectionReader('../results/conn_input_output.dat');
+
+% readWeights() returns time stamps and weights.
+
+% allTimestamps will contain the times of the individual weight snapshots
+% (in ms). We took a snapshot at the beginning of the simulation and at the
+% end, after 1000 seconds have elapsed, so we should have 2 values: 0 and
+% 1000000.
+
+% allWeights is of dimension numSnapshots X numSynapsesPossible.
+% numSnapshots is the number of the snapshots taken while
+% numSynapsesPossible is the total number of synapses possible in the
+% synaptic connection. For instance, if you have 30% connectivity between
+% two groups of size N1 and N2, the number of possible synapses would be
+% N1 X N2.
+[allTimestamps, allWeights] = CR.readWeights();
+
+% Generate x-axis of neuron ids
+x1=linspace(1, 100, 100);
+
+% output everything to figure 2
+figure(2);
+hold on;
+
+% plot the initial weights in red (first row of data).
+plot(x1,allWeights(1,:),'red');
+
+% plot the final weights in blue (second row of data).S\
+plot(x1,allWeights(2,:),'blue');
+xlabel('Neuron ID');
+ylabel('Synaptic Weight Strength');
+title('Synaptic Weight Strength vs. Neuron ID');
+\endcode
+
+After adding the location of the OAT source code to the MATLAB path, a SpikeReader is opened on the
+spike data file: <tt>"../results/spk_output.dat"</tt> which was created during the CARLsim
+simulation because we created a SpikeMonitor.
+
+Calling the readSpikes method with an argument of '1000' creates 1000 ms wide bins in which it
+places the total number of spikes for that time period (1000 ms). The user can then easily create a
+plot or histogram with the data. Below <b>Fig. 1</b> shows the target firing rate and actual average
+firing rate of the output neuron.
+
+
+\image html FiringRates.png "Fig. 1. The Target (red) and average (blue) firing rate of the output neuron."
+
+To visualize the weights, we next open a ConnectionReader on the file
+<tt>"../results/conn_input_output.dat"</tt> which was created during the CARLsim simulation because
+we created a ConnectionMonitor. We use the readWeights method to return a matrix that contains the
+time stamps of when each synaptic weight snapshot was created. The synaptic weight values are output
+to the allWeights matrix. See the code comments for more information. Finally, we plot the initial
+weight values in red and the final weight values in blue as shown in <b>Fig. 2</b>.
+
+\image html Weights.png "Fig. 2. The initial (red) and final (blue) synaptic weight values."
+
+*/
