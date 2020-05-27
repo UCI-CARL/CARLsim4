@@ -11,7 +11,7 @@
 ##              University of California, Irvine
 ##              Irvine, CA, 92697-5100, USA
 ##
-##   Version:   04/11/2018 HK
+##   Version:   03/31/2016
 ##
 ##----------------------------------------------------------------------------##
 
@@ -23,9 +23,7 @@
 
 # Name of the binary file to be created.
 # NOTE: There must be a corresponding .cpp file named main_$(proj_target).cpp!
-proj_target    := MST-heading-stdp
-launcher_target := launchCARLsimECJ.sh
-ecj_param_file := src/MSTHeadingExperiment.params
+proj_target    := MST-heading-opt
 
 # Directory where all include files reside. The Makefile will automatically
 # detect and include all .h files within that directory.
@@ -46,18 +44,15 @@ proj_src_dir   := src
 
 # NOTE: If your CARLsim4 installation does not reside in the default path, make
 # sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
+ifdef CARLSIM4_INSTALL_DIR
 	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.
 include $(CARLSIM4_INC_DIR)/configure.mk
 
-pti_lib_path := $(ECJ_PTI_DIR)/lib/
-pti_lib := -lCARLsimPTI
-pti_inc_path := $(ECJ_PTI_DIR)/inc/
 
 #------------------------------------------------------------------------------
 # Build local variables
@@ -72,16 +67,12 @@ cu_files   := $(wildcard $(proj_src_dir)/src/*.cu)
 inc_files  := $(wildcard $(proj_inc_dir)/*.h)
 
 # compile .cpp files to -cpp.o, and .cu files to -cu.o
-obj_cpp    := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
-obj_cu     := $(patsubst %.cu, %-cu.o, $(cu_files))
-ifeq ($(CARLSIM4_NO_CUDA),1)
-obj_files  := $(obj_cpp)
-else
-obj_files  := $(obj_cpp) $(obj_cu)
-endif
+obj_cpp  := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
+obj_cu  += $(patsubst %.cu, %-cu.o, $(cu_files))
 
 # handled by clean and distclean
-clean_files := $(obj_files) $(proj_target) $(launcher_target)
+clean_files := $(obj_files) $(proj_target)
+# distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 distclean_files := $(clean_files) results/* 
 
 
@@ -89,25 +80,24 @@ distclean_files := $(clean_files) results/*
 # Project targets and rules
 #------------------------------------------------------------------------------
 
-.PHONY: $(proj_target) clean distclean help
-default: $(proj_target) $(launcher_target)
+.PHONY: $(proj_target) nocuda clean distclean help
+default: $(proj_target)
 
-$(proj_target): $(main_src_file) $(inc_files) $(obj_files)
+
+$(proj_target): $(main_src_file) $(inc_files) $(obj_cpp) $(obj_cu)
 	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
 	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) -I$(pti_inc_path) -L$(pti_lib_path) $(obj_files) $< -o $@ $(CARLSIM4_LIB) $(pti_lib)
+	$(NVCC) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB)
 
-# create executable bash script for user to run
-$(launcher_target): $(proj_target)
-	@echo "#!/bin/bash" > $(launcher_target)
-	@echo "java -cp \"$(ECJ_JAR):$(ECJ_PTI_DIR)/lib/CARLsim-ECJ.jar\" ecjapp.CARLsimEC -file ./$(ecj_param_file)" >> $(launcher_target)
-	@chmod u+x $(launcher_target)
+nocuda: $(main_src_file) $(inc_files) $(obj_cpp)
+	$(eval CARLSIM4_FLG += -D__NO_CUDA__)
+	$(CXX) $(CARLSIM4_FLG) $(obj_cpp) $(obj_cu) $< -o $(proj_target) $(CARLSIM4_LIB) -lpthread
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
-	$(CXX) -c $(CXXINCFL) $(CXXFL) -I$(pti_inc_path) $< -o $@
+	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
 
 $(proj_src_dir)/%-cu.o: $(proj_src_dir)/%.cu $(inc_files)
-	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) -I$(pti_inc_path) $< -o $@
+	$(NVCC) -c $(NVCCINCFL) $(SIMINCFL) $(NVCCFL) $< -o $@
 
 clean:
 	$(RM) $(clean_files)
@@ -116,9 +106,9 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 tutorial options:)
+	$(info CARLsim4 Project options:)
 	$(info )
-	$(info make               Compiles tutorial code)
+	$(info make               Compiles this project)
 	$(info make clean         Cleans out all object files)
 	$(info make distclean     Cleans out all object and output files)
 	$(info make help          Brings up this message)

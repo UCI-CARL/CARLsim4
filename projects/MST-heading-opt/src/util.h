@@ -17,5 +17,3 @@ int randGenerator (int i);
 void shuffleTrials(int numTrials, int numTrain, int numTest, int *trainTrials, int *testTrials);
 
 void calcCorrCoef(float** X, float** Y, int numRow, int numCol, float* corrCoef);
-
-float calcPopCorrCoef(float* x,float* y, int length);

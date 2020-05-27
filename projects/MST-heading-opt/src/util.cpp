@@ -89,6 +89,7 @@ void calcCorrCoef(float** X, float** Y, int numRow, int numCol, float* corrCoef)
 
     for (unsigned int i = 0; i < numCol; i ++) {
         meanX = meanY = 0.0;
+        sumXX = sumYY = sumXY = 0.0;
         for (unsigned int j = 0; j < numRow; j ++) {
             meanX += X[j][i];
             meanY += Y[j][i];
@@ -96,7 +97,6 @@ void calcCorrCoef(float** X, float** Y, int numRow, int numCol, float* corrCoef)
         meanX /= numRow;
         meanY /= numRow;
 
-        sumXX = sumYY = sumXY = 0.0;
         for (unsigned int j = 0; j < numRow; j ++) {
             sumXX += (X[j][i] - meanX) * (X[j][i] - meanX);
             sumYY += (Y[j][i] - meanY) * (Y[j][i] - meanY);
@@ -104,29 +104,5 @@ void calcCorrCoef(float** X, float** Y, int numRow, int numCol, float* corrCoef)
         }
         corrCoef[i] = sumXY / (sqrt(sumXX * sumYY) + sub);
     }
-}
-
-float calcPopCorrCoef(float* x,float* y, int length)
-{
-    const float TINY=1.0e-20;//tiny number to avoide division with zero
-    float res = 0;
-    int j;
-    float syy=0.0,sxy=0.0,sxx=0.0,ay=0.0,ax=0.0;
-
-    for (j=0;j<length;j++) 
-        {
-        ax += x[j];
-        ay += y[j];
-    }
-    ax /= length;
-    ay /= length;
-    for (j=0;j<length;j++) 
-        {     
-        sxx += (x[j]-ax)*(x[j]-ax);
-        syy += (y[j]-ay)*(y[j]-ay);
-        sxy += (x[j]-ax)*(y[j]-ay);
-    }
-    res=sxy/(sqrt(sxx*syy)+TINY);
-        return res;
 }
 

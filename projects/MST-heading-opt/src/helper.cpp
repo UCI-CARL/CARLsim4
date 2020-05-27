@@ -23,6 +23,9 @@ void reconstructMT(vector<vector<float> > weights, vector<float> FRs, float* rec
     		if (isnan(weights[i][j]) || weights[i][j] < 0) {
     			weights[i][j] = 0;
     		}
+    		if (isnan(FRs[j]) || FRs[j] < 0) {
+    			FRs[j] = 0;
+    		}
     		productSum += weights[i][j] * FRs[j];
 	    }
 	    recMT[i] = productSum;
