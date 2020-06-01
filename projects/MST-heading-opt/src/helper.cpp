@@ -9,8 +9,10 @@
 using namespace std;
 
 void reconstructMT(vector<vector<float> > weights, vector<float> FRs, float* recMT) {
-    int wNumRow = weights.size();
-    int wNumCol = weights[0].size();
+    // int wNumRow = weights.size();
+    // int wNumCol = weights[0].size();
+    int wNumRow = 1800;
+    int wNumCol = 64;
     int numNeur = FRs.size();
 
     assert (wNumCol == numNeur);

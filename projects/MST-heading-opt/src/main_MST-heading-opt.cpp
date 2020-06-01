@@ -62,7 +62,7 @@ int main(int argc, char *argv[]) {
 
 		// training and testing parameters
 		int totalNumTrial = 6000;
-		int numTrial = 10;
+		int numTrial = 5;
 		int numTrain = int(numTrial * 0.8);
 		// int numTrain = 1;
 		int numTest = numTrial - numTrain;
@@ -110,8 +110,8 @@ int main(int argc, char *argv[]) {
 		parameters = loadData(paramsFile, numNetwork, numParams);
 
 		// ---------------- CONFIG STATE ------------------- 
-		// time_t seed = 1774820947;
-		CARLsim* const network = new CARLsim("MST-heading-opt", GPU_MODE, SILENT);
+		int seed = 1774820947;
+		CARLsim* const network = new CARLsim("MST-heading-opt", GPU_MODE, SILENT, 1, seed);
 
 		// creat neuron groups
 		gMT = network->createSpikeGeneratorGroup("MT", MTDim, EXCITATORY_POISSON);
@@ -157,12 +157,7 @@ int main(int argc, char *argv[]) {
 		//set up monitors
 		string spk_monitor_name = "results/spk_MST_analysis.dat";
 		string conn_monitor_name = "results/conn_MT_MST_analysis.dat";
-		// string name_suffix = ".dat";
-		// string name_id;
-		// string spk_monitor_name;
-		// string conn_monitor_name;
 		SpikeMonMST = network->setSpikeMonitor(gMST, spk_monitor_name);
-		// SpikeMonMST->setPersistentData(true);
 
 		CMMtToMst = network->setConnectionMonitor(gMT, gMST, conn_monitor_name);
 		CMMtToMst->setUpdateTimeIntervalSec(-1);
@@ -170,10 +165,11 @@ int main(int argc, char *argv[]) {
 		// // ---------------- RUN STATE -------------------
 		shuffleTrials(totalNumTrial, numTrain, numTest, trainTrials, testTrials); 
 
-		cout << "================ Training starts ===========================" << endl;
-
 		// /*** TRAINING - run network with MT activities on 80% trials ***/
+
 		if (!load_network) {
+			cout << "================ Training starts ===========================" << endl;
+			
 			for (unsigned int tr = 0; tr < numTrain; tr++) {
 				trial = trainTrials[tr];
 				// sort MT responses to match with the dimensions of the neuron group
