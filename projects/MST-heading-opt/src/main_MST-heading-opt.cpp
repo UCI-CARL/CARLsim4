@@ -26,12 +26,12 @@ int main(int argc, char *argv[]) {
 
 		// MT group dimensions 
 		int gridDim = 15; // dimension of flow fields
-		int nNeuronPerPixel = 8;
+		int nNeuronPerPixel = 1;
 		Grid3D MTDim(gridDim, gridDim, nNeuronPerPixel); 
 		int nMT = gridDim * gridDim * nNeuronPerPixel; // 1800 MT neurons
 
 		// MST group dimensions 
-		int nMSTDim = 8;
+		int nMSTDim = 1;
 		Grid3D MSTDim(nMSTDim, nMSTDim, 1);
 		int nMST = nMSTDim * nMSTDim; // 64 MST neurons
 		
@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
 		int totalNumTrial = 6000;
 		int numTrial = 5;
 		int numTrain = int(numTrial * 0.8);
-		// int numTrain = 1;
+		numTrain = 1;
 		int numTest = numTrial - numTrain;
 		// int numTest = 100;
 		// int numNew = 10000;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 
 		// ---------------- CONFIG STATE ------------------- 
 		int seed = 1774820947;
-		CARLsim* const network = new CARLsim("MST-heading-opt", GPU_MODE, SILENT, 1, seed);
+		CARLsim* const network = new CARLsim("MST-heading-opt", GPU_MODE, USER, 1, seed);
 
 		// creat neuron groups
 		gMT = network->createSpikeGeneratorGroup("MT", MTDim, EXCITATORY_POISSON);
@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
 			}
 			cout << "=============== Training completed ============\n";
 			network->saveSimulation("sim_MST-heading-opt.dat", true);
-		}
+	        }	
 
 		
 		weights = CMMtToMst->takeSnapshot();
@@ -223,10 +223,15 @@ int main(int argc, char *argv[]) {
 		// 	}
 		// 	fileWts << endl;
 		// }
+                for (vec_it = weights.begin(); vec_it != weights.end(); vec_it++) {
+		    for (it = (*vec_it).begin(); it != (*vec_it).end(); it++) {
+			std::cout << (*it) << " "; 
+	            }
+	        }
 
 		for (unsigned int m = 0; m < nMST; m ++) {
 			for (unsigned int n = 0; n < nMT; n ++) {
-				fileWts << weights[m][n] << ",";
+				fileWts << m << ", " << n << ", " << weights[m][n] << "\n";
 			}
 			fileWts << endl;
 		}
