@@ -1476,6 +1476,8 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 			// copy from runtimeData to managerRuntimeData
 			fetchPreConnectionInfo(netId);
 			fetchPostConnectionInfo(netId);
+			fetchConnIdsLookupArray(netId);
+			fetchSynapseState(netId);
 
 			// save number of synapses that starting from local groups
 			int numSynToSave = 0;
