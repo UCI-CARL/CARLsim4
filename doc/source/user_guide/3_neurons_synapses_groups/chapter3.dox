@@ -7,30 +7,34 @@
 
 \section ch3s1_neurons 3.1 Neurons
 \author Michael Beyeler
+\author Stanislav Listopad
 
 CARLsim currently supports Izhikevich spiking neurons with either current-based or conductance-based synapses
 (see \ref ch3s2_synapses), but more neuron types are planned for the future.
 Different groups of neurons can be created from a one-dimensional array to a three-dimensional grid (see
 \ref ch3s3s2_topography) via <tt>createSpikeGeneratorGroup</tt> and <tt>createGroup</tt>.
 
-\subsection ch3s1s1_izhikevich_neurons 3.1.1 Izhikevich Neurons
+Differential equations can be integrated either with the forward Euler or Runge-Kutta method
+(see \ref ch12s2_num_int).
+
+\subsection ch3s1s1_izhikevich_neurons4 3.1.1 Izhikevich Neurons (4-Parameter Model)
 
 The Izhikevich neuron is a dynamical systems model that can be described by a two-dimensional system of ordinary
 differential equations:
 
 \f{align*}{
-\frac{dv}{dt}  = & ~ 0.04v^2 + 5v + 140 - u + i_{syn} & \text{(1)}\\
+\frac{dv}{dt}  = & ~ 0.04v^2 + 5v + 140 - u + I & \text{(1)}\\
 \frac{du}{dt}  = & ~ a (bv - u) & \text{(2)} \f}
 
-Here, (1) describes the membrane potential \f$v\f$ for a given synaptic current \f$i_{syn}\f$ (see \ref ch3s2_synapses),
-whereas (2) describes a recovery variable \f$u\f$;
+Here, (1) describes the membrane potential \f$v\f$ for a given current \f$I\f$, where \f$I\f$ is the sum of all
+synaptic and external currents; that is, \f$I = i_{syn} + I_{ext}\f$ (see \ref ch3s2_synapses).
+(2) describes a recovery variable \f$u\f$;
 the parameter \f$a\f$ is the rate constant of the recovery variable,
 and the parameter \f$b\f$ describes the sensitivity of the recovery variable to the subthreshold fluctuations of the
-membrane potneital.
+membrane potential.
 All parameters in (1) and (2) are dimensionless; however, the right-hand side of (1) is in a form such that the 
 membrane potential \f$v\f$ has mV scale and the time \f$t\f$ has ms scale.
-is voltage, \f$u\f$ is the recovery variable, \f$I\f$ is the input current, and \f$a, b, c, d\f$ are
-open parameters that have different values for different neuron types.
+\f$a, b, c, d\f$ are open parameters that have different values for different neuron types.
 
 In contrast to other simple models such as the leaky integrate-and-fire (LIF) neuron, the Izhikevich neuron is able
 to generate the upstroke of the spike itself. Thus the voltage reset occurs not at the threshold, but at the peak
@@ -48,10 +52,111 @@ For example, regular spiking (RS) neurons (class 1 excitable) have \f$a=0.02, b=
 Fast spiking (FS) neurons (class 2 excitable) have \f$a=0.1, b=0.2, c=-65, d=2)\f$.
 For more information on different neuron types, see Izhikevich (2003, 2004).
 
+\see \ref ch3s1s2_izhikevich_neurons9
 
-\subsection ch3s1s2_other_neurons 3.1.2 Other Neuron Types
-In the future, we plan to include other types of neuron models, such as the full 9-parameter Izhikevich model,
-a compartmental model, the leaky integrate-and-fire model, and the adaptive exponential integrate-and-fire model.
+
+\subsection ch3s1s2_izhikevich_neurons9 3.1.2 Izhikevich Neurons (9-Parameter Model)
+
+The 9-parameter izhikevich neuron model is equivalent to the 4-parameter one. Larger number of parameters is used for
+convenience in describing various neuron types.
+
+\f{align*}{
+\frac{dv}{dt}  = & ~ (k (v - vr) (v - vt) - u + I) / C & \text{(5)}\\ 
+\f}
+
+Here, (5) describes the membrane potential \f$v\f$ for a given current \f$I\f$, where \f$I\f$ is the sum of all
+synaptic and external currents; that is, \f$I = i_{syn} + I_{ext}\f$ (see \ref ch3s2_synapses).
+
+The parameter \f$k\f$ is a rate constant of the membrane potential, and can be found using the rheobase and the input
+resistance of a neuron.
+The parameter \f$vr\f$ is the resting membrane potential.
+The parameter \f$vt\f$ is the instantaneous threshold potential.
+The parameter \f$C\f$ is the membrane capacitance.
+
+\f{align*}{
+\frac{dv}{dt}  = & ~ a (b (v - vr) - u) & \text{(6)}\\
+\f}
+
+Here, (15) describes a recovery variable \f$u\f$;
+
+The parameter \f$a\f$ is the rate constant of the recovery variable.
+The parameter \f$b\f$ describes the sensitivity of the recovery variable to the subthreshold fluctuations of the
+membrane potential.
+The parameter \f$vr\f$ is the resting membrane potential.
+
+All parameters in (5) and (6) are dimensionless; however, the right-hand side of (5) is in a form such that the
+membrane potential \f$v\f$ has mV scale and the time \f$t\f$ has ms scale.
+is voltage, \f$u\f$ is the recovery variable, \f$I\f$ is the input current, and \f$C, k, vr, vt, a, b, vpeak, c, d\f$ are
+open parameters that have different values for different neuron types.
+
+In contrast to other simple models such as the leaky integrate-and-fire (LIF) neuron, the Izhikevich neuron is able
+to generate the upstroke of the spike itself. Thus the voltage reset occurs not at the threshold, but at the peak
+(\f$v_{cutoff}=+vpeak\f$) of the spike.
+The action potential downstroke is modeled using an instantaneous reset of the membrane potential whenever \f$v\f$
+reaches the spike cutoff, plus a stepping of the recovery variable:
+
+\f{align*}{ 
+ v(v>vpeak)  = & ~ c & \text{(7)}\\
+ u(v>vpeak)  = & ~ u + d & \text{(8)}\f}
+
+Regular spiking (RS) neurons (class 1 excitable) have \f$C=100, k=0.7, vr=-60, vt=-40, a=0.03, b=-2.0, vpeak=35, c=-50, d=100\f$.
+Fast spiking (FS) neurons (class 2 excitable) have \f$C=20, k=1, vr=-55, vt=-40, a=0.15, b=8, vpeak=25, c=-55, d=200)\f$.
+For more information on different neuron types, see Izhikevich (2003, 2004).
+For more information about 9-parameter model see Izhikevich (2007).
+
+We do not recommend to use forward-Euler when working with the 9-parameter Izhikevich model.
+Use Runge-Kutta instead (see \ref ch12s2s2_RK4).
+
+\see \ref ch3s1s1_izhikevich_neurons4
+\since v3.1
+
+
+
+\subsection ch3s1s3_compartments 3.1.3 Multi-Compartment Neurons
+\author Stanislav Listopad
+\author Michael Beyeler
+
+Neurons in a group can be extended to include multiple compartments by calling CARLsim::setCompartmentParameters on a
+group and connecting them via CARLsim::connectCompartments.
+
+In this case, the total current \f$I\f$ of (1) and (5) is extended to include a dendritic current, \f$i_{dendr}\f$
+in pA; that is, \f$I = i_{syn} + i_{dendr} + I_{ext}\f$.
+The dendritic current at each compartment consists of the currents coming from the \em down ("mother") compartment
+and \em up ("daughter") compartments:
+
+\f{align*}{
+i_{dendr} =  &  G_{down} (v - v_{down}) + \sum \limits_{up} G_{up} (v - v_{up}) & \text{(9)}
+\f}
+
+with the values of the conductances \f$G_{up}\f$ and \f$G_{down}\f$ specified in CARLsim::setCompartmentParameters.
+
+For more information on multi-compartmental neurons, see Izhikevich and Edelman (2008), especially their supporting
+information.
+
+We do not recommend to use forward-Euler when working with multi-compartment neurons.
+Use Runge-Kutta instead (see \ref ch12s2s2_RK4).
+
+\note The maximum number of allowed compartmental connections per neuron is controlled by the parameter
+::MAX_NUM_COMP_CONN in carlsim_definitions.h.
+\since v3.1
+
+
+
+\subsection ch3s1s4_other_neurons 3.1.4 Leaky Integrate-and-Fire (LIF) neurons
+\author Hirak J Kashyap
+
+The support for LIF neurons has been added in CARLSim 4.0.  LIF model and its variants are probably the 
+most well known model of spiking point neurons, largely due their to simple membrane voltage dynamics favored
+for dynamical system analysis and hardware implementation.
+
+The parameter \f$k\f$ is a rate constant of the membrane potential, and can be found using the rheobase and the input
+resistance of a neuron.
+The parameter \f$vr\f$ is the resting membrane potential.
+The parameter \f$R\f$ is the membrane resistance.
+
+\f{align*}{
+k \frac{dv}{dt}  = & ~  - [v - vr] + R I& \text{(10)}\\
+\f}
 
 
 \section ch3s2_synapses 3.2 Synapses
@@ -214,7 +319,7 @@ synapses are supported with the ::INHIBITORY_NEURON keyword.
 To refer to this group in later method calls, the CARLsim::createGroup method returns a group ID, <tt>gOut</tt>.
 
 Next, specify the Izhikevich parameters, in this case for class 1 excitability (regular spiking) neurons
-(see \ref ch3s1s1_izhikevich_neurons):
+(see \ref ch3s1s1_izhikevich_neurons4):
 \code
 sim.setNeuronParameters(gOut, 0.02f, 0.2f, -65.0f, 8.0f);
 \endcode
@@ -277,12 +382,21 @@ int gOut = sim.createGroup("output", Grid3D(N,1,1), EXCITATORY_NEURON); // are e
 \since v3.0
 
 
-\section ch3s4_refs 3.4 References
+\section ch3s5_refs 3.5 References
 
 Izhikevich E.M. (2003) Simple Model of Spiking Neurons. IEEE Transactions on Neural Networks,
 14:1569-1572.
 
 Izhikevich E.M. (2004) Which Model to Use for Cortical Spiking Neurons? IEEE Transactions on Neural
 Networks, 15:1063-1070.
+
+Izhikevich E.M. (2007) Dynamical Systems in Neuroscience - The Geometry of Excitability and Bursting.
+
+
+
+
+
+
+
 
 */

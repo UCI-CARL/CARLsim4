@@ -888,6 +888,9 @@ __device__ inline float dudtIzhikevich9(float volt, float recov, float voltRest,
 	return (izhA * (izhB * (volt - voltRest) - recov) * timeStep);
 }
 
+__device__ inline float dvdtLIF(float volt, float lif_vReset, float lif_gain, float lif_bias, int lif_tau_m, float totalCurrent, float timeStep=1.0f){
+	return ((lif_vReset -volt + ((totalCurrent * lif_gain) + lif_bias))/ (float) lif_tau_m) * timeStep;
+}
 
 __device__ float getCompCurrent_GPU(int grpId, int neurId, float const0 = 0.0f, float const1 = 0.0f) {
 	float compCurrent = 0.0f;
@@ -923,6 +926,17 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 	float vpeak = runtimeDataGPU.Izh_vpeak[nid];
 	float a = runtimeDataGPU.Izh_a[nid];
 	float b = runtimeDataGPU.Izh_b[nid];
+	
+	// pre-load LIF parameters
+	int lif_tau_m = runtimeDataGPU.lif_tau_m[nid];
+	int lif_tau_ref = runtimeDataGPU.lif_tau_ref[nid];
+	int lif_tau_ref_c = runtimeDataGPU.lif_tau_ref_c[nid];
+	float lif_vTh = runtimeDataGPU.lif_vTh[nid];
+	float lif_vReset = runtimeDataGPU.lif_vReset[nid];
+	float lif_gain = runtimeDataGPU.lif_gain[nid];
+	float lif_bias = runtimeDataGPU.lif_bias[nid];
+
+	const float one_sixth = 1.0f / 6.0f;
 
 	float timeStep = networkConfigGPU.timeStep;
 
@@ -949,7 +963,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 
 	switch (networkConfigGPU.simIntegrationMethod) {
 	case FORWARD_EULER:
-		if (!groupConfigsGPU[grpId].withParamModel_9)
+		if (!groupConfigsGPU[grpId].withParamModel_9 && !groupConfigsGPU[grpId].isLIF)
 		{	// 4-param Izhikevich
 			// update vpos and upos for the current neuron
 
@@ -961,7 +975,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 				u += runtimeDataGPU.Izh_d[nid];
 			}
 		}
-		else
+		else if(!groupConfigsGPU[grpId].isLIF)
 		{	// 9-param Izhikevich
 			// update vpos and upos for the current neuron
 			v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
@@ -971,20 +985,52 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 				u += runtimeDataGPU.Izh_d[nid];
 			}
 		}
+		else{
+			 if (lif_tau_ref_c > 0){
+                         	if(lastIteration){
+                                	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+					v_next = lif_vReset;
+                                }
+                         }
+                         else{
+                                if (v_next > lif_vTh) {
+                                        runtimeDataGPU.curSpike[nid] = true;
+                                        v_next = lif_vReset;
+					if(lastIteration){
+                                        	runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref;
+					}
+					else{
+						runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref+1;
+					}
+                                }
+				else{
+					v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+				}
+                         }
 
-		if (v_next < -90.0f) v_next = -90.0f;
-
-		if (!groupConfigsGPU[grpId].withParamModel_9)
-		{
-			u += dudtIzhikevich4(v_next, u, a, b, timeStep);
 		}
-		else
-		{
-			u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+
+		if (groupConfigsGPU[grpId].isLIF){
+                	if (v_next < lif_vReset) v_next = lif_vReset;
+                }
+                else{
+
+			if (v_next < -90.0f) v_next = -90.0f;
+
+			if (!groupConfigsGPU[grpId].withParamModel_9)
+			{
+				u += dudtIzhikevich4(v_next, u, a, b, timeStep);
+			}
+			else
+			{
+				u += dudtIzhikevich9(v_next, u, vr, a, b, timeStep);
+			}
 		}
 		break;
+
 	case RUNGE_KUTTA4:
-		if (!groupConfigsGPU[grpId].withParamModel_9) {
+
+		if (!groupConfigsGPU[grpId].withParamModel_9 && !groupConfigsGPU[grpId].isLIF) {
 			// 4-param Izhikevich
 			float k1 = dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 			float l1 = dudtIzhikevich4(v, u, a, b, timeStep);
@@ -998,7 +1044,6 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			float k4 = dvdtIzhikevich4(v + k3, u + l3, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich4(v + k3, u + l3, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > 30.0f) {
@@ -1012,7 +1057,7 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 
 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 		}
-		else {
+		else if(!groupConfigsGPU[grpId].isLIF){
 			// 9-param Izhikevich
 			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
@@ -1026,7 +1071,6 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
 			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
 
-			const float one_sixth = 1.0f / 6.0f;
 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
 
 			if (v_next > vpeak) {
@@ -1039,6 +1083,32 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			if (v_next < -90.0f) v_next = -90.0f;
 
 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+		}
+		
+		else{
+			// LIF integration is always FORWARD_EULER
+			 if (lif_tau_ref_c > 0){
+                         	if(lastIteration){
+                                	runtimeDataGPU.lif_tau_ref_c[nid] -= 1;
+					v_next = lif_vReset;
+                                }
+                         }
+                         else{
+                                if (v_next > lif_vTh) {
+                                        runtimeDataGPU.curSpike[nid] = true;
+                                        v_next = lif_vReset;
+					if(lastIteration){
+                                        	runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref;
+					}
+					else{
+						runtimeDataGPU.lif_tau_ref_c[nid] = lif_tau_ref+1;
+					}
+                                }
+				else{
+					v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
+				}
+                         }
+			if (v_next < lif_vReset) v_next = lif_vReset;
 		}
 		break;
 	case UNKNOWN_INTEGRATION:
@@ -2135,7 +2205,8 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->voltage, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nextVoltage, sizeof(float) * length));
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nextVoltage, sizeof(float) * length));
+
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	//neuron input current...
@@ -2154,9 +2225,9 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, cudaMemcpyKi
 	// do it only from host to device
 	copyExternalCurrent(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
-	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->curSpike, sizeof(bool) * length));
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->curSpike, sizeof(bool) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->curSpike[ptrPos], &managerRuntimeData.curSpike[ptrPos], sizeof(bool) * length, cudaMemcpyHostToDevice));
-
+	
 	copyNeuronParameters(netId, lGrpId, dest, cudaMemcpyHostToDevice, allocateMem);
 
 	if (networkConfigs[netId].sim_with_nm)
@@ -2312,6 +2383,14 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 		assert(dest->Izh_vr == NULL);
 		assert(dest->Izh_vt == NULL);
 		assert(dest->Izh_vpeak == NULL);
+
+		assert(dest->lif_tau_m == NULL); //LIF parameters
+		assert(dest->lif_tau_ref == NULL);
+		assert(dest->lif_tau_ref_c == NULL);
+		assert(dest->lif_vTh == NULL);
+		assert(dest->lif_vReset == NULL);
+		assert(dest->lif_gain == NULL);
+		assert(dest->lif_bias == NULL);		
 	}
 
 	if(lGrpId == ALL) {
@@ -2348,6 +2427,28 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_vpeak, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	//LIF parameters
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_tau_m, sizeof(int) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_tau_m[ptrPos], &(managerRuntimeData.lif_tau_m[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_tau_ref, sizeof(int) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_tau_ref[ptrPos], &(managerRuntimeData.lif_tau_ref[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_tau_ref_c, sizeof(int) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_tau_ref_c[ptrPos], &(managerRuntimeData.lif_tau_ref_c[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_vTh, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_vTh[ptrPos], &(managerRuntimeData.lif_vTh[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_vReset, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_vReset[ptrPos], &(managerRuntimeData.lif_vReset[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_gain, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_gain[ptrPos], &(managerRuntimeData.lif_gain[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_bias, sizeof(float) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_bias[ptrPos], &(managerRuntimeData.lif_bias[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
 
 	// pre-compute baseFiringInv for fast computation on GPUs.
 	if (sim_with_homeostasis) {
@@ -2824,11 +2925,11 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 
 	// cudaFree all device pointers
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].voltage) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].nextVoltage));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].recovery) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].current) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].extCurrent) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].curSpike));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plastic) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Npre_plasticInv) );
@@ -2866,12 +2967,21 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_b) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_c) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_d) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt) );
-	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_C));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_k));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak));
+
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_m) ); //LIF parameters
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_ref) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_ref_c) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_vTh) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_vReset) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_gain) );
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_bias) );
+
 	if (sim_with_NMDA_rise) {
 		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_r) );
 		CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gNMDA_d) );
@@ -2963,7 +3073,6 @@ void SNN::globalStateUpdate_N_GPU(int netId) {
 		CUDA_CHECK_ERRORS(cudaMemcpy(&runtimeData[netId].voltage[0], &runtimeData[netId].nextVoltage[0],
 			sizeof(float) * networkConfigs[netId].numNReg, cudaMemcpyDeviceToDevice));
 	}
-
 }
 
 void SNN::globalStateUpdate_G_GPU(int netId) {

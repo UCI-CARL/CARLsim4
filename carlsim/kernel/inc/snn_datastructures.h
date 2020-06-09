@@ -187,7 +187,9 @@ typedef struct NeuralDynamicsConfig_s {
 							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
 							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
 							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
-							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f)
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), lif_tau_m(-1), 
+							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minRmem(1.0f),
+							   lif_maxRmem(1.0f)
 	{}
 	float 		Izh_C;
 	float 		Izh_C_sd;
@@ -207,7 +209,12 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
-
+	int 		lif_tau_m; //!< parameters for a LIF spiking group
+	int 		lif_tau_ref;
+	float 		lif_vTh;
+	float 		lif_vReset;
+	double		lif_minRmem;
+	double		lif_maxRmem;
 } NeuralDynamicsConfig;
 
 //!< long-term plasiticity configurations
@@ -302,6 +309,7 @@ typedef struct GroupConfig_s {
 	int          numN;
 	bool isSpikeGenerator;
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF;
 	bool withCompartments;
 
 	float compCouplingUp;
@@ -320,7 +328,7 @@ typedef struct GroupConfig_s {
 typedef struct GroupConfigMD_s {
 	GroupConfigMD_s() : gGrpId(-1), gStartN(-1), gEndN(-1),
 						lGrpId(-1), lStartN(-1), lEndN(-1),
-					    netId(-1), maxIncomingDelay(1), fixedInputWts(true), hasExternalConnect(false),
+					    netId(-1), maxOutgoingDelay(1), fixedInputWts(true), hasExternalConnect(false),
 						LtoGOffset(0), GtoLOffset(0), numPostSynapses(0), numPreSynapses(0), Noffset(0),
 						spikeMonitorId(-1), neuronMonitorId(-1), groupMonitorId(-1), currTimeSlice(1000), sliceUpdateTime(0), homeoId(-1), ratePtr(NULL)
 	{}
@@ -336,7 +344,7 @@ typedef struct GroupConfigMD_s {
 	int GtoLOffset;
 	int numPostSynapses;
 	int numPreSynapses;
-	int maxIncomingDelay;
+	int maxOutgoingDelay;
 	bool fixedInputWts;
 	bool hasExternalConnect;
 	int spikeMonitorId;
@@ -429,6 +437,7 @@ typedef struct GroupConfigRT_s {
 	float decayNE; //!< decay rate for Noradrenaline, published by GroupConfig \sa GroupConfig
 
 	bool withParamModel_9; //!< False = 4 parameter model; 1 = 9 parameter model.
+	bool isLIF; //!< True = a LIF spiking group
 
 	bool withCompartments;
 	float compCouplingUp;
@@ -467,6 +476,14 @@ typedef struct RuntimeData_s {
 	float* current;
 	float* totalCurrent;
 	float* extCurrent;
+	
+	int* lif_tau_m; //!< parameters for a LIF spiking group
+	int* lif_tau_ref;
+	int* lif_tau_ref_c; // current refractory of the neuron
+	float* lif_vTh;
+	float* lif_vReset;
+	float* lif_gain;
+	float* lif_bias;
 
 	//! Keeps track of all neurons that spiked at current time.
 	//! Because integration step can be < 1ms we might want to keep integrating but remember that the neuron fired,
@@ -576,8 +593,9 @@ typedef struct RuntimeData_s {
 typedef struct GlobalNetworkConfig_s {
 	GlobalNetworkConfig_s() : numN(0), numNReg(0), numNPois(0),
 							  numNExcReg(0), numNInhReg(0), numNExcPois(0), numNInhPois(0),
-							  numSynNet(0), maxDelay(-1), simIntegrationMethod(FORWARD_EULER),
-							  simNumStepsPerMs(2), timeStep(0.5f)
+							  numSynNet(0), maxDelay(-1), numN1msDelay(0), numN2msDelay(0),
+							  simIntegrationMethod(FORWARD_EULER),
+							  simNumStepsPerMs(2), timeStep(0.5)
 	{}
 
 	int numN;		  //!< number of neurons in the global network
@@ -590,6 +608,8 @@ typedef struct GlobalNetworkConfig_s {
 	int numNPois;     //!< number of poisson neurons in the global network
 	int numSynNet;    //!< number of total synaptic connections in the global network
 	int maxDelay;	  //!< maximum axonal delay in the gloabl network
+	int numN1msDelay; //!< number of neurons with maximum out going axonal delay = 1 ms
+	int numN2msDelay; //!< number of neurons with maximum out going axonal delay >= 2 ms
 
 	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
 	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond

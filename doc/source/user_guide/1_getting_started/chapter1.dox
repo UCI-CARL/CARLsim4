@@ -29,7 +29,7 @@ the file <tt>helper_cuda.h</tt>, which usually resides in
 
 \subsection ch1s1s1_os 1.1.1 Supported Operating Systems
 CARLsim has been tested on the following platforms:
-- Windows 7/10
+- Mac OSX 10.11
 - Ubuntu 16.04
 
 
@@ -96,26 +96,19 @@ This can be done in three steps:
 -# Switch to a terminal (or <a href="https://desktop.github.com/">GitHub Desktop</a>)
    and clone the repository:
    \code
-   $ git clone --recursive https://github.com/UCI-CARL/YourUsername/CARLsim4
+   $ git clone --recursive https://github.com/UCI-CARL/CARLsim4.git
    $ cd CARLsim4
    \endcode
    where <tt>YourUsername</tt> is your GitHub user name.
    Note the <tt>--recursive</tt> option: It will make sure all external software
    dependencies get installed (e.g., Google Test).
 
--# Choose your software version:
-   - If you want the latest stable release, switch to the <tt>stable</tt> branch:
-     \code
-     $ git checkout stable
-     \endcode
-   - If you want the latest development version, simply stay on the <tt>master</tt>
-     branch.
-
 Alternatively, you may download the latest stable release from the 
 <a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
 
 For installation instructions on Linux and Mac OS X platforms, please refer to \ref ch1s2s1_linux below.
 For installation instructions on Windows platforms, please refer to \ref ch1s2s2_windows below.
+For installation instructions on any platform using CMake, refer to \ref ch1s2s3_cmake below.
 
 
 \subsection ch1s2s1_linux 1.2.1 Linux / Mac OS X
@@ -142,22 +135,13 @@ The following options are available:
   \endcode
   For advanced users or administrators, you could set the path to <tt>/usr/local</tt>
 
-- Custom CUDA paths: By default, CARLsim assumes that your CUDA library lives in
-  <tt>/usr/local/cuda</tt>. If this is not the case on your system, make sure to
-  set adjust an environment variable called <tt>CUDA_PATH</tt>:
+- Custom CUDA paths: Set an environment variable called <tt>CUDA_PATH</tt>. By default, your CUDA library lives in <tt>/usr/local/cuda</tt>
   \code
   $ export CUDA_PATH=/path/to/CUDA
   \endcode
 
-- ECJ support: By default, CARLsim assumes that the Parameter Tuning Interface
-  lives in <tt>/opt/CARL/carlsim_ecj_pti</tt>, with the JAR file located at
-  <tt>/opt/ecj/jar/ecj.23.jar</tt>. If these paths are not correct and you wish
-  to use the Parameter Tuning Interface (see \ref ch10_ecj), please update
-  your environment variables accordingly:
-  \code
-  $ export ECJ_JAR=/path/to/ECJ/JAR/file
-  $ export ECJ_PTI_DIR=/path/to/ECJ/PTI
-  \endcode
+- ECJ support: If you use the evolutionary computing based Parameter Tuning Interface,
+  additional variables are needed. See \ref ch10_ecj for the list of those additional variables.
 
 Once you have made changes to your <tt>~/.bashrc</tt>, make sure they go into
 effect by either typing:
@@ -178,21 +162,21 @@ The CUDA Toolkit version can be found via:
 $ nvcc --version
 \endcode
 You need only input the major number of the toolkit version
-(e.g. 6 for 6.5).
+(e.g. 7 for 7.5).
 
 The compute capability of the GPU device can be found by compiling the <tt>deviceQuery</tt> sample in 
 the directory <tt>1_Utilities</tt> of the CUDA Toolkit.
 \code
 # copy NVIDIA Toolkit to home directory
 $ cd /usr/local/cuda/bin
-$ ./cuda-install-samples-6.5.sh ~
-$ cd ~/NVIDIA_CUDA-6.5_Samples/1_Utilities/deviceQuery
+$ ./cuda-install-samples-9.0.sh ~
+$ cd ~/NVIDIA_CUDA-9.0_Samples/1_Utilities/deviceQuery
 
 # compile and run deviceQuery
 $ make
 $ ./deviceQuery
 \endcode
-For CUDA Toolkits other than version 6.5, the paths above need to be changed accordingly.
+For CUDA Toolkits other than version 9.0, the paths above need to be changed accordingly.
 
 \note Please make sure you install the CUDA SDK samples, as CARLsim relies on
 the file <tt>helper_cuda.h</tt>, which usually resides in
@@ -279,7 +263,7 @@ $ make test_nocuda
 
 To run the regression suite, you can type:
 \code
-$ ./carlsim/test_carlsim_tests
+$ ./carlsim/test/carlsim_tests
 \endcode
 
 
@@ -306,6 +290,52 @@ Newer VS versions will automatically upgrade the solution file (<tt>CARLsim.sln<
 (<tt>*.vcxproj</tt>).
 For newer CUDA Toolkit versions, the strings "CUDA 8.0.props" and "CUDA 8.0.targets" that are present in
 every .vcxproj file have to be manually updated to reflect the right CUDA Toolkit version number.
+
+
+\subsection ch1s2s3_cmake 1.2.3 CMake
+
+Create a build directory (you can make it anywhere)
+
+   ```
+   $ mkdir <build-dir>
+   ```
+
+Proceed into build directory and do configuration:
+
+   ```
+   $ cd <build-dir>
+   $ cmake \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_INSTALL_PREFIX=<carlsim-install-dir> \
+       -DCARLSIM_NO_CUDA=OFF \
+       <carlsim-source-dir>
+   ```
+
+As you can see `cmake` accepts several options
+<a href="https://cmake.org/cmake/help/v3.0/manual/cmake.1.html">`-D<name>=<value>`</a>:
+they define cmake variables.
+<a href="https://cmake.org/cmake/help/v3.0/variable/CMAKE_BUILD_TYPE.html"> `CMAKE_BUILD_TYPE`</a>
+being assigned `Release`, which means that we are going to build release version of the library.
+If you need debug version then pass `Debug`.
+<a href="https://cmake.org/cmake/help/v3.0/variable/CMAKE_INSTALL_PREFIX.html">`CMAKE_INSTALL_PREFIX`</a>
+specifies a directory which we are going to install the library into.
+`CARLSIM_NO_CUDA` switches on/off support of CUDA inside the library.
+
+Build:
+
+   ```
+   $ cmake --build <build-dir>
+   ```
+
+Install:
+
+   ```
+   $ cmake --build <build-dir> --target install
+   ```
+Alternatively, the library can be built and installed from an IDE, in case you specified the IDE's
+<a href="https://cmake.org/cmake/help/v3.10/manual/cmake-generators.7.html">CMake Generator</a>
+during the configuration step.
+
 
 
 \section ch1s3_project_workflow 1.3 Project Workflow
@@ -428,6 +458,49 @@ Second, the projects file needs to be added to the <tt>CARLsim.sln</tt> solution
 Then the new project is ready to be built, rebuilt, or cleaned directly through VS.
 
 \since v3.0
+
+
+\subsection ch1s3s3_cmake_project_workflow 1.3.3 CMake
+
+\subsubsection ch1s3s3s1_cmake_hello_world_compile 1.3.3.1 Compiling the "Hello World" Project using CMake
+
+Make sure that CARLsim has been \ref ch1s2s3_cmake "built and installed using CMake",
+because the "Hello World" project's cmake script searches for CARLsim's cmake package configuration file.
+
+Create a build directory (you can make it anywhere)
+
+   ```
+   $ mkdir <build-dir>
+   ```
+
+Proceed into the build directory and do configuration:
+
+   ```
+   $ cd <build-dir>
+   $ cmake \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DCMAKE_PREFIX_PATH=<carlsim-install-dir> \
+       <hello-world-source-dir>
+   ```
+
+<a href="https://cmake.org/cmake/help/v3.0/variable/CMAKE_BUILD_TYPE.html"> `CMAKE_BUILD_TYPE`</a>
+specifies whether we build Release of Debug version of the project.
+<a href="https://cmake.org/cmake/help/v3.0/variable/CMAKE_PREFIX_PATH.html">`CMAKE_PREFIX_PATH`</a>
+must point to the CARLsim's installation directory in case we installed the library
+into a cutsom directory, so that cmake can find its configuration file.
+`<hello-world-source-dir>` must point to the directory holding the project's
+`CMakeLists.txt` file.
+
+Build the project:
+
+   ```
+   $ cmake --build <build-dir>
+   ```
+
+Alternatively, the project can be built from an IDE, in case you specified the IDE's
+<a href="https://cmake.org/cmake/help/v3.10/manual/cmake-generators.7.html">CMake Generator</a>
+during the configuration step.
+
 
 
 \section ch1s4_uninstallation 1.4 Uninstallation

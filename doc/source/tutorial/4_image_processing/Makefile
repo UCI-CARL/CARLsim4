@@ -48,7 +48,7 @@ proj_src_dir   := .
 ifdef CARLSIM4_INSTALL_DIR
 	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := $(HOME)/CARL/carlsim
+	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.

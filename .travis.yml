@@ -1,23 +1,34 @@
 sudo: false
 
-dist: trusty
+language: cpp
 
-language:
-  - cpp
+matrix:
+    include:
+      - os: osx
+        compiler: clang
+#FIX THIS
+#      - os: linux
+#        dist: trusty
+#        compiler: gcc
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#          packages:
+#            - lcov
+    fast_finish:
+     - true
 
-addons:
-  apt:
-    sources:
-      - ubuntu-toolchain-r-test
-    packages:
-      - lcov
 
 before_install:
-  - gem install coveralls-lcov
+  # Set alias for readability
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then LINUX=true; fi
+  - if [[ $LINUX ]]; then gem install coveralls-lcov; fi
 
 install:
-  - mkdir $HOME/install
-  - export CARLSIM4_INSTALL_DIR=$HOME/install
+  - mkdir $HOME/carlsim4_install
+  - export CARLSIM4_INSTALL_DIR=$HOME/carlsim4_install
+  - export CARLSIM4_NO_CUDA=1
+  - if [[ $LINUX ]]; then export CARLSIM4_COVERAGE=1; fi
   - cd external/googletest
   - mkdir build
   - cd build
@@ -25,18 +36,18 @@ install:
   - make
   - cd ../../..
   - pwd
-  - make release_nocuda_coverage -j4
+  - make distclean
+  - make release_nocuda -j4
   - make install
 
 script:
-  - make test_nocuda_coverage
-  - travis_wait 49 ./carlsim/test/carlsim_tests --gtest_filter=-*_Adv
+  - make test_nocuda
+  - travis_wait 49 ./carlsim/test/carlsim_tests --gtest_filter=-*_MultiGPU:*_Adv
 
 after_success:
-- lcov -b . -d . -c -o ./coverage.info
-- lcov -r coverage.info "/usr*" -o coverage.info
-- lcov -r coverage.info "/tmp*" -o coverage.info
-- lcov -r coverage.info "external/*" -o coverage.info
-- lcov -r coverage.info "*.h" -o coverage.info
-- coveralls-lcov coverage.info
-
+- if [[ $LINUX ]]; then lcov -b . -d . -c -o ./coverage.info; fi
+- if [[ $LINUX ]]; then lcov -r coverage.info "/usr*" -o coverage.info; fi
+- if [[ $LINUX ]]; then lcov -r coverage.info "external/*" -o coverage.info; fi
+- if [[ $LINUX ]]; then lcov -r coverage.info "*.h" -o coverage.info; fi
+- if [[ $LINUX ]]; then lcov -r coverage.info "*.cu" -o coverage.info; fi
+- if [[ $LINUX ]]; then coveralls-lcov coverage.info; fi

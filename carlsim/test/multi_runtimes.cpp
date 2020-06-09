@@ -101,87 +101,349 @@ private:
 	bool* connecteds;
 };
 
-TEST(MultiRuntimes, spikesSingleVsMulti) {
-	// create a network on GPU
+TEST(MultiRuntimes, spikesSingleVsMultiX2) {
 	int gExc, gExc2, gInput;
 	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
 	CARLsim* sim;
 	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(10, 10, RangeWeight(10.0f), RangeDelay(1, 20));
 	
 	int randSeed = rand();
-	for (int mode = 0; mode < TESTED_MODES; mode++) {
-	//int mode = 1;
-	//int partition = 1;
-		for (int partition = 0; partition < 2; partition++) {
-			sim = new CARLsim("MultiRumtimes.spikesSingleVsMulti", HYBRID_MODE, SILENT, 0, randSeed);
+	for (int partition = 0; partition < 2; partition++) {
+		sim = new CARLsim("MultiRumtimes.spikesSingleVsMultiX2", CPU_MODE, SILENT, 0, randSeed);
 
-			// configure the network
-			gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, mode ? GPU_CORES : CPU_CORES);
-			sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		// configure the network
+		gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, CPU_CORES);
+		sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			//int gInh = sim.createGroup("inh", 20, INHIBITORY_NEURON);
-			//sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
-			gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, mode ? GPU_CORES : CPU_CORES);
-			sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+		gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, CPU_CORES);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-			gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, mode ? GPU_CORES : CPU_CORES);
+		gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, CPU_CORES);
 
-			sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
-			sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
+		sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
 
-			sim->setConductances(false);
+		sim->setConductances(false);
 
-			//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+		//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
 
-			// build the network
-			sim->setupNetwork();
+		// build the network
+		sim->setupNetwork();
 
-			// set some monitors
-			//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
-			//SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
-			SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
-			//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gExc2, "NULL");
+		// set some monitors
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+		//SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
+		SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gExc2, "NULL");
 
-			//setup some baseline input
-			PoissonRate in(10);
-			in.setRates(5.0f);
-			sim->setSpikeRate(gInput, &in);
+		//setup some baseline input
+		PoissonRate in(10);
+		in.setRates(5.0f);
+		sim->setSpikeRate(gInput, &in);
 
-			// run for a total of 10 seconds
-			// at the end of each runNetwork call, SpikeMonitor stats will be printed
-			//smInput->startRecording();
-			//smExc->startRecording();
-			smExc2->startRecording();
+		// run for a total of 10 seconds
+		// at the end of each runNetwork call, SpikeMonitor stats will be printed
+		//smInput->startRecording();
+		//smExc->startRecording();
+		smExc2->startRecording();
 
-			sim->runNetwork(1, 0);
+		sim->runNetwork(1, 0);
 
-			//smInput->stopRecording();
-			//smExc->stopRecording();
-			smExc2->stopRecording();
+		//smInput->stopRecording();
+		//smExc->stopRecording();
+		smExc2->stopRecording();
 
-			if (partition == 0) { // single gpu
-				spikesSingleRuntime = smExc2->getSpikeVector2D();
-			}
-			else {
-				spikesMultiRuntimes = smExc2->getSpikeVector2D();
-			}
-
-			//smExc->print(true);
-			//smExc2->print(true);
-			//smInput->print(true);
-
-			delete sim;
+		if (partition == 0) { // single gpu
+			spikesSingleRuntime = smExc2->getSpikeVector2D();
+		}
+		else {
+			spikesMultiRuntimes = smExc2->getSpikeVector2D();
 		}
 
-		for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
-			EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
-			for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
-				EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
-		}
+		//smExc->print(true);
+		//smExc2->print(true);
+		//smInput->print(true);
+
+		delete sim;
+	}
+
+	for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
+		EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
+		for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
+			EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
 	}
 }
 
-TEST(MultiRuntimes, shuffleGroups) {
+TEST(MultiRuntimes, spikesSingleVsMultiX2_2_GPU_MultiGPU) {
+	int gExc, gExc2, gInput;
+	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
+	CARLsim* sim;
+	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(10, 10, RangeWeight(10.0f), RangeDelay(1, 20));
+
+	int randSeed = rand();
+	for (int partition = 0; partition < 2; partition++) {
+		sim = new CARLsim("MultiRumtimes.spikesSingleVsMultiX2_2_GPU", GPU_MODE, SILENT, 0, randSeed);
+
+		// configure the network
+		gExc = sim->createGroup("exc", 10, EXCITATORY_NEURON, 0, GPU_CORES);
+		sim->setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc2 = sim->createGroup("exc2", 10, EXCITATORY_NEURON, partition, GPU_CORES);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gInput = sim->createSpikeGeneratorGroup("input", 10, EXCITATORY_NEURON, 0, GPU_CORES);
+
+		sim->connect(gInput, gExc, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc, gExc2, frConnGen, SYN_FIXED);
+
+		sim->setConductances(false);
+
+		//sim.setESTDP(gExc, true, STANDARD, ExpCurve(0.1f/100, 20, -0.12f/100, 20));
+
+		// build the network
+		sim->setupNetwork();
+
+		// set some monitors
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+		//SpikeMonitor* smExc = sim->setSpikeMonitor(gExc, "NULL");
+		SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc, gExc2, "NULL");
+
+		//setup some baseline input
+		PoissonRate in(10);
+		in.setRates(5.0f);
+		sim->setSpikeRate(gInput, &in);
+
+		// run for a total of 10 seconds
+		// at the end of each runNetwork call, SpikeMonitor stats will be printed
+		//smInput->startRecording();
+		//smExc->startRecording();
+		smExc2->startRecording();
+
+		sim->runNetwork(1, 0);
+
+		//smInput->stopRecording();
+		//smExc->stopRecording();
+		smExc2->stopRecording();
+
+		if (partition == 0) { // single gpu
+			spikesSingleRuntime = smExc2->getSpikeVector2D();
+		}
+		else {
+			spikesMultiRuntimes = smExc2->getSpikeVector2D();
+		}
+
+		//smExc->print(true);
+		//smExc2->print(true);
+		//smInput->print(true);
+
+		delete sim;
+	}
+
+	for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
+		EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
+		for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
+			EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
+	}
+}
+
+TEST(MultiRuntimes, spikesSingleVsMultiX4) {
+	int gExc1, gExc2, gExc3, gExc4, gInput;
+	int nNeur = 10;
+	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
+	CARLsim* sim;
+	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(nNeur, nNeur, RangeWeight(0.0, 12.0, 15.0), RangeDelay(1, 20));
+
+	int randSeed = rand();
+	for (int partition = 0; partition < 2; partition++) {
+		sim = new CARLsim("MultiRumtimes.spikesSingleVsMultiX4", CPU_MODE, SILENT, 0, randSeed);
+
+		// configure the network
+		gExc1 = sim->createGroup("exc1", nNeur, EXCITATORY_NEURON, 0, CPU_CORES);
+		sim->setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc2 = sim->createGroup("exc2", nNeur, EXCITATORY_NEURON, partition ? 1 : 0, CPU_CORES);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc3 = sim->createGroup("exc3", nNeur, EXCITATORY_NEURON, partition ? 2 : 0, CPU_CORES);
+		sim->setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc4 = sim->createGroup("exc4", nNeur, EXCITATORY_NEURON, partition ? 3 : 0, CPU_CORES);
+		sim->setNeuronParameters(gExc4, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gInput = sim->createSpikeGeneratorGroup("input", nNeur, EXCITATORY_NEURON, 0, CPU_CORES);
+
+		sim->connect(gInput, gExc1, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc1, gExc2, frConnGen, SYN_PLASTIC);
+		sim->connect(gExc2, gExc3, frConnGen, SYN_PLASTIC);
+		sim->connect(gExc3, gExc4, frConnGen, SYN_PLASTIC);
+
+		sim->setConductances(false);
+
+		float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
+		//sim->setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+
+		// build the network
+		sim->setupNetwork();
+
+		// set some monitors
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+		//SpikeMonitor* smExc1 = sim->setSpikeMonitor(gExc1, "NULL");
+		//SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//SpikeMonitor* smExc3 = sim->setSpikeMonitor(gExc3, "NULL");
+		SpikeMonitor* smExc4 = sim->setSpikeMonitor(gExc4, "NULL");
+		//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc1, gExc2, "NULL");
+
+		//setup some baseline input
+		PoissonRate in(nNeur);
+		in.setRates(6.0f);
+		sim->setSpikeRate(gInput, &in);
+
+		// run for a total of 10 seconds
+		// at the end of each runNetwork call, SpikeMonitor stats will be printed
+		//smInput->startRecording();
+		//smExc1->startRecording();
+		//smExc2->startRecording();
+		//smExc3->startRecording();
+		smExc4->startRecording();
+
+		sim->runNetwork(1, 0);
+
+		//smInput->stopRecording();
+		//smExc1->stopRecording();
+		//smExc2->stopRecording();
+		//smExc3->stopRecording();
+		smExc4->stopRecording();
+
+		if (partition == 0) { // single runtime
+			spikesSingleRuntime = smExc4->getSpikeVector2D();
+		}
+		else {
+			spikesMultiRuntimes = smExc4->getSpikeVector2D();
+		}
+
+		//smExc->print(true);
+		//smExc2->print(true);
+		//smExc3->print(true);
+		//smExc1->print(false);
+		//smExc2->print(false);
+		//smExc3->print(false);
+		//smExc4->print(false);
+		//smInput->print(true);
+		//cmEE->printSparse();
+
+		delete sim;
+	}
+
+	for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
+		EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
+		for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
+			EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
+	}
+}
+
+TEST(MultiRuntimes, spikesSingleVsMultiX4_4_GPU_MultiGPU) {
+	int gExc1, gExc2, gExc3, gExc4, gInput;
+	int nNeur = 10;
+	std::vector<std::vector<int> > spikesSingleRuntime, spikesMultiRuntimes;
+	CARLsim* sim;
+	FixedRandomConnGen* frConnGen = new FixedRandomConnGen(nNeur, nNeur, RangeWeight(0.0, 12.0, 15.0), RangeDelay(1, 20));
+
+	int randSeed = rand();
+	for (int partition = 0; partition < 2; partition++) {
+		sim = new CARLsim("MultiRumtimes.spikesSingleVsMultiX4_4_GPU", GPU_MODE, SILENT, 0, randSeed);
+
+		// configure the network
+		gExc1 = sim->createGroup("exc1", nNeur, EXCITATORY_NEURON, 0, GPU_CORES);
+		sim->setNeuronParameters(gExc1, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc2 = sim->createGroup("exc2", nNeur, EXCITATORY_NEURON, partition ? 1 : 0, GPU_CORES);
+		sim->setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc3 = sim->createGroup("exc3", nNeur, EXCITATORY_NEURON, partition ? 2 : 0, GPU_CORES);
+		sim->setNeuronParameters(gExc3, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gExc4 = sim->createGroup("exc4", nNeur, EXCITATORY_NEURON, partition ? 3 : 0, GPU_CORES);
+		sim->setNeuronParameters(gExc4, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+		gInput = sim->createSpikeGeneratorGroup("input", nNeur, EXCITATORY_NEURON, 0, GPU_CORES);
+
+		sim->connect(gInput, gExc1, "one-to-one", RangeWeight(50.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
+		sim->connect(gExc1, gExc2, frConnGen, SYN_PLASTIC);
+		sim->connect(gExc2, gExc3, frConnGen, SYN_PLASTIC);
+		sim->connect(gExc3, gExc4, frConnGen, SYN_PLASTIC);
+
+		sim->setConductances(false);
+
+		float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
+		//sim->setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+
+		// build the network
+		sim->setupNetwork();
+
+		// set some monitors
+		//SpikeMonitor* smInput = sim->setSpikeMonitor(gInput, "NULL");
+		//SpikeMonitor* smExc1 = sim->setSpikeMonitor(gExc1, "NULL");
+		//SpikeMonitor* smExc2 = sim->setSpikeMonitor(gExc2, "NULL");
+		//SpikeMonitor* smExc3 = sim->setSpikeMonitor(gExc3, "NULL");
+		SpikeMonitor* smExc4 = sim->setSpikeMonitor(gExc4, "NULL");
+		//ConnectionMonitor* cmEE = sim->setConnectionMonitor(gExc1, gExc2, "NULL");
+
+		//setup some baseline input
+		PoissonRate in(nNeur);
+		in.setRates(6.0f);
+		sim->setSpikeRate(gInput, &in);
+
+		// run for a total of 10 seconds
+		// at the end of each runNetwork call, SpikeMonitor stats will be printed
+		//smInput->startRecording();
+		//smExc1->startRecording();
+		//smExc2->startRecording();
+		//smExc3->startRecording();
+		smExc4->startRecording();
+
+		sim->runNetwork(1, 0);
+
+		//smInput->stopRecording();
+		//smExc1->stopRecording();
+		//smExc2->stopRecording();
+		//smExc3->stopRecording();
+		smExc4->stopRecording();
+
+		if (partition == 0) { // single runtime
+			spikesSingleRuntime = smExc4->getSpikeVector2D();
+		}
+		else {
+			spikesMultiRuntimes = smExc4->getSpikeVector2D();
+		}
+
+		//smExc->print(true);
+		//smExc2->print(true);
+		//smExc3->print(true);
+		//smExc1->print(false);
+		//smExc2->print(false);
+		//smExc3->print(false);
+		//smExc4->print(false);
+		//smInput->print(true);
+		//cmEE->printSparse();
+
+		delete sim;
+	}
+
+	for (int nId = 0; nId < spikesSingleRuntime.size(); nId++) {
+		EXPECT_EQ(spikesSingleRuntime[nId].size(), spikesMultiRuntimes[nId].size()); // the same number of spikes
+		for (int s = 0; s < spikesSingleRuntime[nId].size(); s++)
+			EXPECT_EQ(spikesSingleRuntime[nId][s], spikesMultiRuntimes[nId][s]); // the same spike timing
+	}
+}
+
+TEST(MultiRuntimes, shuffleGroups_2_GPU_MultiGPU) {
 	int randSeed = 42;
 	float pConn = 100.0f / 1000; // connection probability
 	
@@ -191,7 +453,7 @@ TEST(MultiRuntimes, shuffleGroups) {
 				for (int modeA = 0; modeA < TESTED_MODES; modeA++) {
 					for (int modeB = 0; modeB < TESTED_MODES; modeB++) {
 						for (int modeC = 0; modeC < TESTED_MODES; modeC++) {
-							CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups", HYBRID_MODE, SILENT, 0, randSeed);
+							CARLsim* sim = new CARLsim("MultiRuntimes.shffleGroups_2_GPU", HYBRID_MODE, SILENT, 0, randSeed);
 
 							// configure the network
 							int gExc = sim->createGroup("exc", 800, EXCITATORY_NEURON, partitionA, modeA ? GPU_CORES : CPU_CORES);

@@ -1,0 +1,57 @@
+# This parameter file is used as input to the ECJ evolutionary computation toolkit.
+#
+# It defines a (mu + lambda)-style evolutionary algorithm that uses an external command to 
+# evaluate the fitness of a pouplation of real-valued parameter vectors.
+#
+# We make use of some custom extensions to ECJ.  These class names begin with 'ecjapp'.  To 
+# use them, you'll need to make sure that the CARLsim-ECJ jar file is in your class path.
+
+# Inherit some boiler-plate configuration
+parent.0 =                                	      	@ec.simple.SimpleEvolutionState simple.params
+
+# Stopping Conditions
+# =========================
+generations =						50
+# Whether we should stop when the "ideal" individual is found
+quit-on-run-complete =					true
+
+# Population and Breeding
+# =========================
+# Initial population size
+pop.subpop.0.size =	 				10
+
+# Evolution strategies options
+breed =							ec.es.MuPlusLambdaBreeder
+es.mu.0 =						5
+es.lambda.0 =						5
+
+
+# Genetic representation
+# =========================
+pop.subpop.0.species =					ec.vector.FloatVectorSpecies
+pop.subpop.0.species.ind =              		ec.vector.DoubleVectorIndividual
+pop.subpop.0.species.fitness =          		ec.simple.SimpleFitness
+pop.subpop.0.species.genome-size =      		4
+
+pop.subpop.0.species.min-gene =         		0.0005
+pop.subpop.0.species.max-gene =         		0.5
+
+
+# Evolutionary operators
+# =========================
+pop.subpop.0.species.pipe =				ec.vector.breed.VectorMutationPipeline
+pop.subpop.0.species.pipe.source.0 = 			ec.es.ESSelection
+pop.subpop.0.species.mutation-prob =    		0.4
+pop.subpop.0.species.mutation-type =    		gauss
+pop.subpop.0.species.mutation-stdev =   		0.1
+pop.subpop.0.species.mutation-bounded = 		true
+
+
+# External fitness function
+# =========================
+eval =							ecjapp.eval.SimpleGroupedEvaluator
+eval.problem =                           		ecjapp.eval.problem.CommandProblem
+eval.problem.objective =				ecjapp.eval.problem.objective.StringToDoubleObjective
+# The algorithm will stop if this fitness value is reached
+eval.problem.objective.idealFitnessValue =		2.0
+eval.problem.simulationCommand =        		$tuneFiringRatesECJ

@@ -284,6 +284,13 @@ public:
 	int createGroup(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
+	 * \brief creates a group of Leaky-Integrate-and-Fire (LIF) spiking neurons
+	 * \TODO finish doc
+	 * \STATE ::CONFIG_STATE
+	 */
+	int createGroupLIF(const std::string& grpName, int nNeur, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
 	 * \brief Create a group of Izhikevich spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
 	 * side length 1)
 	 *
@@ -305,6 +312,18 @@ public:
 	 * \since v3.0
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
+
+	/*!
+	 * \brief Create a group of LIF spiking neurons on a 3D grid (a primitive cubic Bravais lattice with cubic
+	 * side length 1)
+	 *
+	 * \STATE ::CONFIG_STATE
+	 * \param[in] grpName    the group name
+	 * \param[in] grid       a Grid3D struct specifying the dimensions of the 3D lattice
+	 * \param[in] neurType   either EXCITATORY_NEURON, INHIBITORY_NEURON or DOPAMINERGIC_NEURON
+	 * \since v4.0
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition = ANY, ComputingBackend preferredBackend = CPU_CORES);
 
 	/*!
 	 * \brief  creates a spike generator group
@@ -554,6 +573,19 @@ public:
 		float izh_d, float izh_d_sd);
 
 	/*!
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
+	 *
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] rMem Range of total membrane resistance of the neuron group, uniformly distributed or fixed for the whole group
+	 * \STATE ::CONFIG_STATE
+	 */
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref=0, float vTh=1.0f, float vReset=0.0f, const RangeRmem& rMem = RangeRmem(1.0f));
+    
+   /*!
 	* \brief Sets coupling constants G_u and G_d for the compartment.
 	*
 	* \TODO finish docu

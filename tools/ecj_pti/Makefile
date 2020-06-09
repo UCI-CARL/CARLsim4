@@ -1,61 +1,121 @@
-# Makefile to build CARLsim-ECJ PTI Examples from installed CARLsim Library
-# (libCARLsim.a). This file includes $(ex_dir)/exampmles.mk which builds the
-# PTI exmaple programs from libCARLsim.a.
+##----------------------------------------------------------------------------##
+##
+##   CARLsim4 CARLsim-ECJ PTI interface Makefile
+##   -------------------------
+##
+##   Authors:   Eric Scott <escott8@gmu.edu>
+##              Kristofor Carlson <kdcarlso@uci.edu>
+##		Michael Beyeler <mbeyeler@uci.edu>
+##
+##   Institute: Cognitive Anteater Robotics Lab (CARL)
+##              Department of Cognitive Sciences
+##              University of California, Irvine
+##              Irvine, CA, 92697-5100, USA
+##
+##   Version:   04/11/2018
+##
+##----------------------------------------------------------------------------##
 
-# set this to wherever user.mk is located
-USER_MK_PATH ?= .
-include $(USER_MK_PATH)/user.mk
+################################################################################
+# Start of user-modifiable section
+################################################################################
 
-# -----------------------------------------------------------------------------
-# You should not need to edit the file beyond this point
-# -----------------------------------------------------------------------------
+# Directory where all include files reside. The Makefile will automatically
+# detect and include all .h files within that directory.
+proj_inc_dir   := inc
 
-all_targets :=
-install_targets :=
-pti_programs :=
-pti_deps :=
-pti_objs :=
-output_files :=
-objects :=
-libraries :=
-izk_build_files :=
-pti_dir := src/CARLsim-app/pti
-ex_dir := src/CARLsim-app/Examples
-izk_dir := src/izk
-results_dir := results
+# Directory where all source files reside. The Makefile will automatically
+# detect and include all .cpp and .cu files within that directory.
+proj_src_dir   := src
 
-# location of .cpp files
-vpath %.cpp $(pti_dir)
-# location of .h files
-vpath %.h $(pti_dir)
-
-# we are compiling from carlsim lib
-CARLSIM_FLAGS += -I$(CARLSIM_LIB_DIR)/include/kernel \
-				 -I$(CARLSIM_LIB_DIR)/include/interface \
-				 -I$(CARLSIM_LIB_DIR)/include/spike_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/group_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/connection_monitor \
-				 -I$(CARLSIM_LIB_DIR)/include/spike_generators \
-				 -I$(CARLSIM_LIB_DIR)/include/visual_stimulus \
-				 -I$(CARLSIM_LIB_DIR)/include/simple_weight_tuner
-CARLSIM_LIBS  += -L$(CARLSIM_LIB_DIR)/lib -lCARLsim
+# Name of the library file to be created.
+lib_pti_name := libCARLsimPTI.a
+jar_target := $(proj_src_dir)/java/dist/CARLsim-ECJ.jar
 
 
-all:
+################################################################################
+# End of user-modifiable section
+################################################################################
 
-include ecj_pti.mk
-include $(pti_dir)/pti.mk
-include $(pti_dir)/libCARLsimPTI.mk
-include $(ex_dir)/examples.mk
-include $(izk_dir)/izk.mk
 
-all: $(all_targets)
+#------------------------------------------------------------------------------
+# Include configuration file
+#------------------------------------------------------------------------------
 
-install: $(install_targets)
+# NOTE: If your CARLsim4 installation does not reside in the default path, make
+# sure the environment variable CARLSIM4_INSTALL_DIR is set.
+ifneq ($(CARLSIM4_INSTALL_DIR),)
+	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
+else
+	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+endif
+
+# include compile flags etc.
+include $(CARLSIM4_INC_DIR)/configure.mk
+
+# Version info
+num_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM)
+lib_ver := $(num_ver).$(SIM_BUILD_NUM)
+lib_target := $(lib_pti_name).$(lib_ver)
+
+#------------------------------------------------------------------------------
+# Build local variables
+#------------------------------------------------------------------------------
+
+# build list of all .cpp, .cu, and .h files (but don't include main_src_file)
+cpp_files  := $(wildcard $(proj_src_dir)/*.cpp)
+cu_files   := $(wildcard $(proj_src_dir)/*.cu)
+inc_files  := $(wildcard $(proj_inc_dir)/**/*.h)
+
+obj_files    := $(patsubst $(proj_src_dir)/%.cpp, obj/%.o, $(cpp_files))
+
+# handled by clean
+clean_files := $(obj_files) $(lib_pti_name).$(lib_ver) $(wildcard $(proj_src_dir)/java/dist) $(wildcard $(proj_src_dir)/java/build)
+
+#------------------------------------------------------------------------------
+# Project targets and rules
+#------------------------------------------------------------------------------
+
+.PHONY: clean distclean help
+default: $(lib_target) $(jar_target)
+
+
+$(lib_target): $(cpp_files) $(obj_files) $(inc_files)
+	ar rcs $@ $(obj_files)
+
+obj/%.o: $(proj_src_dir)/%.cpp $(inc_files)
+	@test -d obj/ || mkdir -p obj/
+	$(CXX) -c $(CXXINCFL) $(CXXFL) -I${proj_inc_dir} $< -o $@
+
+# Build the CARLsim-ECJ.jar from nbproject using ant
+$(jar_target):
+	cd $(proj_src_dir)/java; ant jar -Dendorsed.classpath=$(ECJ_JAR)
+
+install_jar: $(jar_target)
+	@test -d $(ECJ_PTI_DIR) || mkdir -p $(ECJ_PTI_DIR)
+	@test -d $(ECJ_PTI_DIR)/lib || mkdir -p $(ECJ_PTI_DIR)/lib
+	@install -m 0755 $(jar_target) $(ECJ_PTI_DIR)/lib
+
+install_carlsim_pti: $(lib_target)
+	@test -d $(ECJ_PTI_DIR) || mkdir -p $(ECJ_PTI_DIR)
+	@test -d $(ECJ_PTI_DIR)/lib || mkdir $(ECJ_PTI_DIR)/lib
+	@test -d $(ECJ_PTI_DIR)/inc || mkdir $(ECJ_PTI_DIR)/inc
+	@install -m 0755 $(lib_target) $(ECJ_PTI_DIR)/lib
+	@ln -fs $(ECJ_PTI_DIR)/lib/$(lib_pti_name).$(lib_ver) \
+		$(ECJ_PTI_DIR)/lib/$(lib_pti_name).$(num_ver)
+	@ln -fs $(ECJ_PTI_DIR)/lib/$(lib_pti_name).$(num_ver) \
+		$(ECJ_PTI_DIR)/lib/$(lib_pti_name)
+	@install -m 0644 $(proj_inc_dir)/*.h \
+		$(ECJ_PTI_DIR)/inc
+
+install: install_carlsim_pti install_jar
 
 clean:
-	$(RM) $(objects) $(libraries) $(pti_programs) $(izk_build_files)
+	$(RM) -r $(clean_files)
 
-distclean:
-	$(RM) $(objects) $(libraries) $(pti_programs) $(output_files) $(izk_build_files)
-
+help:
+	$(info CARLsim-ECJ Makefile options:)
+	$(info )
+	$(info make	       Compiles $(lib_pti_name) and CARLsim-ECJ.jar)
+	$(info make clean	 Cleans out all compiled files)
+	$(info make help	  Brings up this message)

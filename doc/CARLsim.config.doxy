@@ -32,7 +32,7 @@ PROJECT_NAME           = "CARLsim"
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = 4.0.0-beta
+PROJECT_NUMBER         = 4.0.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer
@@ -664,9 +664,7 @@ INPUT                  = ../carlsim/interface/inc \
                          ../carlsim/interface/src \
                          ../carlsim/kernel/inc \
                          ../carlsim/kernel/src \
-                         ../carlsim/spike_monitor \
-                         ../carlsim/connection_monitor \
-                         ../carlsim/group_monitor \
+                         ../carlsim/monitor \
                          ../tools/ecj_pti \
                          ../tools/eo_pti \
                          ../tools/visual_stimulus \
@@ -693,7 +691,8 @@ INPUT                  = ../carlsim/interface/inc \
                          source/tutorial/4_image_processing/doc \
                          source/tutorial/5_motion_energy/doc \
                          source/tutorial/6_simple_weight_tuner/doc \
-                         source/tutorial/7_pti/doc
+                         source/tutorial/7_pti/doc \
+                         source/tutorial/8_compartments/doc 
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding, which is
@@ -801,7 +800,8 @@ IMAGE_PATH             = source/user_guide \
                          source/tutorial/4_image_processing/doc \
                          source/tutorial/5_motion_energy/doc \
                          source/tutorial/6_simple_weight_tuner/doc \
-                         source/tutorial/7_pti/doc
+                         source/tutorial/7_pti/doc \
+                         source/tutorial/8_compartments/doc
 
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should

@@ -190,6 +190,16 @@ public:
 	 */
 	int createGroup(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
 
+	//! Creates a group of LIF spiking neurons
+	/*!
+	 * \param grpName the symbolic name of a group
+	 * \param grid Grid3D struct to create neurons on a 3D grid (x,y,z)
+	 * \param neurType the type of neuron
+	 * \param preferredPartition defines the desired runtime partition for the group
+	 * \param preferredBackend defines whether the group will be placed on CPU or GPU
+	 */
+	int createGroupLIF(const std::string& grpName, const Grid3D& grid, int neurType, int preferredPartition, ComputingBackend preferredBackend);
+
 	//! Creates a spike generator group (dummy-neurons, not Izhikevich spiking neurons)
 	/*!
 	 * \param name the symbolic name of a group
@@ -249,6 +259,20 @@ public:
 	 */
 	void setNeuronParameters(int grpId, float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_c, float izh_c_sd, float izh_d, float izh_d_sd);
+
+	/*!
+	 * \brief Sets neuron parameters for a group of LIF spiking neurons
+	 *
+	 * \param[in] grpId group ID
+	 * \param[in] tau_m Membrane time constant in ms (controls decay/leak)
+	 * \param[in] tau_ref absolute refractory period in ms
+	 * \param[in] vTh Threshold voltage for firing (must be > vReset)
+	 * \param[in] vReset Membrane potential resets to this value immediately after spike
+	 * \param[in] minRmem minimum membrane resistance
+	 * \param[in] maxRmem maximum membrane resistance
+	 * 
+	 */
+	void setNeuronParametersLIF(int grpId, int tau_m, int tau_ref, float vTh, float vReset, double minRmem, double maxRmem);
 
 	//! Sets the Izhikevich parameters C, k, vr, vt, a, b, vpeak, c, and d of a neuron group.
 	/*!
@@ -936,8 +960,8 @@ private:
 	//allocates runtime data on CPU memory
 	void allocateSNN_CPU(int netId); 
 
-	// runNetwork functions - multithreaded in POSIX using pthreads
-#if defined(WIN32) || defined(WIN64)
+	// runNetwork functions - multithreaded in LINUX using pthreads
+#if defined(WIN32) || defined(WIN64) || defined(__APPLE__)
 	void assignPoissonFiringRate_CPU(int netId);
 	void clearExtFiringTable_CPU(int netId);
 	void convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
@@ -953,7 +977,7 @@ private:
 	void spikeGeneratorUpdate_CPU(int netId);
 	void updateTimingTable_CPU(int netId);
 	void updateWeights_CPU(int netId);
-#else // for POSIX systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
+#else // for APPLE and Win systems - returns a void* to pthread_create - only differ in the return type compared to the counterparts above
 	void* assignPoissonFiringRate_CPU(int netId);
 	void* clearExtFiringTable_CPU(int netId);
 	void* convertExtSpikesD2_CPU(int netId, int startIdx, int endIdx, int GtoLOffset);
