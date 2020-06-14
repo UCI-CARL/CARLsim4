@@ -59,7 +59,7 @@ int main(int argc, const char* argv[]) {
 
 	float wtExc = 40.0f;
 
-	// create 
+	// create
 	int gExc = sim.createGroup("exc", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
@@ -88,10 +88,10 @@ int main(int argc, const char* argv[]) {
 
 	//for (int t = 0; t < 500; t++) {
 
-	
-	
+
+
 		// run for 1 ms, don't generate run stats
-		sim.runNetwork(0,200,false);
+		sim.runNetwork(1,600,false);
 	//}
 	SMexc->stopRecording();
 	NMexc->stopRecording();

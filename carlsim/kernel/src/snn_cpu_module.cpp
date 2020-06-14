@@ -82,7 +82,7 @@
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperSpikeGeneratorUpdate_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -103,7 +103,7 @@
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperUpdateTimingTable_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -141,7 +141,7 @@
 //						GtoLOffset = grpIt->GtoLOffset;
 //				}
 //
-//				convertExtSpikesD2_CPU(1, firingTableIdxD2, 
+//				convertExtSpikesD2_CPU(1, firingTableIdxD2,
 //					firingTableIdxD2 + managerRuntimeData.extFiringTableEndIdxD2[lGrpId],
 //					GtoLOffset); // [StartIdx, EndIdx)
 //				firingTableIdxD2 += managerRuntimeData.extFiringTableEndIdxD2[lGrpId];
@@ -245,7 +245,7 @@
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperConvertExtSpikesD2_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -271,7 +271,7 @@
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperConvertExtSpikesD1_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -292,7 +292,7 @@
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperClearExtFiringTable_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -344,7 +344,7 @@ void SNN::copyExtFiringTable(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperResetSpikeCnt_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -392,7 +392,7 @@ void SNN::copyExtFiringTable(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperDoCurrentUpdateD1_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -457,7 +457,7 @@ void SNN::copyExtFiringTable(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperDoCurrentUpdateD2_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -506,7 +506,7 @@ void SNN::copyExtFiringTable(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperDoSTPUpdateAndDecayCond_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -547,6 +547,7 @@ void SNN::copyExtFiringTable(int netId) {
 					int idxBase = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * simTimeMs + lGrpId * MAX_NEURON_MON_GRP_SZIE;
 					runtimeData[netId].nVBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN] = runtimeData[netId].voltage[lNId];
 					runtimeData[netId].nUBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN] = runtimeData[netId].recovery[lNId];
+					//KERNEL_INFO("simTimeMs: %d --base:%d -- %f -- %f --%f --%f", simTimeMs, idxBase + lNId - groupConfigs[netId][lGrpId].lStartN, runtimeData[netId].voltage[lNId], runtimeData[netId].recovery[lNId], runtimeData[netId].nVBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN], runtimeData[netId].nUBuffer[idxBase + lNId - groupConfigs[netId][lGrpId].lStartN]);
 				}
 			}
 
@@ -613,7 +614,7 @@ void SNN::copyExtFiringTable(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperFindFiring_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -970,7 +971,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				switch (networkConfigs[netId].simIntegrationMethod) {
 				case FORWARD_EULER:
 					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF)
-					{	
+					{
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich4(v, u, totalCurrent, timeStep);
 						if (v_next > 30.0f) {
@@ -981,7 +982,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						}
 					}
 					else if (!groupConfigs[netId][lGrpId].isLIF)
-					{	
+					{
 						// update vpos and upos for the current neuron
 						v_next = v + dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
 						if (v_next > vpeak) {
@@ -1003,7 +1004,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 							if (v_next > lif_vTh) {
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
-								
+
 								if(lastIter){
                                         				runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
 								}
@@ -1014,7 +1015,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 							else{
 								v_next = v + dvdtLIF(v, lif_vReset, lif_gain, lif_bias, lif_tau_m, totalCurrent, timeStep);
 							}
-						}						
+						}
 					}
 
 					if (groupConfigs[netId][lGrpId].isLIF){
@@ -1033,7 +1034,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						}
 					}
 					break;
-				
+
 				case RUNGE_KUTTA4:
 
 					if (!groupConfigs[netId][lGrpId].withParamModel_9 && !groupConfigs[netId][lGrpId].isLIF) {
@@ -1105,7 +1106,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 							if (v_next > lif_vTh) {
 								runtimeData[netId].curSpike[lNId] = true;
 								v_next = lif_vReset;
-								
+
 								if(lastIter){
                                         				runtimeData[netId].lif_tau_ref_c[lNId] = lif_tau_ref;
 								}
@@ -1173,7 +1174,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperGlobalStateUpdate_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -1292,7 +1293,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperUpdateWeights_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -1336,7 +1337,7 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperShiftSpikeTables_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -1483,7 +1484,7 @@ void SNN::copyPreConnectionInfo(int netId, int lGrpId, RuntimeData* dest, Runtim
 	}
 
 	// connection synaptic lengths and cumulative lengths...
-	if(allocateMem) 
+	if(allocateMem)
 		dest->Npre = new unsigned short[networkConfigs[netId].numNAssigned];
 	memcpy(&dest->Npre[posN], &src->Npre[posN], sizeof(short) * lengthN);
 
@@ -1634,7 +1635,7 @@ void SNN::copySynapseState(int netId, RuntimeData* dest, RuntimeData* src, bool 
  * \brief this function allocates memory sapce and copies variables related to nueron state to it
  *
  * This function:
- * (allocate and) copy voltage, recovery, current, avgFiring 
+ * (allocate and) copy voltage, recovery, current, avgFiring
  *
  * This funcion is called by allocateSNN_CPU(). Only copying from host to device is required
  *
@@ -1675,7 +1676,6 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
 	memcpy(&dest->voltage[ptrPos], &managerRuntimeData.voltage[ptrPos], sizeof(float) * length);
 
 	if (allocateMem)
-
 		dest->nextVoltage = new float[length];
 	memcpy(&dest->nextVoltage[ptrPos], &managerRuntimeData.nextVoltage[ptrPos], sizeof(float) * length);
 
@@ -1727,7 +1727,7 @@ void SNN::copyNeuronState(int netId, int lGrpId, RuntimeData* dest, bool allocat
  * \param[in] dest pointer to runtime data desitnation
  * \param[in] src pointer to runtime data source
  * \param[in] allocateMem a flag indicates whether allocating memory space before copy
- * \param[in] destOffset the offset of data destination, which is used in local-to-global copy 
+ * \param[in] destOffset the offset of data destination, which is used in local-to-global copy
  *
  * \sa copyNeuronState fetchConductanceAMPA
  * \since v3.0
@@ -1915,29 +1915,64 @@ void SNN::copyConductanceGABAb(int netId, int lGrpId, RuntimeData* dest, Runtime
 void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	int ptrPos, length;
 
+	assert(src->nVBuffer != NULL);
+	if (allocateMem) dest->nVBuffer = new float[networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000];
+
+	assert(src->nUBuffer != NULL);
+	if (allocateMem) dest->nUBuffer = new float[networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000];
+
+	assert(src->nIBuffer != NULL);
+	if (allocateMem) dest->nIBuffer = new float[networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000];
+
 	if (lGrpId == ALL) {
 		ptrPos = 0;
 		length = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000;
+
+		// copy neuron information
+		memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
+		memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
+		memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
 	}
 	else {
-		ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
-		length = MAX_NEURON_MON_GRP_SZIE * 1000;
+		//ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
+		//length = MAX_NEURON_MON_GRP_SZIE * 1000;
+
+		for (int t = 0; t < 1000; t++) {
+			ptrPos = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+			length = MAX_NEURON_MON_GRP_SZIE;
+
+			assert((ptrPos + length) <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
+			assert(length > 0);
+
+			// copy neuron information
+			memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
+			memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
+			memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
+		}
 	}
-	assert(length <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
-	assert(length > 0);
 
+	//int lNId = groupConfigs[netId][lGrpId].lStartN;
+	//int idx = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000 + lNId - groupConfigs[netId][lGrpId].lStartN;
+	//int idx = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000 + 499;
+	//KERNEL_INFO("Source base:%d --- %f --- %f --- %f", idx, src->nVBuffer[idx], src->nUBuffer[idx], src->nIBuffer[idx]);
 	// neuron information
-	assert(src->nVBuffer != NULL);
-	if (allocateMem) dest->nVBuffer = new float[length];
-	memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
+	//assert(src->nVBuffer != NULL);
+	//if (allocateMem) dest->nVBuffer = new float[length];
+	//memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
+	//KERNEL_INFO("Size of float: %d --- ptrpos: %d --- ptrposnext: %d", sizeof(float), &dest->nVBuffer[ptrPos], &dest->nVBuffer[ptrPos+1]);
+	//KERNEL_INFO("Length in bytes: %d --- ptrpos: %d --- ptrposlast: %d", sizeof(float) * length, &src->nVBuffer[ptrPos], &src->nVBuffer[ptrPos+length]);
+	//KERNEL_INFO("MAX_NEURON_MON_GRP_SZIE: %d  --- numGroups: %d --- lGrpId: %d", MAX_NEURON_MON_GRP_SZIE, networkConfigs[netId].numGroups, lGrpId);
 
-	assert(src->nUBuffer != NULL);
-	if (allocateMem) dest->nUBuffer = new float[length];
-	memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
+	// assert(src->nUBuffer != NULL);
+	// if (allocateMem) dest->nUBuffer = new float[length];
+	// memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
+	//
+	// assert(src->nIBuffer != NULL);
+	// if (allocateMem) dest->nIBuffer = new float[length];
+	// memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
 
-	assert(src->nIBuffer != NULL);
-	if (allocateMem) dest->nIBuffer = new float[length];
-	memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
+	//KERNEL_INFO("Dest base:%d --- %f --- %f --- %f", idx, dest->nVBuffer[idx], dest->nUBuffer[idx], dest->nIBuffer[idx]);
+
 }
 
 /*!
@@ -2174,9 +2209,9 @@ void SNN::copySTPState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* sr
 void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* src, bool allocateMem) {
 	if (allocateMem) {
 		assert(dest->memType == CPU_MEM && !dest->allocated);
-		dest->grpDA = new float[networkConfigs[netId].numGroups]; 
-		dest->grp5HT = new float[networkConfigs[netId].numGroups]; 
-		dest->grpACh = new float[networkConfigs[netId].numGroups]; 
+		dest->grpDA = new float[networkConfigs[netId].numGroups];
+		dest->grp5HT = new float[networkConfigs[netId].numGroups];
+		dest->grpACh = new float[networkConfigs[netId].numGroups];
 		dest->grpNE = new float[networkConfigs[netId].numGroups];
 	}
 	memcpy(dest->grpDA, src->grpDA, sizeof(float) * networkConfigs[netId].numGroups);
@@ -2187,9 +2222,9 @@ void SNN::copyGroupState(int netId, int lGrpId, RuntimeData* dest, RuntimeData* 
 	if (lGrpId == ALL) {
 		if (allocateMem) {
 			assert(dest->memType == CPU_MEM && !dest->allocated);
-			dest->grpDABuffer = new float[1000 * networkConfigs[netId].numGroups]; 
-			dest->grp5HTBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
-			dest->grpAChBuffer = new float[1000 * networkConfigs[netId].numGroups]; 
+			dest->grpDABuffer = new float[1000 * networkConfigs[netId].numGroups];
+			dest->grp5HTBuffer = new float[1000 * networkConfigs[netId].numGroups];
+			dest->grpAChBuffer = new float[1000 * networkConfigs[netId].numGroups];
 			dest->grpNEBuffer = new float[1000 * networkConfigs[netId].numGroups];
 		}
 		memcpy(dest->grpDABuffer, src->grpDABuffer, sizeof(float) * 1000 * networkConfigs[netId].numGroups);
@@ -2420,7 +2455,7 @@ void SNN::copyNeuronSpikeCount(int netId, int lGrpId, RuntimeData* dest, Runtime
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperAssignPoissonFiringRate_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -2646,7 +2681,7 @@ void SNN::copySpikeTables(int netId) {
 }
 
 #if !defined(WIN32) && !defined(WIN64) && !defined(__APPLE__) // Linux or MAC
-	// Static multithreading subroutine method - helper for the above method  
+	// Static multithreading subroutine method - helper for the above method
 	void* SNN::helperDeleteRuntimeData_CPU(void* arguments) {
 		ThreadStruct* args = (ThreadStruct*) arguments;
 		//printf("\nThread ID: %lu and CPU: %d\n",pthread_self(), sched_getcpu());
@@ -2654,4 +2689,3 @@ void SNN::copySpikeTables(int netId) {
 		pthread_exit(0);
 	}
 #endif
-
