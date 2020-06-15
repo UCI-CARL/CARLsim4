@@ -102,6 +102,7 @@ void NeuronMonitor::setLogFile(const std::string& fileName) {
 		fid = NULL;
 	} else {
 		fid = fopen(fileName.c_str(),"wb");
+		//printf("%s\n", fileName.c_str());
 		if (fid==NULL) {
 			// default case: print error and exit
 			std::string fileError = " Double-check file permissions and make sure directory exists.";

@@ -6468,7 +6468,7 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		if (numMsMax == 0)
 			numMsMax = 1000; // special case: full second
 		assert(numMsMin < numMsMax);
-		KERNEL_INFO("lastUpdate: %d -- numMsMin: %d -- numMsMax: %d", lastUpdate, numMsMin, numMsMax);
+		//KERNEL_INFO("lastUpdate: %d -- numMsMin: %d -- numMsMax: %d", lastUpdate, numMsMin, numMsMax);
 
 		// current time is last completed second in milliseconds (plus t to be added below)
 		// special case is after each completed second where !getSimTimeMs(): here we look 1s back
@@ -6533,7 +6533,7 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 			}
 		}
 
-		if (nrnFileId != NULL) // flush spike file
+		if (nrnFileId != NULL) // flush neuron state file
 			fflush(nrnFileId);
 	}
 }
