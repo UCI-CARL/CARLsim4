@@ -1490,7 +1490,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 				// save each synapse starting from from neuron lNId
 				for (int t = 0; t < glbNetworkConfig.maxDelay; t++) {
-					DelayInfo dPar = managerRuntimeData.postDelayInfo[lNId*(glbNetworkConfig.maxDelay + 1)];
+					DelayInfo dPar = managerRuntimeData.postDelayInfo[lNId*(glbNetworkConfig.maxDelay + 1)+t];
 
 					for (int idx_d=dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d++) {
 						SynInfo post_info = managerRuntimeData.postSynapticIds[offset + idx_d];
