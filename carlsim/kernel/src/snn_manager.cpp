@@ -61,7 +61,6 @@
 
 #include <spike_buffer.h>
 #include <error_code.h>
-#include <iostream>
 
 // \FIXME what are the following for? why were they all the way at the bottom of this file?
 
@@ -999,7 +998,6 @@ void SNN::exitSimulation(int val) {
 
 // reads network state from file
 void SNN::loadSimulation(FILE* fid) {
-	std::cout << "loadSimFID loaded" << std::endl;
 	loadSimFID = fid;
 }
 
@@ -1459,7 +1457,6 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 
 	if (!saveSynapseInfo) return;
 
-	std::cout << "Save Synapse";
 	// Save number of local networks
 	int net_count = 0;
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
@@ -1468,7 +1465,6 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 		}
 	}
 	if (!fwrite(&net_count, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	std::cout << "net count " << net_count << std::endl;
 
 	// Save weights for each local network
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
@@ -1487,7 +1483,6 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 				}
 			}
 			if (!fwrite(&numSynToSave, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
-			std::cout << "synapse count " << numSynToSave << std::endl;
 			// read synapse info from managerRuntimData
 			int numSynSaved = 0;
 			for (int lNId = 0; lNId < networkConfigs[netId].numNAssigned; lNId++) {
@@ -1523,7 +1518,6 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 						// inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) 
 						if (groupConfigMDMap[gGrpIdPre].netId == netId) {
 							numSynSaved++;
-							std::cout << gGrpIdPre << ", " << gGrpIdPost << ", " << grpNIdPre << ", " << grpNIdPost << ", " << connId << ", " << weight << ", " << maxWeight << ", " << delay << "\n";
 							if (!fwrite(&gGrpIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
 							if (!fwrite(&gGrpIdPost, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
 							if (!fwrite(&grpNIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
@@ -5245,10 +5239,9 @@ void SNN::partitionSNN() {
 	// update ConnectConfig::numberOfConnections
 	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
 	if (loadSimFID == NULL) {
-		std::cout << "Use weight initiazation" << std::endl;
 		connectNetwork();
 	} else {
-		std::cout << "Use load simulation" << std::endl;
+		KERNEL_INFO("Load Simulation");
 		loadSimulation_internal(false);  // true or false doesn't matter here
 	}
 
@@ -5363,7 +5356,6 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 		exitSimulation(-1);
 	}
 
-	std::cout << "Start to load groups" << std::endl;
 
 	// ------- read group information ----------------
 	for (int g=0; g<numGroups; g++) {
@@ -5431,17 +5423,14 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 		exitSimulation(-1);
 	}
 
-	std::cout << "Start to load synapses" << std::endl;
 	// ------- read synapse information ----------------
 	int net_count = 0;
 	result = fread(&net_count, sizeof(int), 1, loadSimFID);
 	readErr |= (result!=1);
 
-	std::cout << "load net_count: " << net_count << std::endl;
 	for (int i = 0; i < net_count; i++) {
 		int synapse_count = 0;
 		result = fread(&synapse_count, sizeof(int), 1, loadSimFID);
-		std::cout << "load synapse_count: " << synapse_count << std::endl;
 		for (int j = 0; j < synapse_count; j++) {
 			int gGrpIdPre;
 			int gGrpIdPost;
