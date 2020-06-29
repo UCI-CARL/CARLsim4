@@ -64,7 +64,7 @@ int main(int argc, const char* argv[]) {
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	// create
-	int gExc2 = sim.createGroup("exc2", 2 * ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc2 = sim.createGroup("exc2", 2 * ONE_NEURON, EXCITATORY_NEURON, 1, CPU_CORES);
 	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
 	int gInput = sim.createSpikeGeneratorGroup("input", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);

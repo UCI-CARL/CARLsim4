@@ -1934,9 +1934,6 @@ void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, Runtim
 		memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
 	}
 	else {
-		//ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
-		//length = MAX_NEURON_MON_GRP_SZIE * 1000;
-
 		for (int t = 0; t < 1000; t++) {
 			ptrPos = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
 			length = MAX_NEURON_MON_GRP_SZIE;
@@ -1950,30 +1947,8 @@ void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, Runtim
 			memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
 		}
 	}
-
-	//int lNId = groupConfigs[netId][lGrpId].lStartN;
-	//int idx = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000 + lNId - groupConfigs[netId][lGrpId].lStartN;
-	//int idx = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000 + 499;
-	//KERNEL_INFO("Source base:%d --- %f --- %f --- %f", idx, src->nVBuffer[idx], src->nUBuffer[idx], src->nIBuffer[idx]);
-	// neuron information
-	//assert(src->nVBuffer != NULL);
-	//if (allocateMem) dest->nVBuffer = new float[length];
-	//memcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length);
-	//KERNEL_INFO("Size of float: %d --- ptrpos: %d --- ptrposnext: %d", sizeof(float), &dest->nVBuffer[ptrPos], &dest->nVBuffer[ptrPos+1]);
-	//KERNEL_INFO("Length in bytes: %d --- ptrpos: %d --- ptrposlast: %d", sizeof(float) * length, &src->nVBuffer[ptrPos], &src->nVBuffer[ptrPos+length]);
-	//KERNEL_INFO("MAX_NEURON_MON_GRP_SZIE: %d  --- numGroups: %d --- lGrpId: %d", MAX_NEURON_MON_GRP_SZIE, networkConfigs[netId].numGroups, lGrpId);
-
-	// assert(src->nUBuffer != NULL);
-	// if (allocateMem) dest->nUBuffer = new float[length];
-	// memcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length);
-	//
-	// assert(src->nIBuffer != NULL);
-	// if (allocateMem) dest->nIBuffer = new float[length];
-	// memcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length);
-
-	//KERNEL_INFO("Dest base:%d --- %f --- %f --- %f", idx, dest->nVBuffer[idx], dest->nUBuffer[idx], dest->nIBuffer[idx]);
-
 }
+
 
 /*!
  * \brief this function allocates memory sapce and copies external current to it
