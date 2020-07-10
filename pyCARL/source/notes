@@ -1,0 +1,6 @@
+swig -c++ -python carlsim.i
+gcc -fPIC -c carlsim_wrap.cxx -I/usr/include/python3.6 -I../carlsim -I../tools -I/usr/local/cuda/include -I/usr/local/cuda/samples/common/inc
+g++ -shared carlsim_wrap.o -o _carlsim.so
+g++ -shared ~/CARL/lib/libcarlsim.a carlsim_wrap.o -o _carlsim.so
+
+python2 setup.py build_ext --inplace --include-dirs /usr/local/cuda/include:/usr/local/cuda/samples/common/inc --define __NO_CUDA__
