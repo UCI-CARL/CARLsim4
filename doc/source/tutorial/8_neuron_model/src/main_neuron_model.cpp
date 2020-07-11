@@ -59,28 +59,39 @@ int main(int argc, const char* argv[]) {
 
 	float wtExc = 40.0f;
 
-	// create 
-	int gExc = sim.createGroup("exc", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
+	// create
+	int gExc = sim.createGroup("exc", ONE_NEURON, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.setNeuronParameters(gExc, 0.02f, 0.2f, -65.0f, 8.0f); // RS
 
-	int gInput = sim.createSpikeGeneratorGroup("input", ONE_NEURON, EXCITATORY_NEURON, 0, CPU_CORES);
+	// create
+	int gExc2 = sim.createGroup("exc2", 2 * ONE_NEURON, EXCITATORY_NEURON, 1, GPU_CORES);
+	sim.setNeuronParameters(gExc2, 0.02f, 0.2f, -65.0f, 8.0f); // RS
+
+	int gInput = sim.createSpikeGeneratorGroup("input", ONE_NEURON, EXCITATORY_NEURON, 0, GPU_CORES);
 
 	// gExc receives input from nSynPerNeur neurons from both gExc and gInh
 	// every neuron in gExc should receive ~nSynPerNeur synapses
 	sim.connect(gInput, gExc, "full", RangeWeight(wtExc), 1.0, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
+	sim.connect(gExc, gExc2, "full", RangeWeight(0.0f, wtExc/2, wtExc), 1.0, RangeDelay(1, 10), RadiusRF(-1), SYN_PLASTIC);
+	sim.setESTDP(gExc2, true, STANDARD, ExpCurve(0.015f, 20.f, 0.005f, 10.0f));
+
 	// run CUBA mode
 	sim.setConductances(false);
 
 	SpikeMonitor* SMexc = sim.setSpikeMonitor(gExc, "DEFAULT");
+	SpikeMonitor* SMexc2 = sim.setSpikeMonitor(gExc2, "DEFAULT");
 	NeuronMonitor* NMexc = sim.setNeuronMonitor(gExc, "DEFAULT");
+	NeuronMonitor* NMexc2 = sim.setNeuronMonitor(gExc2, "DEFAULT");
 
 	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
 
 	// ---------------- RUN STATE -------------------
 	SMexc->startRecording();
+	SMexc2->startRecording();
 	NMexc->startRecording();
+	NMexc2->startRecording();
 
 	// random thalamic input to a single neuron from either gExc or gInh
 	std::vector<float> thalamCurrExc(ONE_NEURON, 10.0f);
@@ -88,17 +99,21 @@ int main(int argc, const char* argv[]) {
 
 	//for (int t = 0; t < 500; t++) {
 
-	
-	
+
+
 		// run for 1 ms, don't generate run stats
-		sim.runNetwork(0,200,false);
+		sim.runNetwork(0,600,false);
 	//}
 	SMexc->stopRecording();
+	SMexc2->stopRecording();
 	NMexc->stopRecording();
+	NMexc2->stopRecording();
 
 	// print firing stats (but not the exact spike times)
 	SMexc->print(false);
+	SMexc2->print(false);
 	NMexc->print();
+	NMexc2->print();
 
 	return 0;
 }
