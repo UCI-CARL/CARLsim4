@@ -1418,7 +1418,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write version number
-	tmpFloat = 0.2f;
+	tmpFloat = 0.3f;
 	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write simulation time so far (in seconds)
@@ -5300,7 +5300,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	// read file version number
 	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
 	readErr |= (result!=1);
-	if (tmpFloat > 0.2f) {
+	if (tmpFloat > 0.3f) {
 		KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
 		exitSimulation(-1);
 	}
