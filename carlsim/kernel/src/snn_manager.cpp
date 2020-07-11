@@ -1418,7 +1418,7 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	if (!fwrite(&tmpInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write version number
-	tmpFloat = 0.2f;
+	tmpFloat = 0.3f;
 	if (!fwrite(&tmpFloat,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write simulation time so far (in seconds)
@@ -1436,9 +1436,9 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 	if (!fwrite(&glbNetworkConfig.numN,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	int dummyInt = 0;
 	//if (!fwrite(&numPreSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	// if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	//if (!fwrite(&numPostSynNet,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
-	if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
+	// if (!fwrite(&dummyInt,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	if (!fwrite(&numGroups,sizeof(int),1,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 
 	//// write group info
@@ -1454,6 +1454,86 @@ void SNN::saveSimulation(FILE* fid, bool saveSynapseInfo) {
 		strncpy(name,groupConfigMap[gGrpId].grpName.c_str(),100);
 		if (!fwrite(name,1,100,fid)) KERNEL_ERROR("saveSimulation fwrite error");
 	}
+
+	if (!saveSynapseInfo) return;
+
+	// Save number of local networks
+	int net_count = 0;
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			net_count++;
+		}
+	}
+	if (!fwrite(&net_count, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+
+	// Save weights for each local network
+	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
+		if (!groupPartitionLists[netId].empty()) {
+			// copy from runtimeData to managerRuntimeData
+			fetchPreConnectionInfo(netId);
+			fetchPostConnectionInfo(netId);
+			fetchConnIdsLookupArray(netId);
+			fetchSynapseState(netId);
+
+			// save number of synapses that starting from local groups
+			int numSynToSave = 0;
+			for (std::list<GroupConfigMD>::iterator grpIt = groupPartitionLists[netId].begin(); grpIt != groupPartitionLists[netId].end(); grpIt++) {
+				if (grpIt->netId == netId) {
+					numSynToSave += grpIt->numPostSynapses;
+				}
+			}
+			if (!fwrite(&numSynToSave, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+			// read synapse info from managerRuntimData
+			int numSynSaved = 0;
+			for (int lNId = 0; lNId < networkConfigs[netId].numNAssigned; lNId++) {
+				unsigned int offset = managerRuntimeData.cumulativePost[lNId];
+
+				// save each synapse starting from from neuron lNId
+				for (int t = 0; t < glbNetworkConfig.maxDelay; t++) {
+					DelayInfo dPar = managerRuntimeData.postDelayInfo[lNId*(glbNetworkConfig.maxDelay + 1)+t];
+
+					for (int idx_d=dPar.delay_index_start; idx_d < (dPar.delay_index_start + dPar.delay_length); idx_d++) {
+						SynInfo post_info = managerRuntimeData.postSynapticIds[offset + idx_d];
+						int lNIdPost = GET_CONN_NEURON_ID(post_info);
+						int lGrpIdPost = GET_CONN_GRP_ID(post_info);
+						int preSynId = GET_CONN_SYN_ID(post_info);
+						int pre_pos = managerRuntimeData.cumulativePre[lNIdPost] + preSynId;
+						SynInfo pre_info = managerRuntimeData.preSynapticIds[pre_pos];
+						int lNIdPre = GET_CONN_NEURON_ID(pre_info);
+						int lGrpIdPre = GET_CONN_GRP_ID(pre_info);
+						float weight = managerRuntimeData.wt[pre_pos];
+						float maxWeight = managerRuntimeData.maxSynWt[pre_pos];
+						int connId = managerRuntimeData.connIdsPreIdx[pre_pos];
+						int delay = t+1;
+
+						// convert local group id to global group id
+						// convert local neuron id to neuron order in group
+						int gGrpIdPre = groupConfigs[netId][lGrpIdPre].gGrpId;
+						int gGrpIdPost = groupConfigs[netId][lGrpIdPost].gGrpId;
+						int grpNIdPre = lNId - groupConfigs[netId][lGrpIdPre].lStartN;
+						int grpNIdPost = lNIdPost - groupConfigs[netId][lGrpIdPost].lStartN;
+
+						// we only save synapses starting from local groups since otherwise we will save external synapses twice 
+						// write order is based on function connectNeurons (no NetId & external_NetId)
+						// inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc, int _nDest, short int _connId, float initWt, float maxWt, uint8_t delay, int externalNetId) 
+						if (groupConfigMDMap[gGrpIdPre].netId == netId) {
+							numSynSaved++;
+							if (!fwrite(&gGrpIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&gGrpIdPost, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&grpNIdPre, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&grpNIdPost, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&connId, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&weight, sizeof(float), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&maxWeight, sizeof(float), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+							if (!fwrite(&delay, sizeof(int), 1, fid)) KERNEL_ERROR("saveSimulation fwrite error");
+						}
+					}
+				}
+			}
+			assert(numSynSaved == numSynToSave);
+		}
+	}
+
 
 	//// +++++ Fetch WEIGHT DATA (GPU Mode only) ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 	//if (simMode_ == GPU_MODE)
@@ -5158,7 +5238,12 @@ void SNN::partitionSNN() {
 	// generation connections among groups according to group and connect configs
 	// update ConnectConfig::numberOfConnections
 	// update GroupConfig::numPostSynapses, GroupConfig::numPreSynapses
-	connectNetwork();
+	if (loadSimFID == NULL) {
+		connectNetwork();
+	} else {
+		KERNEL_INFO("Load Simulation");
+		loadSimulation_internal(false);  // true or false doesn't matter here
+	}
 
 	collectGlobalNetworkConfigP();
 
@@ -5188,63 +5273,64 @@ void SNN::partitionSNN() {
 }
 
 int SNN::loadSimulation_internal(bool onlyPlastic) {
-	//// TSC: so that we can restore the file position later...
-	//// MB: not sure why though...
-	//long file_position = ftell(loadSimFID);
-	//
-	//int tmpInt;
-	//float tmpFloat;
+	// TSC: so that we can restore the file position later...
+	// MB: not sure why though...
+	long file_position = ftell(loadSimFID);
+	
+	int tmpInt;
+	float tmpFloat;
 
-	//bool readErr = false; // keep track of reading errors
-	//size_t result;
+	bool readErr = false; // keep track of reading errors
+	size_t result;
 
 
-	//// ------- read header ----------------
+	// ------- read header ----------------
 
-	//fseek(loadSimFID, 0, SEEK_SET);
+	fseek(loadSimFID, 0, SEEK_SET);
 
-	//// read file signature
-	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//readErr |= (result!=1);
-	//if (tmpInt != 294338571) {
-	//	KERNEL_ERROR("loadSimulation: Unknown file signature. This does not seem to be a "
-	//		"simulation file created with CARLsim::saveSimulation.");
-	//	exitSimulation(-1);
-	//}
+	// read file signature
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != 294338571) {
+		KERNEL_ERROR("loadSimulation: Unknown file signature. This does not seem to be a "
+			"simulation file created with CARLsim::saveSimulation.");
+		exitSimulation(-1);
+	}
 
-	//// read file version number
-	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	//readErr |= (result!=1);
-	//if (tmpFloat > 0.2f) {
-	//	KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
-	//	exitSimulation(-1);
-	//}
+	// read file version number
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpFloat > 0.3f) {
+		KERNEL_ERROR("loadSimulation: Unsupported version number (%f)",tmpFloat);
+		exitSimulation(-1);
+	}
 
-	//// read simulation time
-	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	//readErr |= (result!=1);
+	// read simulation time
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
 
-	//// read execution time
-	//result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
-	//readErr |= (result!=1);
+	// read execution time
+	result = fread(&tmpFloat, sizeof(float), 1, loadSimFID);
+	readErr |= (result!=1);
 
-	//// read number of neurons
-	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//readErr |= (result!=1);
-	//if (tmpInt != numN) {
-	//	KERNEL_ERROR("loadSimulation: Number of neurons in file (%d) and simulation (%d) don't match.",
-	//		tmpInt, numN);
-	//	exitSimulation(-1);
-	//}
+	// read number of neurons
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != glbNetworkConfig.numN) {
+		KERNEL_ERROR("loadSimulation: Number of neurons in file (%d) and simulation (%d) don't match.",
+			tmpInt, glbNetworkConfig.numN);
+		exitSimulation(-1);
+	}
 
-	//// read number of pre-synapses
-	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//readErr |= (result!=1);
-	//if (numPreSynNet != tmpInt) {
-	//	KERNEL_ERROR("loadSimulation: numPreSynNet in file (%d) and simulation (%d) don't match.",
-	//		tmpInt, numPreSynNet);
-	//	exitSimulation(-1);
-	//}
+	// skip save and read pre-synapses & post-synapses in CARLsim4 since they are now netID based
+	// read number of pre-synapses
+	// result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	// readErr |= (result!=1);
+	// if (numPreSynNet != tmpInt) {
+	// 	KERNEL_ERROR("loadSimulation: numPreSynNet in file (%d) and simulation (%d) don't match.",
+	// 		tmpInt, numPreSynNet);
+	// 	exitSimulation(-1);
+	// }
 
 	//// read number of post-synapses
 	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
@@ -5255,105 +5341,87 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	//	exitSimulation(-1);
 	//}
 
-	//// read number of groups
-	//result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//readErr |= (result!=1);
-	//if (tmpInt != numGroups) {
-	//	KERNEL_ERROR("loadSimulation: Number of groups in file (%d) and simulation (%d) don't match.",
-	//		tmpInt, numGroups);
-	//	exitSimulation(-1);
-	//}
+	// read number of groups
+	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
+	if (tmpInt != numGroups) {
+		KERNEL_ERROR("loadSimulation: Number of groups in file (%d) and simulation (%d) don't match.",
+			tmpInt, numGroups);
+		exitSimulation(-1);
+	}
 
-	//// throw reading error instead of proceeding
-	//if (readErr) {
-	//	fprintf(stderr,"loadSimulation: Error while reading file header");
-	//	exitSimulation(-1);
-	//}
-
-
-	//// ------- read group information ----------------
-
-	//for (int g=0; g<numGroups; g++) {
-	//	// read StartN
-	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
-	//	if (tmpInt != groupConfigs[0][g].StartN) {
-	//		KERNEL_ERROR("loadSimulation: StartN in file (%d) and grpInfo (%d) for group %d don't match.",
-	//			tmpInt, groupConfigs[0][g].StartN, g);
-	//		exitSimulation(-1);
-	//	}
-
-	//	// read EndN
-	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
-	//	if (tmpInt != groupConfigs[0][g].EndN) {
-	//		KERNEL_ERROR("loadSimulation: EndN in file (%d) and grpInfo (%d) for group %d don't match.",
-	//			tmpInt, groupConfigs[0][g].EndN, g);
-	//		exitSimulation(-1);
-	//	}
-
-	//	// read SizeX
-	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
-
-	//	// read SizeY
-	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
-
-	//	// read SizeZ
-	//	result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
-
-	//	// read group name
-	//	char name[100];
-	//	result = fread(name, sizeof(char), 100, loadSimFID);
-	//	readErr |= (result!=100);
-	//	if (strcmp(name,groupInfo[g].Name.c_str()) != 0) {
-	//		KERNEL_ERROR("loadSimulation: Group names in file (%s) and grpInfo (%s) don't match.", name,
-	//			groupInfo[g].Name.c_str());
-	//		exitSimulation(-1);
-	//	}
-	//}
-
-	//if (readErr) {
-	//	KERNEL_ERROR("loadSimulation: Error while reading group info");
-	//	exitSimulation(-1);
-	//}
+	// throw reading error instead of proceeding
+	if (readErr) {
+		fprintf(stderr,"loadSimulation: Error while reading file header");
+		exitSimulation(-1);
+	}
 
 
-	//// ------- read synapse information ----------------
+	// ------- read group information ----------------
+	for (int g=0; g<numGroups; g++) {
+		// read StartN
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != groupConfigMDMap[g].gStartN) {
+			KERNEL_ERROR("loadSimulation: StartN in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, groupConfigMDMap[g].gStartN, g);
+			exitSimulation(-1);
+		}
 
-	//for (int i = 0; i < numN; i++) {
-	//	int nrSynapses = 0;
+		// read EndN
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != groupConfigMDMap[g].gEndN) {
+			KERNEL_ERROR("loadSimulation: EndN in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, groupConfigMDMap[g].gEndN, g);
+			exitSimulation(-1);
+		}
 
-	//	// read number of synapses
-	//	result = fread(&nrSynapses, sizeof(int), 1, loadSimFID);
-	//	readErr |= (result!=1);
+		// read SizeX
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != groupConfigMap[g].grid.numX) {
+			KERNEL_ERROR("loadSimulation: numX in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, groupConfigMap[g].grid.numX, g);
+			exitSimulation(-1);
+		}
 
-	//	for (int j=0; j<nrSynapses; j++) {
-	//		int nIDpre;
-	//		int nIDpost;
-	//		float weight, maxWeight;
-	//		uint8_t delay;
-	//		uint8_t plastic;
-	//		short int connId;
 
-	//		// read nIDpre
-	//		result = fread(&nIDpre, sizeof(int), 1, loadSimFID);
-	//		readErr |= (result!=1);
-	//		if (nIDpre != i) {
-	//			KERNEL_ERROR("loadSimulation: nIDpre in file (%u) and simulation (%u) don't match.", nIDpre, i);
-	//			exitSimulation(-1);
-	//		}
+		// read SizeY
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != groupConfigMap[g].grid.numY) {
+			KERNEL_ERROR("loadSimulation: numY in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, groupConfigMap[g].grid.numY, g);
+			exitSimulation(-1);
+		}
 
-	//		// read nIDpost
-	//		result = fread(&nIDpost, sizeof(int), 1, loadSimFID);
-	//		readErr |= (result!=1);
-	//		if (nIDpost >= numN) {
-	//			KERNEL_ERROR("loadSimulation: nIDpre in file (%u) is larger than in simulation (%u).", nIDpost, numN);
-	//			exitSimulation(-1);
-	//		}
 
+		// read SizeZ
+		result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
+		readErr |= (result!=1);
+		if (tmpInt != groupConfigMap[g].grid.numZ) {
+			KERNEL_ERROR("loadSimulation: numZ in file (%d) and grpInfo (%d) for group %d don't match.",
+				tmpInt, groupConfigMap[g].grid.numZ, g);
+			exitSimulation(-1);
+		}
+
+
+		// read group name
+		char name[100];
+		result = fread(name, sizeof(char), 100, loadSimFID);
+		readErr |= (result!=100);
+		if (strcmp(name,groupConfigMap[g].grpName.c_str()) != 0) {
+			KERNEL_ERROR("loadSimulation: Group names in file (%s) and grpInfo (%s) don't match.", name,
+				groupConfigMap[g].grpName.c_str());
+			exitSimulation(-1);
+		}
+	}
+
+	if (readErr) {
+		KERNEL_ERROR("loadSimulation: Error while reading group info");
+		exitSimulation(-1);
+	}
 	//		// read weight
 	//		result = fread(&weight, sizeof(float), 1, loadSimFID);
 	//		readErr |= (result!=1);
@@ -5378,39 +5446,146 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 	//			exitSimulation(-1);
 	//		}
 
-	//		// read delay
-	//		result = fread(&delay, sizeof(uint8_t), 1, loadSimFID);
-	//		readErr |= (result!=1);
-	//		if (delay > MAX_SYN_DELAY) {
-	//			KERNEL_ERROR("loadSimulation: delay in file (%d) is larger than MAX_SYN_DELAY (%d)",
-	//				(int)delay, (int)MAX_SYN_DELAY);
-	//			exitSimulation(-1);
-	//		}
+	// ------- read synapse information ----------------
+	int net_count = 0;
+	result = fread(&net_count, sizeof(int), 1, loadSimFID);
+	readErr |= (result!=1);
 
-	//		assert(!isnan(weight));
-	//		// read plastic/fixed
-	//		result = fread(&plastic, sizeof(uint8_t), 1, loadSimFID);
-	//		readErr |= (result!=1);
+	for (int i = 0; i < net_count; i++) {
+		int synapse_count = 0;
+		result = fread(&synapse_count, sizeof(int), 1, loadSimFID);
+		for (int j = 0; j < synapse_count; j++) {
+			int gGrpIdPre;
+			int gGrpIdPost;
+			int grpNIdPre;
+			int grpNIdPost;
+			int connId;
+			float weight;
+			float maxWeight;
+			int delay;
 
-	//		// read connection ID
-	//		result = fread(&connId, sizeof(short int), 1, loadSimFID);
-	//		readErr |= (result!=1);
+			// read gGrpIdPre
+			result = fread(&gGrpIdPre, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
 
-	//		if ((plastic && onlyPlastic) || (!plastic && !onlyPlastic)) {
-	//			int gIDpost = managerRuntimeData.grpIds[nIDpost];
-	//			int connProp = SET_FIXED_PLASTIC(plastic?SYN_PLASTIC:SYN_FIXED);
+			// read gGrpIdPost
+			result = fread(&gGrpIdPost, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
 
-	//			//setConnection(gIDpre, gIDpost, nIDpre, nIDpost, weight, maxWeight, delay, connProp, connId);
-	//			groupInfo[gIDpre].sumPostConn++;
-	//			groupInfo[gIDpost].sumPreConn++;
+			// read grpNIdPre
+			result = fread(&grpNIdPre, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
 
-	//			if (delay > groupConfigs[0][gIDpre].MaxDelay)
-	//				groupConfigs[0][gIDpre].MaxDelay = delay;
-	//		}
-	//	}
-	//}
+			// read grpNIdPost
+			result = fread(&grpNIdPost, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
 
-	//fseek(loadSimFID,file_position,SEEK_SET);
+			// read connId
+			result = fread(&connId, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
+
+			// read weight
+			result = fread(&weight, sizeof(float), 1, loadSimFID);
+			readErr != (result!=1);
+
+			// read maxWeight
+			result = fread(&maxWeight, sizeof(float), 1, loadSimFID);
+			readErr != (result!=1);
+
+			// read delay
+			result = fread(&delay, sizeof(int), 1, loadSimFID);
+			readErr != (result!=1);
+
+			// check connection
+			if (connectConfigMap[connId].grpSrc != gGrpIdPre) {
+				KERNEL_ERROR("loadSimulation: source group in file (%d) and in simulation (%d) for connection %d don't match.",
+					gGrpIdPre , connectConfigMap[connId].grpSrc, connId);
+				exitSimulation(-1);
+			}
+
+			if (connectConfigMap[connId].grpDest != gGrpIdPost) {
+				KERNEL_ERROR("loadSimulation: dest group in file (%d) and in simulation (%d) for connection %d don't match.",
+					gGrpIdPost , connectConfigMap[connId].grpDest, connId);
+				exitSimulation(-1);
+			}
+
+			// connect synapse
+			// find netid for two groups
+			int netIdPre = groupConfigMDMap[gGrpIdPre].netId;
+			int netIdPost = groupConfigMDMap[gGrpIdPost].netId;
+			bool isExternal = (netIdPre != netIdPost);
+
+			// find global neuron id for two neurons
+			int globalNIdPre = groupConfigMDMap[gGrpIdPre].gStartN + grpNIdPre;
+			int globalNIdPost = groupConfigMDMap[gGrpIdPost].gStartN + grpNIdPost;
+
+			bool connected =false;
+			if (!isExternal) {
+				for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netIdPre].begin(); connIt != localConnectLists[netIdPre].end() && (!connected); connIt++) {
+					if (connIt->connId == connId) {
+						// connect two neurons
+						connectNeurons(netIdPre, gGrpIdPre, gGrpIdPost, globalNIdPre, globalNIdPost, connId, weight, maxWeight, delay,  -1);
+						connected = true;
+						// update connection information
+						connIt->numberOfConnections++;
+						std::list<GroupConfigMD>::iterator grpIt;
+
+						// fix me maybe: numPostSynapses and numPreSynpases could also be loaded from saved information directly to save time
+						// the current implementation is a safer one
+						GroupConfigMD targetGrp;
+
+						targetGrp.gGrpId = gGrpIdPre;
+						grpIt = std::find(groupPartitionLists[netIdPre].begin(), groupPartitionLists[netIdPre].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPre].end());
+						grpIt->numPostSynapses += 1;
+
+						targetGrp.gGrpId = gGrpIdPost;
+						grpIt = std::find(groupPartitionLists[netIdPre].begin(), groupPartitionLists[netIdPre].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPost].end());
+						grpIt->numPreSynapses += 1;
+					}
+				}
+			} else {
+				for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netIdPre].begin(); connIt != externalConnectLists[netIdPre].end() && (!connected); connIt++) {
+					if (connIt->connId == connId) {
+						// connect two neurons
+						connectNeurons(netIdPre, gGrpIdPre, gGrpIdPost, globalNIdPre, globalNIdPost, connId, weight, maxWeight, delay, netIdPost);
+						connected = true;
+						// update connection information
+						connIt->numberOfConnections++;
+
+						// fix me maybe: numPostSynapses and numPreSynpases could also be loaded from saved information directly to save time
+						// the current implementation is a safer one
+						GroupConfigMD targetGrp;
+						std::list<GroupConfigMD>::iterator grpIt;
+
+						targetGrp.gGrpId = gGrpIdPre;
+						grpIt = std::find(groupPartitionLists[netIdPre].begin(), groupPartitionLists[netIdPre].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPre].end());
+						grpIt->numPostSynapses += 1;
+
+						targetGrp.gGrpId = gGrpIdPost;
+						grpIt = std::find(groupPartitionLists[netIdPre].begin(), groupPartitionLists[netIdPre].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPost].end());
+						grpIt->numPreSynapses += 1;
+
+						// update group information in another network
+						targetGrp.gGrpId = gGrpIdPre;
+						grpIt = std::find(groupPartitionLists[netIdPost].begin(), groupPartitionLists[netIdPost].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPost].end());
+						grpIt->numPostSynapses += 1;
+
+						targetGrp.gGrpId = gGrpIdPost;
+						grpIt = std::find(groupPartitionLists[netIdPost].begin(), groupPartitionLists[netIdPost].end(), targetGrp);
+						assert(grpIt != groupPartitionLists[netIdPost].end());
+						grpIt->numPreSynapses += 1;
+					}
+				}
+			}
+		}
+	}
+
+	fseek(loadSimFID,file_position,SEEK_SET);
 
 	return 0;
 }

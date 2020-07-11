@@ -19,14 +19,14 @@ classdef SimulationReader < handle
     %
     % To read all the synapse information in MATLAB, use an optional input
     % argument loadSynapseInfo:
-    % >> SR = SimulationReader('results/sim_random'dat',true);
-    % >> hist(SR.sim.syn_weights)
+    % >> SR = SimulationReader('results/sim_[netName].dat',true);
+    % >> hist(SR.syns.weights)
     %
-    % Note: Use of syn_* properties is deprecated. Use ConnectionMonitor or
-    % ConnectionReader instead.
     %
-    % Version 5/21/2015
+    % Version 7/11/2020
     % Author: Michael Beyeler <mbeyeler@uci.edu>
+    % Updated by: Kexin Chen <kexinc3@uci.edu>
+    
     
     %% PROPERTIES
     % public
@@ -36,12 +36,8 @@ classdef SimulationReader < handle
         sim;                % a struct that contains general information
                             % about the simulation and the network
         groups;             % a struct that contains all group info
-        syn_preIDs;
-        syn_postIDs;
-        syn_weights;
-        syn_maxWeights;
-        syn_plastic;
-        syn_delays;
+
+        syns;               % a struct that contains all synapse info
     end
 
     % private
@@ -91,10 +87,10 @@ classdef SimulationReader < handle
             obj.fileId = -1;
             obj.fileSignature = 294338571;
             obj.fileVersionMajor = 0;
-            obj.fileVersionMinor = 2;
+            obj.fileVersionMinor = 3;
 
-			% disable backtracing for warnings and errors
-			warning off backtrace
+            % disable backtracing for warnings and errors
+            warning off backtrace
         end
         
         function privOpenFile(obj, loadSynapseInfo)
@@ -131,7 +127,7 @@ classdef SimulationReader < handle
                     num2str(version) ' found'])
             end
             if feof(fid) ...
-					|| floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
+                    || floor((version-obj.fileVersionMajor)*10.01)<obj.fileVersionMinor
                 % check minor number: extract first digit after decimal point
                 % multiply 10.01 instead of 10 to avoid float rounding errors
                 error(['File version must be >= ' ...
@@ -153,8 +149,8 @@ classdef SimulationReader < handle
             
             % read network info
             sim.nNeurons      = fread(fid,1,'int32');
-            sim.nSynapsesPre  = fread(fid,1,'int32');
-            sim.nSynapsesPost = fread(fid,1,'int32');
+%             sim.nSynapsesPre  = fread(fid,1,'int32');
+%             sim.nSynapsesPost = fread(fid,1,'int32');
             sim.nGroups       = fread(fid,1,'int32');
             % \TODO more params could be added:
             % sim_with_fixedwts
@@ -166,14 +162,14 @@ classdef SimulationReader < handle
             % sim_with_homeostasis
             % sim_with_stp
             obj.sim = sim;
-			
+            
             
             %% READ GROUPS
-            groups = struct('name',{},'startN',{},'endN',{},'sizeN',{},'grid3D',{});
+            groups = struct('name',{},'groupId',{},'startN',{},'endN',{},'sizeN',{},'grid3D',{});
             for g=1:sim.nGroups
                 groups(g).startN = fread(fid,1,'int32'); % start index at 0
                 groups(g).endN = fread(fid,1,'int32');
-                groups(g).sizeN = groups(g).endN-groups(g).startN+1;
+%                 groups(g).sizeN = groups(g).endN-groups(g).startN+1;
 
                 sizeX = fread(fid,1,'int32');
                 sizeY = fread(fid,1,'int32');
@@ -182,35 +178,41 @@ classdef SimulationReader < handle
 
                 groups(g).name = char(fread(fid,100,'int8')');
                 groups(g).name = groups(g).name(groups(g).name>0);
+                groups(g).groupId = g-1;
             end
             obj.groups = groups;
             
             %% READ SYNAPSES
             % reading synapse info is optional
             if loadSynapseInfo
-                weightData = cell(sim.nNeurons,1);
-                nrSynTot = 0;
-                for i=1:sim.nNeurons
+                syns = struct();
+                netCount = fread(fid,1,'int32');
+                weightData = cell(netCount,1);
+                for n=1:netCount
                     nrSyn = fread(fid,1,'int32');
-                    nrSynTot = nrSynTot + nrSyn;
-                    if nrSyn>0
-                        weightData{i} = fread(fid,[18 nrSyn],'uint8=>uint8');
-                    end
-				end
-				
+                    weightData{n} = fread(fid,[32 nrSyn],'uint8=>uint8'); 
+                end
                 alldata = cat(2,weightData{:});
-                clear weightData;
+                % pre-synaptic group id
+                syns.gGrpIdPre = typecast(reshape(alldata(1:4,:),[],1),'uint32');
+                % post-synaptic group id
+                syns.gGrpIdPost = typecast(reshape(alldata(5:8,:),[],1),'uint32');
+                % pre-synaptic neuron id within group
+                syns.grpNIdPre = typecast(reshape(alldata(9:12,:),[],1),'uint32');
+                % post-synaptic neuron id within group
+                syns.grpNIdPost = typecast(reshape(alldata(13:16,:),[],1),'uint32');
+                % global inter-group connection id
+                syns.connId = typecast(reshape(alldata(17:20,:),[],1),'uint32');
+                % weight values
+                syns.weights = typecast(reshape(alldata(21:24,:),[],1),'single');
+                % maximum weight value for this synapse
+                syns.maxWeights = typecast(reshape(alldata(25:28,:),[],1),'single');
+                % delay 
+                syns.delays = typecast(reshape(alldata(29:32,:),[],1),'uint32');
                 
-                obj.syn_preIDs = typecast(reshape(alldata(1:4,:),[],1),'uint32');
-                obj.syn_postIDs = typecast(reshape(alldata(5:8,:),[],1),'uint32');
-                obj.syn_weights = typecast(reshape(alldata(9:12,:),[],1),'single');
-                obj.syn_maxWeights = typecast(reshape(alldata(13:16,:),[],1),'single');
-                obj.syn_delays = alldata(17,:);
-                obj.syn_plastic = alldata(18,:);
-            end
-            
+                obj.syns = syns;
+            end 
             obj.fileId = fid;
-            
         end
     end
 end
