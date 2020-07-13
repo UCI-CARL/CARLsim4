@@ -52,8 +52,7 @@ sim.setup(timestep=0.01, min_delay=1.0, netName = netName, simMode = simMode, lo
 numNeurons = 1 
 
 # define the neuron groups
-inputCellType = spikeType = sim.SpikeSourcePoisson(neuronType="EXCITATORY_NEURON", rate=50)
-#inputCellType = sim.SpikeSourceArray("EXCITATORY_NEURON", )
+inputCellType = sim.SpikeSourcePoisson(neuronType="EXCITATORY_NEURON", rate=50)
 spike_source = sim.Population(numNeurons, inputCellType)
 
 izhikevichCellType = sim.Izhikevich(neuronType="EXCITATORY_NEURON", a=0.02, b=0.2, c=-65, d=6)
@@ -62,7 +61,7 @@ neuron_group1 = sim.Population(numNeurons, izhikevichCellType)
 
 # connect the neuron groups
 #connection = sim.Projection(spike_source, neuron_group1, sim.OneToOneConnector(),receptor_type='excitatory')
-connection = sim.Projection(spike_source, neuron_group1, sim.AllToAllConnector(), sim.StaticSynapse(weight=3.0, delay=4.0), receptor_type='excitatory')
+connection = sim.Projection(spike_source, neuron_group1, sim.AllToAllConnector(), sim.StaticSynapse(weight=3.0, delay=4.0))
 
 sim.state.network.setConductances(False)
 

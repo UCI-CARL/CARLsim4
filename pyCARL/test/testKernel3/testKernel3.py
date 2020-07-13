@@ -59,5 +59,7 @@ stdp_model = sim.STDPMechanism(
 
 connection = sim.Projection(spike_source, neurons, sim.OneToOneConnector(), stdp_model, receptor_type='excitatory')
 
+sim.state.network.setConductances(False)
+
 sim.run(100)
 
