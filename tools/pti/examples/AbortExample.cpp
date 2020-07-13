@@ -1,7 +1,8 @@
 /*! \brief A program that demonstrates the occurence of a fatal error while using
  &  PTI to load parameters and run an Experiment.
  * 
- * The "Experiment"  
+ * This is intended for testing: run an optimization package on this program to test how
+ * it logs errors when the objective function croaks.
  */
 #include "PTI.h"
 #include "Experiment.h"
