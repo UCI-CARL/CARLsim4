@@ -8,7 +8,6 @@ print(time.time() - t)
 # Configure the application (i.e) configure the additional
 # simualator parameters
 
-t = time.time()
 sim, options = get_simulator(("netName", "String for name of simulation"),("--gpuMode", "Enable GPU_MODE (CPU_MODE by default)", {"action":"store_true"}), ("logMode", "Enter logger mode (USER by default)", {"default":"USER"}), ("ithGPUs", "Number of GPUs"), ("randSeed", "Random seed"))
 
 ##################################################################
@@ -60,7 +59,6 @@ neuron_group1 = sim.Population(numNeurons, izhikevichCellType)
 
 
 # connect the neuron groups
-#connection = sim.Projection(spike_source, neuron_group1, sim.OneToOneConnector(),receptor_type='excitatory')
 connection = sim.Projection(spike_source, neuron_group1, sim.AllToAllConnector(), sim.StaticSynapse(weight=3.0, delay=4.0))
 
 sim.state.network.setConductances(False)
@@ -68,13 +66,8 @@ sim.state.network.setConductances(False)
 # function has to be called before any record function is called. 
 neuron_group1.record('spikes')
 
-
 # run the simulation for 100ms
 sim.run(100)
 sim.state.network.setExternalCurrent(1, 70)
 sim.run(900)
-
-print(time.time() - t)
-#t = time.time()
-# start the recording of the groups
 

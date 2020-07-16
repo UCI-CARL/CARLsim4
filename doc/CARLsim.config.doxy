@@ -685,6 +685,7 @@ INPUT                  = ../carlsim/interface/inc \
                          source/user_guide/11_regression_suite \
                          source/user_guide/12_advanced_topics \
                          source/user_guide/13_example_networks \
+                         source/user_guide/14_pycarl \
                          source/tutorial/1_basic_concepts/doc \
                          source/tutorial/2_random_spnet/doc \
                          source/tutorial/3_plasticity/doc \
