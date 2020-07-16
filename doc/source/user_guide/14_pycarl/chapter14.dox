@@ -1,0 +1,174 @@
+/*!
+
+\page ch14_pyCARL Chapter 14: pyCARL
+
+\tableofcontents
+
+\section ch14s1_preinstallation 14.1 Pre-Installation
+\author Adarsha Balaji
+
+pyCARL is an interface between a pyNN front-end and a CARLsim back-end.
+
+pyCARL requires the installation of pyNN and CARLsim and runs on generic x86 CPUs.  
+
+pyCARL works with Python2.x and Python3.x.  
+
+The rest of the chapter discusses the steps required to install pyCARL and its dependencies, and the funcitonalities and APIs supported by pyCARL.  
+
+
+\subsection ch14s1s1_os 14.1.1 Supported Operating Systems
+pyCARL has been tested on the following platforms:
+- Ubuntu 16.04
+
+\section ch14s2_installation 14.2 Installation
+\author Adarsha Balaji
+
+pyCARL is available as a part of the CARLsim repository in Github.
+
+
+\subsection ch14s2s2_pyNN 14.2.1 Installing PyNN
+
+You may install pyNN using the following command:
+
+\code
+$ pip install pyNN
+\endcode
+
+or, you may follow the installation instructions at <a href="http://neuralensemble.org/docs/PyNN/installation.html">pyNN</a>.
+
+\subsection ch14s2s3_pyCARL 14.2.2 Installation pyCARL
+PyCARL is a PyNN-based common Python programming interface that integrates a pyNN front-end to a CARLsim back-end. 
+
+\subsubsection ch14s2s1s1_CARLsim Clone and install the latest development version of CARLsim5. 
+
+\code
+$ git clone --recursive https://github.com/UCI-CARL/CARLsim5.git
+$ cd CARLsim5
+\endcode
+
+Alternatively, you may download the latest stable release from the
+<a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
+
+For installation instructions on Linux and Mac OS X platforms, please refer to \ref ch1s2s1_linux.
+
+\subsubsection ch14s2s1s1_pyCARL Navigate to the pyCARL source code and copy its contents to the pyNN installation root.
+
+\code
+$ cd CARLsim5/pyCARL
+$ cp -r CARLsim5/pyCARL/carlsim <pyNN_installation_ root>
+\endcode
+
+\section ch14s3_features 14.3 Features supported by pyCARL
+
+\subsection ch14s3s1_run 14.3.1 Running PyNN with CARLsim:
+
+\code 
+Command: python <application>.py <pyNN_backend> <application_name> <log_mode> <ithGPUs> <randSeed>
+
+$ python test.py carlsim "test" USER 1 42
+\endcode
+
+\subsection ch14s3s2_neuronmodel 14.3.2 Neuron Models: 
+pyCARL currently supports Izhikevich spiking neurons with either current-based or conductance-based synapses. Support for LIF neurons is planned for the future. 
+Different groups of neurons can be created from a one-dimensional array to a three-dimensional grid.
+
+\subsubsection ch14s3s2s1_neuronmodel Neuron Type:
+ To create a group (Population) of Izhikevich neurons, first create a Izhikevich cellType and define its properties, as shown below:
+\code
+izhikevichCellType = sim.Izhikevich(neuronType="EXCITATORY_NEURON", a=0.02, b=0.2, c=-65, d=6)
+\endcode
+
+Here, neuronType="EXCITATORY" denotes that the neurons in the group are glutamatergic. Neurons with GABAergic synapses are supported with the INHIBITORY_NEURON keyword.
+The Izhikevich neuron parameters (a,b,c and d) are also specified in this function. 
+
+
+\subsubsection ch14s3s2s2_neuronmodel Create Group:
+Next, create a Group/Population of the above defined neuron type as follows:
+\code
+neuron_group1 = sim.Population(numNeurons, izhikevichCellType)
+\endcode
+
+Here, numNeurons represents the number of neurons in the group. 
+
+
+\subsection ch14s3s3_synapse 14.3.3 Synapse: 
+Once the neuron groups have been defined, the synaptic connections between them can be defined using Projections in pyNN (shown below).
+To connect two neuron groups (eg. neuron_group1 and neuron_group2) using an all-to-all connector:
+\code
+connection = sim.Projection(neuron_group1, neuron_group2, sim.AllToAllConnector(), sim.StaticSynapse(weight=3.0, delay=4.0))
+\endcode
+
+\subsubsection ch14s3s3s1_connector Connector Types:
+In PyNN, each different algorithm that can be used to determine which pre-synaptic neurons are connected to which post-synaptic neurons 
+
+The pyCARL interface currently supports the following connectors: 
+-# AllToAllConnector - Each neuron in the pre-synaptic population is connected to every neuron in the post-synaptic population. 
+-# OneToOneConnector - The neuron with index i in the pre-synaptic population is then connected to the neuron with index i in the post-synaptic population.
+-# FixedProbabilityConnector - Each possible connection between all pre-synaptic neurons and all post-synaptic neurons is created with probability p.
+
+\subsection ch14s3s4_model 14.3.4 Synapse Models:
+
+Static Synapse - A fixed weight and delay synapse. 
+\code
+synapse = sim.StaticSynapse(weight=3.0, delay=4.0)
+\endcode
+
+Spike-timing-dependent plasticity - STDP mechanisms can be constructed using weight-dependence and timing-dependent models. 
+\code
+stdp = STDPMechanism(
+          weight=0.02,
+          delay=1,
+          timing_dependence=SpikePairRule(tau_plus=20.0, tau_minus=20.0, A_plus=0.01, A_minus=0.012),
+          weight_dependence=AdditiveWeightDependence(w_min=0, w_max=0.04))
+\endcode
+
+Here, weight is the initialized weights, delay represents the synaptic delay and timing_dependence and weight_dependence are the supported STDP mechanisms.  
+
+\subsection ch14s3s5_input 14.3.5 Input: 
+
+\subsubsection ch14s3s5s1_poisson Generating Poisson Spikes: 
+
+The following function allows a user to create spike trains whose inter-spike interval follows a Poisson process. 
+\code
+inputCellType = sim.SpikeSourcePoisson(neuronType="EXCITATORY_NEURON", rate=50)
+\endcode
+
+neuronType="EXCITATORY" denotes that the neurons in the group are glutamatergic. Neurons with GABAergic synapses are supported with the INHIBITORY_NEURON keyword.
+The spike rate is set using the rate variable. 
+
+ 
+\subsubsection ch14s3s5s2_spikesource Generating Spikes From Arrays:
+The following function allows the user to schedule exact spike times (ms)
+\code
+inputCellType = sim.SpikeSourceArray(neuronType="EXCITATORY_NEURON", spike_times=[5, 10, 15, 20])
+\endcode
+
+\subsection ch14s3s6_monitor 14.3.6 Monitoring:
+Currently, pyCARL support spike and connection monitoring. CARLsim SpikeMonitors and ConnectionMonitors are internally defined for every group (Population) and connection (projection) in an application. 
+
+The control the recording of these parameters use the record() function as indicated below: 
+\code 
+neuron_group1 = sim.Population(nExc, izhikevichCellType1, label='exc')
+...
+...
+neuron_group1.record('spikes') # spike monitoring
+\endcode
+
+
+\subsection ch14s3s7_homeostasis 14.3.7 Homeostasis:
+Homeostatic synaptic scaling has been observed experimentally and may serve to stabilize plasticity mechanisms that can otherwise undergo run-away behaviors.
+CARLsim implements a version of homeostatic synaptic scaling that helps stabilize STDP.
+
+\code
+sim.state.setHomeostasis(neuron_group1.carlsim_group, True, 1.0, 10.0) // groupID, true/false, alpha, T
+\endcode
+
+\subsection ch14s3s8_homeostasis 14.3.8 Conductance mode:
+CARLsim supports two synapse model descriptions. The current-based (CUBA) description uses a single synaptic current term while the conductance-based (COBA) description calculates the synaptic current using more complex conductance equations for each synaptic receptor-type.
+
+\code 
+sim.state.network.setConductances(False)
+\endcode 
+
+*/
+

@@ -75,16 +75,18 @@ neuron_group2 = sim.Population(nInh, izhikevichCellType1, label='inh')
 ##################################################################
 
 # connect input to exc - "one-to-one"
-connection = sim.Projection(spike_source, neuron_group1, sim.OneToOneConnector(), sim.StaticSynapse(weight=3.0, delay=4.0), receptor_type='excitatory')
+connection = sim.Projection(spike_source, neuron_group1, sim.OneToOneConnector(), sim.StaticSynapse(weight=3.0, delay=4.0))
 
 # connect input to exc - "random connector"
-connection = sim.Projection(neuron_group1, neuron_group1, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0), receptor_type='excitatory')
+connection = sim.Projection(neuron_group1, neuron_group1, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0))
 
 # connect input to exc - "random connector"
-connection = sim.Projection(neuron_group1, neuron_group2, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0), receptor_type='inhibitory')
+connection = sim.Projection(neuron_group1, neuron_group2, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0))
 
 # connect input to exc - "random connector"
-connection = sim.Projection(neuron_group2, neuron_group1, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0), receptor_type='inhibitory')
+connection = sim.Projection(neuron_group2, neuron_group1, sim.FixedProbabilityConnector(pConn), sim.StaticSynapse(weight=3.0, delay=4.0))
+
+sim.state.network.setConductances(False)
 
 ##################################################################
 # Setup Network (function native to CARLsim) 

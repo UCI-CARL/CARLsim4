@@ -71,6 +71,12 @@
 				<tab type="user" visible="no" title="12.3 Multi-GPU" url="@ref ch12s3_multi_gpu"/>
 				<tab type="user" visible="no" title="12.4 On-Line Weight Tuning" url="@ref ch12s4_online_weight_tuning"/>
 			</tab>
+            <tab type="usergroup" visible="yes" title="13. pyCARL" url="@ref ch14_pyCARL">
+                <tab type="user" visible="no" title="13.1 Pre-Installation" url="@ref ch14s1_preinstallation"/>
+                <tab type="user" visible="no" title="13.2 Installation" url="@ref ch14s2_installation"/>
+                <tab type="user" visible="no" title="13.3 Supported Features" url="@ref ch14s3_features"/>
+            </tab>
+
 		</tab>
 		<tab type="usergroup" visible="yes" title="Tutorial">
 			<tab type="usergroup" visible="yes" title="1. Basic Concepts" url="@ref tut1_basic_concepts">
