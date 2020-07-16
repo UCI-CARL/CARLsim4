@@ -4,10 +4,10 @@ t = time.time()
 from numpy import arange
 from pyNN.utility import get_simulator
 from pyNN.carlsim import *
-print(time.time() - t)
-# Configure the application (i.e) configure the additional
-# simualator parameters
 
+# Configure the application (i.e) configure the additional
+
+# simualator parameters
 sim, options = get_simulator(("netName", "String for name of simulation"),("--gpuMode", "Enable GPU_MODE (CPU_MODE by default)", {"action":"store_true"}), ("logMode", "Enter logger mode (USER by default)", {"default":"USER"}), ("ithGPUs", "Number of GPUs"), ("randSeed", "Random seed"))
 
 ##################################################################
