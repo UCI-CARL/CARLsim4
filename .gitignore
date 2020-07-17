@@ -28,16 +28,26 @@
 # Build directory
 .build
 build
+libcarlsim*
+
+# Built docs
+doc/html
+
 
 # =====================
-# emacs ignore list
+# Other
 # =====================
+# IDE and OS files
 *~
 *.desktop
 *.desktop.lock
 *.lib
+.vscode
 
 # Executables
 *.exe
 *.out
 *.app
+
+# Simulation results
+results/

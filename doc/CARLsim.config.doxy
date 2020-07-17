@@ -671,6 +671,8 @@ INPUT                  = ../carlsim/interface/inc \
                          ../tools/offline_analysis_toolbox \
                          ../tools/spike_generators \
                          ../tools/simple_weight_tuner \
+                         ../tools/pti \
+                         ../tools/pit/examples \
                          source/user_guide \
                          source/user_guide/1_getting_started \
                          source/user_guide/2_basics \
@@ -760,7 +762,7 @@ EXCLUDE_SYMBOLS        =
 # directories that contain example code fragments that are included (see
 # the \include command).
 
-EXAMPLE_PATH           =
+EXAMPLE_PATH           = ../tools/pti/examples/
 
 # If the value of the EXAMPLE_PATH tag contains directories, you can use the
 # EXAMPLE_PATTERNS tag to specify one or more wildcard pattern (like *.cpp
