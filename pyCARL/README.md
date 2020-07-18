@@ -26,7 +26,7 @@ pyCARL has been tested on the following platforms:
 2. Ubuntu 16.04
 
 Ubuntu Users: 
-1. Users on an Ubuntu platform can install the pyCARL in USER and DEV mode (explained below). 
+1. Users on an Ubuntu platform can install pyCARL in USER and DEV mode (explained below). 
 
 Mac OSX Users: 
 1. Users on a MacOSX platform will have to install pyCARL in DEV mode ONLY. (explained below)
