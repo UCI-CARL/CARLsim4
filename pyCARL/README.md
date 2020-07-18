@@ -19,8 +19,18 @@ $ python test.py carlsim "test" USER 1 42
 
 
 #####################################################################################  
-
 # 1. Installation 
+
+pyCARL has been tested on the following platforms:
+1. Mac OSX 10.11
+2. Ubuntu 16.04
+
+Ubuntu Users: 
+1. Users on an Ubuntu platform can install the pyCARL in USER and DEV mode (explained below). 
+
+Mac OSX Users: 
+1. Users on a MacOSX platform will have to install pyCARL in DEV mode ONLY. (explained below)
+
 There are two modes of installation: 
 1. USER mode: Users that only want to use pyNN with CARLsim must install pyCARL 
 using the USER installation steps. 
@@ -69,12 +79,25 @@ $ cp -r CARLsim5/pyCARL/carlsim <pyNN installation location>
 #####################################################################################
 
 # 1.2.1 Installing PyNN:  
+
+Ubuntu User:
+
 ```
 $ pip install pyNN 
 ```
 Or follow the instructions in  
 
 http://neuralensemble.org/docs/PyNN/installation.html 
+
+MacOSX user:
+
+Install pyNN manually, using the sources in the pyNN github repo. 
+
+Follow the steps in the link below to install pyNN manually:
+```
+http://neuralensemble.org/docs/PyNN/installation.html
+```
+
 
 
 # 1.2.2 Compile and Install pyCARL

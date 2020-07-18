@@ -5,6 +5,34 @@ setup.py file
 """
 
 from distutils.core import setup, Extension
+import os
+import sysconfig
+from Cython.Distutils import build_ext
+
+class BuildExtWithoutPlatformSuffix(build_ext):
+    def get_ext_filename(self, ext_name):
+        filename = super().get_ext_filename(ext_name)
+        return get_ext_filename_without_platform_suffix(filename)
+
+
+def get_ext_filename_without_platform_suffix(filename):
+    name, ext = os.path.splitext(filename)
+    ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
+    if ext_suffix == ext:
+        return filename
+
+    ext_suffix = ext_suffix.replace(ext, '')
+    idx = name.find(ext_suffix)
+
+    if idx == -1:
+        return filename
+    else:
+        return name[:idx] + ext
+
+
+extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+extra_compile_args += ["-ffast-math", "-w", "-c"]
 
 
 carlsim_module = Extension('_carlsim',
@@ -27,7 +55,7 @@ carlsim_module = Extension('_carlsim',
                            '../../carlsim/monitor/neuron_monitor_core.cpp',
                            '../../tools/spike_generators/spikegen_from_vector.cpp',
                            '../../tools/visual_stimulus/visual_stimulus.cpp'
-                           ]
+                           ], extra_compile_args=extra_compile_args, language='c++'
                            )
 
 
@@ -35,5 +63,8 @@ setup (name = 'carlsim',
        version = '0.2',
        description = """CARLsim simulator as Python library""",
        ext_modules = [carlsim_module],
+       cmdclass={'build_ext': BuildExtWithoutPlatformSuffix},
        py_modules = ["carlsim"],
-       )
+)
+
+
