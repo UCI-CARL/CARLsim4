@@ -126,7 +126,7 @@ $ sudo apt install swig
 ```
 $ cd source  
 
-Update the /include paths in the build.sh file (lines 8, 12 or 16) 
+Update the /include paths in the build.sh file (lines 8 or 12) 
 
 Run the build.sh file. 
 
