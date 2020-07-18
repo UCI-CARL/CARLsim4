@@ -5,8 +5,8 @@ mkdir -p bin/
 mv carlsim.py bin/
 
 # TO BUILD FOR PYTHON2 WITHOUT CUDA SUPPORT
-#python2 setup.py build_ext -b ./bin/ -t ./bin/wrap --define __NO_CUDA__ --include <CARLSIM_INSTALL_DIR>/CARL/include:/usr/local/cuda/include:/usr/local/cuda/samples/common/inc
+#python2 setup.py build_ext -b ./bin/ -t ./bin/wrap --define __NO_CUDA__ --include $CARLSIM4_INSTALL_DIR/include:/usr/local/cuda/include:/usr/local/cuda/samples/common/inc
 
 # TO BUILD FOR PYTHON3 WITHOUT CUDA SUPPORT
 # swig -c++ -python -py3 carlsim.i
-python3 setup.py build_ext -b ./bin/ -t ./bin/wrap --define __NO_CUDA__ --include <CARLSIM_INSTALL_DIR>/CARL/include:/usr/local/cuda/include:/usr/local/cuda/samples/common/inc
+python3 setup.py build_ext -b ./bin/ -t ./bin/wrap --define __NO_CUDA__ --include $CARLSIM4_INSTALL_DIR/include:/usr/local/cuda/include:/usr/local/cuda/samples/common/inc
