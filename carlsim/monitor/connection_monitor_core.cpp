@@ -167,7 +167,7 @@ int ConnectionMonitorCore::getFanIn(int neurPostId) {
 	assert(neurPostId<nNeurPost_);
 	int nSyn = 0;
 	for (int i=0; i<nNeurPre_; i++) {
-		if (!isnan(wtMat_[i][neurPostId])) {
+		if (!std::isnan(wtMat_[i][neurPostId])) {
 			nSyn++;
 		}
 	}
@@ -179,7 +179,7 @@ int ConnectionMonitorCore::getFanOut(int neurPreId) {
 	assert(neurPreId<nNeurPre_);
 	int nSyn = 0;
 	for (int j=0; j<nNeurPost_; j++) {
-		if (!isnan(wtMat_[neurPreId][j])) {
+		if (!std::isnan(wtMat_[neurPreId][j])) {
 			nSyn++;
 		}
 	}
@@ -195,7 +195,7 @@ float ConnectionMonitorCore::getMaxWeight(bool getCurrent) {
 		for (int i=0; i<nNeurPre_; i++) {
 			for (int j=0; j<nNeurPost_; j++) {
 				// skip entries in matrix where no synapse exists
-				if (isnan(wtMat_[i][j]))
+				if (std::isnan(wtMat_[i][j]))
 					continue;
 
 				if (wtMat_[i][j] > maxVal) {
@@ -220,7 +220,7 @@ float ConnectionMonitorCore::getMinWeight(bool getCurrent) {
 		for (int i=0; i<nNeurPre_; i++) {
 			for (int j=0; j<nNeurPost_; j++) {
 				// skip entries in matrix where no synapse exists
-				if (isnan(wtMat_[i][j]))
+				if (std::isnan(wtMat_[i][j]))
 					continue;
 
 				if (wtMat_[i][j] < minVal) {
@@ -245,7 +245,7 @@ int ConnectionMonitorCore::getNumWeightsChanged(double minAbsChange) {
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			// skip entries in matrix where no synapse exists
-			if (isnan(wtMat_[i][j]))
+			if (std::isnan(wtMat_[i][j]))
 				continue;
 
 			if (fabs(wtChange[i][j]) >= minAbsChange) {
@@ -271,7 +271,7 @@ int ConnectionMonitorCore::getNumWeightsInRange(double minVal, double maxVal) {
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			// skip entries in matrix where no synapse exists
-			if (isnan(wtMat_[i][j]))
+			if (std::isnan(wtMat_[i][j]))
 				continue;
 
 			if (wtMat_[i][j]>=minVal && wtMat_[i][j]<=maxVal) {
@@ -300,7 +300,7 @@ double ConnectionMonitorCore::getTotalAbsWeightChange() {
 	for (int i=0; i<nNeurPre_; i++) {
 		for (int j=0; j<nNeurPost_; j++) {
 			// skip entries in matrix where no synapse exists
-			if (isnan(wtMat_[i][j]))
+			if (std::isnan(wtMat_[i][j]))
 				continue;
 			wtTotalChange += fabs(wtChange[i][j]);
 		}
@@ -331,7 +331,7 @@ void ConnectionMonitorCore::print() {
 		std::stringstream line;
 		line << std::setw(9) << std::setfill(' ') << i << " |";
 		for (int j=0; j<nNeurPost_; j++) {
-			line << std::fixed << std::setprecision(4) << (isnan(wtMat_[i][j])?"      ":(wtMat_[i][j]>=0?"   ":"  "))
+			line << std::fixed << std::setprecision(4) << (std::isnan(wtMat_[i][j])?"      ":(wtMat_[i][j]>=0?"   ":"  "))
 				<< wtMat_[i][j]  << "  ";
 		}
 		KERNEL_INFO("%s",line.str().c_str());
@@ -383,7 +383,7 @@ void ConnectionMonitorCore::printSparse(int neurPostId, int maxConn, int connPer
 			if (nConn>=maxConn)
 				break;
 
-			if (!isnan(wtMat_[i][j])) {
+			if (!std::isnan(wtMat_[i][j])) {
 				line << "[" << std::setw(maxIntDigits) << i << "," << std::setw(maxIntDigits) << j << "] "
 					<< std::fixed << std::setprecision(4) << wtMat_[i][j];
 				if (isPlastic_) {
