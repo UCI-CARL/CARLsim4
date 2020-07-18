@@ -48,9 +48,9 @@ follow the Dev installtion steps.
 $ pip install pyNN 
 ```
 Or follow the instructions in  
-
+```
 http://neuralensemble.org/docs/PyNN/installation.html 
-
+```
 
 ###################################################################################### 
 
@@ -86,9 +86,9 @@ Ubuntu User:
 $ pip install pyNN 
 ```
 Or follow the instructions in  
-
+```
 http://neuralensemble.org/docs/PyNN/installation.html 
-
+```
 MacOSX user:
 
 Install pyNN manually, using the sources in the pyNN github repo. 
