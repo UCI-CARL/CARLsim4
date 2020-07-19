@@ -22,7 +22,7 @@ $ python test.py carlsim "test" USER 1 42
 # 1. Installation 
 
 pyCARL has been tested on the following platforms:
-1. Mac OSX 10.11
+1. Mac OSX 10.13
 2. Ubuntu 16.04
 
 Ubuntu Users: 
