@@ -43,16 +43,16 @@ proj_src_dir   := .
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
+# NOTE: If your CARLsim5 installation does not reside in the default path, make
+# sure the environment variable CARLSIM5_INSTALL_DIR is set.
+ifdef CARLSIM5_INSTALL_DIR
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
+	CARLSIM5_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.
-include $(CARLSIM4_INC_DIR)/configure.mk
+include $(CARLSIM5_INC_DIR)/configure.mk
 
 
 #------------------------------------------------------------------------------
@@ -81,14 +81,14 @@ default: $(proj_target1)
 
 
 $(proj_target1): $(main_src_file1) $(inc_files)
-	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
-	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
+	$(eval CARLSIM5_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM5_LIB += -lcurand)
+	$(NVCC) $(CARLSIM5_FLG) $(obj_files) $< -o $@ $(CARLSIM5_LIB)
 
 $(proj_target2): $(main_src_file2) $(inc_files)
-	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
-	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) $(obj_files) $< -o $@ $(CARLSIM4_LIB)
+	$(eval CARLSIM5_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM5_LIB += -lcurand)
+	$(NVCC) $(CARLSIM5_FLG) $(obj_files) $< -o $@ $(CARLSIM5_LIB)
 
 clean:
 	$(RM) $(clean_files)
@@ -97,7 +97,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Project options:)
+	$(info CARLsim5 Project options:)
 	$(info )
 	$(info make               Compiles test suite
 	$(info make clean         Cleans out all object files)

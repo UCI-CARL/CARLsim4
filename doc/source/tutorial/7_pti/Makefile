@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Project Makefile
+##   CARLsim5 Project Makefile
 ##   -------------------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -44,16 +44,16 @@ proj_src_dir   := src
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
+# NOTE: If your CARLsim5 installation does not reside in the default path, make
+# sure the environment variable CARLSIM5_INSTALL_DIR is set.
+ifneq ($(CARLSIM5_INSTALL_DIR),)
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM5_INC_DIR  := /usr/local/include/carlsim
 endif
 
 # include compile flags etc.
-include $(CARLSIM4_INC_DIR)/configure.mk
+include $(CARLSIM5_INC_DIR)/configure.mk
 
 pti_lib_path := $(ECJ_PTI_DIR)/lib/
 pti_lib := -lCARLsimPTI
@@ -74,7 +74,7 @@ inc_files  := $(wildcard $(proj_inc_dir)/*.h)
 # compile .cpp files to -cpp.o, and .cu files to -cu.o
 obj_cpp    := $(patsubst %.cpp, %-cpp.o, $(cpp_files))
 obj_cu     := $(patsubst %.cu, %-cu.o, $(cu_files))
-ifeq ($(CARLSIM4_NO_CUDA),1)
+ifeq ($(CARLSIM5_NO_CUDA),1)
 obj_files  := $(obj_cpp)
 else
 obj_files  := $(obj_cpp) $(obj_cu)
@@ -93,9 +93,9 @@ distclean_files := $(clean_files) results/* *.dot *.dat *.csv *.log
 default: $(proj_target) $(launcher_target)
 
 $(proj_target): $(main_src_file) $(inc_files) $(obj_files)
-	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
-	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) -I$(pti_inc_path) -L$(pti_lib_path) $(obj_files) $< -o $@ $(CARLSIM4_LIB) $(pti_lib)
+	$(eval CARLSIM5_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM5_LIB += -lcurand)
+	$(NVCC) $(CARLSIM5_FLG) -I$(pti_inc_path) -L$(pti_lib_path) $(obj_files) $< -o $@ $(CARLSIM5_LIB) $(pti_lib)
 
 # create executable bash script for user to run
 $(launcher_target): $(proj_target)
@@ -116,7 +116,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 tutorial options:)
+	$(info CARLsim5 tutorial options:)
 	$(info )
 	$(info make               Compiles tutorial code)
 	$(info make clean         Cleans out all object files)

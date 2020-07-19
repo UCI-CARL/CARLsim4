@@ -98,7 +98,7 @@ CARLsim is now threadsafe so a distinct CARLsim simulation can be run on every G
 machine. We call simulations using multiple GPUs as multi-GPU simulation, using multiple CPUs as multi-CPU simulation, and 
 using multiple GPUs and CPUs as hybrid simulation. The user can easily control simulations on multiple CPU/GPU by
 specifying the preferred partition while creating each group. Currently, upto 8 GPUs and 24 CPU cores can be used concurrently in a single simulation.
-The available processors are indexed from 0. By default, CARLsim4 places all the neuron groups on CPU 0 partition.
+The available processors are indexed from 0. By default, CARLsim5 places all the neuron groups on CPU 0 partition.
 The following examples show how to specify the preferred processor for each neuron group
 
 For example, to create a group of Izhikevich neurons on a GPU partition using CARLsim::createGroup, simply specify a name (e.g., "exc1"), the number of neurons
@@ -118,7 +118,7 @@ Similarly, the following method call creates a LIF neuron group named "inh1" and
 int gInh1 = sim.createGroupLIF("inh1", 2018, INHIBITORY_NEURON, 3, CPU_CORES);
 \endcode
 
-An example CARLsim4 simulation using heterogeneous processors (CPU and GPU) and heterogeneous neurons (Izhikevich and LIF) is shown in the lif_izhi_random_spnet
+An example CARLsim5 simulation using heterogeneous processors (CPU and GPU) and heterogeneous neurons (Izhikevich and LIF) is shown in the lif_izhi_random_spnet
 project under the projects/ directory. The example implements the clasic Izhikevich 80-20 network using LIF neurons and fast spiking Izhikevich neurons.
 
 

@@ -145,7 +145,7 @@ Use Runge-Kutta instead (see \ref ch12s2s2_RK4).
 \subsection ch3s1s4_other_neurons 3.1.4 Leaky Integrate-and-Fire (LIF) neurons
 \author Hirak J Kashyap
 
-The support for LIF neurons has been added in CARLSim 4.0.  LIF model and its variants are probably the 
+The support for LIF neurons has been added in CARLSim 5.0.  LIF model and its variants are probably the 
 most well known model of spiking point neurons, largely due their to simple membrane voltage dynamics favored
 for dynamical system analysis and hardware implementation.
 

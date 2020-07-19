@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Project Makefile
+##   CARLsim5 Project Makefile
 ##   -------------------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -42,16 +42,16 @@ proj_src_dir   := src
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
+# NOTE: If your CARLsim5 installation does not reside in the default path, make
+# sure the environment variable CARLSIM5_INSTALL_DIR is set.
+ifdef CARLSIM5_INSTALL_DIR
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := $(HOME)/CARL/include
+	CARLSIM5_INC_DIR  := $(HOME)/CARL/include
 endif
 
 # include compile flags etc.
-include $(CARLSIM4_INC_DIR)/configure.mk
+include $(CARLSIM5_INC_DIR)/configure.mk
 
 
 #------------------------------------------------------------------------------
@@ -84,9 +84,9 @@ default: $(proj_target)
 
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
-	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
-	$(eval CARLSIM4_LIB += -lcurand)
-	$(NVCC) $(CARLSIM4_FLG) $(PROJ_FL) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LIB) $(PROJ_LIB)
+	$(eval CARLSIM5_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM5_LIB += -lcurand)
+	$(NVCC) $(CARLSIM5_FLG) $(PROJ_FL) $(obj_files) $< -o $(proj_target) $(CARLSIM5_LIB) $(PROJ_LIB)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(NVCC) -c $(NVCCINCFL) $(NVCCFL) $(PROJ_FL) $< -o $@ $(PROJ_LIB)
@@ -98,7 +98,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Project options:)
+	$(info CARLsim5 Project options:)
 	$(info )
 	$(info make               Compiles this project)
 	$(info make clean         Cleans out all object files)

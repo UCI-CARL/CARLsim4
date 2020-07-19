@@ -47,7 +47,7 @@ $ cd CARLsim5
 \endcode
 
 Alternatively, you may download the latest stable release from the
-<a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
+<a href="https://github.com/UCI-CARL/CARLsim5/releases">GitHub Release</a> page (.zip or .tar.gz).
 
 For installation instructions on Linux and Mac OS X platforms, please refer to \ref ch1s2s1_linux.
 

@@ -79,7 +79,7 @@ scripts, spike generators, and tools for visual stimuli.
 \author Ting-Shuo Chou
 \author Michael Beyeler
 
-CARLsim is now available on <a href="https://github.com/UCI-CARL/CARLsim4">GitHub</a>.
+CARLsim is now available on <a href="https://github.com/UCI-CARL/CARLsim5">GitHub</a>.
 
 If you are familiar with Git and GitHub, the preferred way to obtain the software
 is to fork and clone the GitHub repository.
@@ -89,22 +89,22 @@ and allow you to easily update your codebase later on.
 This can be done in three steps:
 
 -# Navigate to CARLsim's
-   <a href="https://github.com/UCI-CARL/CARLsim4">GitHub page</a> and click on the
-   <a href="https://github.com/UCI-CARL/CARLsim4#fork-destination-box"><tt>Fork</tt></a> box in the
+   <a href="https://github.com/UCI-CARL/CARLsim5">GitHub page</a> and click on the
+   <a href="https://github.com/UCI-CARL/CARLsim5#fork-destination-box"><tt>Fork</tt></a> box in the
    top-right corner.
 
 -# Switch to a terminal (or <a href="https://desktop.github.com/">GitHub Desktop</a>)
    and clone the repository:
    \code
-   $ git clone --recursive https://github.com/UCI-CARL/CARLsim4.git
-   $ cd CARLsim4
+   $ git clone --recursive https://github.com/UCI-CARL/CARLsim5.git
+   $ cd CARLsim5
    \endcode
    where <tt>YourUsername</tt> is your GitHub user name.
    Note the <tt>--recursive</tt> option: It will make sure all external software
    dependencies get installed (e.g., Google Test).
 
 Alternatively, you may download the latest stable release from the 
-<a href="https://github.com/UCI-CARL/CARLsim4/releases">GitHub Release</a> page (.zip or .tar.gz).
+<a href="https://github.com/UCI-CARL/CARLsim5/releases">GitHub Release</a> page (.zip or .tar.gz).
 
 For installation instructions on Linux and Mac OS X platforms, please refer to \ref ch1s2s1_linux below.
 For installation instructions on Windows platforms, please refer to \ref ch1s2s2_windows below.
@@ -120,7 +120,7 @@ On most platforms, these are already installed by default.
 
 \subsubsection ch1s2s1s1_environment_variables 1.2.1.1 Environment Variables
 
-CARLsim 4 allows configuration via environment variables.
+CARLsim 5 allows configuration via environment variables.
 The easiest way to set these is to add them to your
 <tt>~/.bashrc</tt> file.
 
@@ -129,9 +129,9 @@ The following options are available:
 - Installation directory: By default, the CARLsim library lives in <tt>~/CARL/lib</tt>,
   and CARLsim include files live in <tt>~/CARL/include</tt>.
   You can overwrite these by exporting an evironment variable called
-  <tt>CARLSIM4_INSTALL_DIR</tt>:
+  <tt>CARLSIM5_INSTALL_DIR</tt>:
   \code
-  $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/location
+  $ export CARLSIM5_INSTALL_DIR=/path/to/your/preferred/location
   \endcode
   For advanced users or administrators, you could set the path to <tt>/usr/local</tt>
 
@@ -229,7 +229,7 @@ After compiling CARLsim, you can install the library by typing:
 
 \note Note the <tt>-E</tt> flag in the commands above,
 which will cause <tt>sudo</tt> to remember any environment
-variables you set above (such as <tt>CARLSIM4_INSTALL_DIR</tt>).
+variables you set above (such as <tt>CARLSIM5_INSTALL_DIR</tt>).
 You don't need this flag if you're not installing with <tt>sudo</tt>.
 
 \note Also, note the <tt>-j4</tt> flag, which will install CARLsim using
@@ -510,7 +510,7 @@ during the configuration step.
 \subsection ch1s4s1_linux 1.4.1 Linux / Mac OS X
 
 To uninstall CARLsim on a Unix platform, open a terminal, simply remove the installed library and header files in
-<tt>CARLSIM4_INSTALL_DIR</tt>
+<tt>CARLSIM5_INSTALL_DIR</tt>
 
 \note Any environments that have been added to <tt>~/.bashrc</tt> must be removed manually.
 

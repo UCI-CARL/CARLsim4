@@ -21,8 +21,8 @@ to follow along and experiment with the source code found there.
 
 This tutorial assumes:
 - ECJ version 22 or greater is installed.
-- CARLsim 4.0 is installed.
-- CARLsim4 and ECJ environment variables are configured correctly.
+- CARLsim 5.0 is installed.
+- CARLsim5 and ECJ environment variables are configured correctly.
 
 The overview of parameter tuning is as follows. ECJ handles all steps of the evolutionary algorithm
 (EA) except for the fitness evaluation which is done by CARLsim through the implementation of an

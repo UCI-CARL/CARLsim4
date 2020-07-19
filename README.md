@@ -2,7 +2,7 @@
 	<img src="http://socsci.uci.edu/~jkrichma/CARL-Logo-small.jpg" width="300"/>
 </div>
 
-# CARLsim 4
+# CARLsim 5
 
 [![Build Status](https://travis-ci.org/UCI-CARL/CARLsim5.svg?branch=master)](https://travis-ci.org/UCI-CARL/CARLsim5)
 [![Coverage Status](https://coveralls.io/repos/github/UCI-CARL/CARLsim5/badge.svg?branch=master)](https://coveralls.io/github/UCI-CARL/CARLsim5?branch=master)
@@ -11,12 +11,12 @@
 
 CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail. CARLsim allows execution of networks of Izhikevich spiking neurons with realistic synaptic dynamics on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface in C/C++, which allows for details and parameters to be specified at the synapse, neuron, and network level.
 
-New features in CARLsim 4 include:
+<!-- New features in CARLsim 5 include:
 - Multi-GPU support
 - Hybrid CPU/GPU mode
-- Multi-compartment and LIF point neurons
+- Multi-compartment and LIF point neurons -->
 
-If you use CARLsim 4 in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim5-IJCNN2018.pdf).
+If you use CARLsim in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim4-IJCNN2018.pdf).
 
 Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165.
 
@@ -29,7 +29,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim5/ch1_getting_
 
 #### For Beginner
 
-1. Download CARLsim 4 zip file by clicking on the `Clone or download` box in the top-right corner.
+1. Download CARLsim 5 zip file by clicking on the `Clone or download` box in the top-right corner.
 
 2. Unzip the source code.
 
@@ -62,7 +62,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim5/ch1_getting_
 
 #### For Advanced User and Developer
 
-1. Fork CARLsim 4 by clicking on the `Fork` box in the top-right corner.
+1. Fork CARLsim 5 by clicking on the `Fork` box in the top-right corner.
 
 2. Clone the repo, where `YourUsername` is your actual GitHub user name:
    ```
@@ -179,8 +179,7 @@ Simply download the code. Open and build `CARLsim.sln`. Run the "Hello World" pr
 
 ## Prerequisites
 
-CARLsim 4 comes with the following requirements:
-- (Windows) Microsoft Visual Studio 2015 or higher.
+CARLsim 5 comes with the following requirements:
 - (optional) CMake 3.0 or higher in case you want to build it using CMake.
 - (optional) CUDA Toolkit 6.0 or higher. For platform-specific CUDA installation instructions, please navigate to 
   the [NVIDIA CUDA Zone](https://developer.nvidia.com/cuda-zone).
