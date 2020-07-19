@@ -164,7 +164,7 @@ CXXSHRFL           += -fPIC -shared
 # variables starting with SIM_ are for internal use when installing CARLsim
 SIM_LIB_NAME := carlsim
 SIM_MAJOR_NUM := 4
-SIM_MINOR_NUM := 0
+SIM_MINOR_NUM := 1
 SIM_BUILD_NUM := 0
 #DETECTED_OS := $(shell uname -s)
 
