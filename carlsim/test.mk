@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Tests
+##   CARLsim5 Tests
 ##   --------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -17,7 +17,7 @@
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Test Files
+# CARLsim5 Test Files
 #------------------------------------------------------------------------------
 
 GTEST_DIR := external/googletest
@@ -32,7 +32,7 @@ output += $(test_target) *.dat
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Targets and Rules
+# CARLsim5 Targets and Rules
 #------------------------------------------------------------------------------
 
 .PHONY: test test_coverage test_nocuda test_nocuda_coverage $(test_target) prep_test_nocuda
@@ -47,4 +47,4 @@ test_nocuda_coverage: prep_coverage prep_nocuda prep_test_nocuda $(test_target)
 
 $(test_target): $(test_cpp_files) $(test_inc_files)
 	@test -d results || mkdir results
-	$(NVCC) $(CARLSIM4_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM4_LIB)
+	$(NVCC) $(CARLSIM5_FLG) $(GTEST_FLG) $(GTEST_LD) $(test_cpp_files) -o $@ $(GTEST_LIB) $(CARLSIM5_LIB)

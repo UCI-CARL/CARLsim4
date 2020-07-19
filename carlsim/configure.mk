@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Configuration
+##   CARLsim5 Configuration
 ##   ----------------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -23,7 +23,7 @@
 #CUDA_PATH        ?= /usr/local/cuda
 
 # enable gcov
-CARLSIM4_COVERAGE ?= 0
+CARLSIM5_COVERAGE ?= 0
 
 #------------------------------------------------------------------------------
 # CARLsim/ECJ Parameter Tuning Interface Options -- only if not in bashrc/profile
@@ -160,10 +160,10 @@ CXXSHRFL           += -fPIC -shared
 # CARLsim Library
 #------------------------------------------------------------------------------
 
-# variables starting with CARLSIM4_ are intended for the user
+# variables starting with CARLSIM5_ are intended for the user
 # variables starting with SIM_ are for internal use when installing CARLsim
 SIM_LIB_NAME := carlsim
-SIM_MAJOR_NUM := 4
+SIM_MAJOR_NUM := 5
 SIM_MINOR_NUM := 0
 SIM_BUILD_NUM := 0
 #DETECTED_OS := $(shell uname -s)
@@ -175,18 +175,18 @@ output += $(lib_name) $(lib_name).$(lib_ver)
 
 
 # use the following flags when building from CARLsim lib path
-ifdef CARLSIM4_INSTALL_DIR
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
-	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
-	sim_install_files += $(CARLSIM4_INC_DIR)
+ifdef CARLSIM5_INSTALL_DIR
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
+	CARLSIM5_LIB_DIR  := $(CARLSIM5_INSTALL_DIR)/lib
+	sim_install_files += $(CARLSIM5_INC_DIR)
 else
-	CARLSIM4_INSTALL_DIR := $(HOME)/CARL
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
-	CARLSIM4_LIB_DIR  := $(CARLSIM4_INSTALL_DIR)/lib
-	sim_install_files += $(CARLSIM4_INC_DIR)
+	CARLSIM5_INSTALL_DIR := $(HOME)/CARL
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
+	CARLSIM5_LIB_DIR  := $(CARLSIM5_INSTALL_DIR)/lib
+	sim_install_files += $(CARLSIM5_INC_DIR)
 endif
 
-sim_install_files += $(CARLSIM4_LIB_DIR)/$(lib_name)*
+sim_install_files += $(CARLSIM5_LIB_DIR)/$(lib_name)*
 
-CARLSIM4_FLG := -I$(CARLSIM4_INC_DIR) -L$(CARLSIM4_LIB_DIR)
-CARLSIM4_LIB := -l$(SIM_LIB_NAME)
+CARLSIM5_FLG := -I$(CARLSIM5_INC_DIR) -L$(CARLSIM5_LIB_DIR)
+CARLSIM5_LIB := -l$(SIM_LIB_NAME)

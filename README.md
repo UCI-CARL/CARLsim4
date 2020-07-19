@@ -4,9 +4,9 @@
 
 # CARLsim 4
 
-[![Build Status](https://travis-ci.org/UCI-CARL/CARLsim4.svg?branch=master)](https://travis-ci.org/UCI-CARL/CARLsim4)
-[![Coverage Status](https://coveralls.io/repos/github/UCI-CARL/CARLsim4/badge.svg?branch=master)](https://coveralls.io/github/UCI-CARL/CARLsim4?branch=master)
-[![Docs](https://img.shields.io/badge/docs-v4.1.0-blue.svg)](http://uci-carl.github.io/CARLsim4)
+[![Build Status](https://travis-ci.org/UCI-CARL/CARLsim5.svg?branch=master)](https://travis-ci.org/UCI-CARL/CARLsim5)
+[![Coverage Status](https://coveralls.io/repos/github/UCI-CARL/CARLsim5/badge.svg?branch=master)](https://coveralls.io/github/UCI-CARL/CARLsim5?branch=master)
+[![Docs](https://img.shields.io/badge/docs-v4.1.0-blue.svg)](http://uci-carl.github.io/CARLsim5)
 [![Google group](https://img.shields.io/badge/Google-Discussion%20group-blue.svg)](https://groups.google.com/forum/#!forum/carlsim-snn-simulator)
 
 CARLsim is an efficient, easy-to-use, GPU-accelerated library for simulating large-scale spiking neural network (SNN) models with a high degree of biological detail. CARLsim allows execution of networks of Izhikevich spiking neurons with realistic synaptic dynamics on both generic x86 CPUs and standard off-the-shelf GPUs. The simulator provides a PyNN-like programming interface in C/C++, which allows for details and parameters to be specified at the synapse, neuron, and network level.
@@ -16,14 +16,14 @@ New features in CARLsim 4 include:
 - Hybrid CPU/GPU mode
 - Multi-compartment and LIF point neurons
 
-If you use CARLsim 4 in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim4-IJCNN2018.pdf).
+If you use CARLsim 4 in your research, please cite this [paper](https://www.socsci.uci.edu/~jkrichma/Chou-Kashyap-CARLsim5-IJCNN2018.pdf).
 
 Chou*, T.-S., Kashyap*, H.J., Xing, J., Listopad, S., Rounds, E.L., Beyeler, M., Dutt, N., and Krichmar, J.L. (2018). "CARLsim 4: An Open Source Library for Large Scale, Biologically Detailed Spiking Neural Network Simulation using Heterogeneous Clusters." In Proceedings of IEEE International Joint Conference on Neural Networks (IJCNN), pp. 1158-1165.
 
 ## Installation
 
 Detailed instructions for installing the latest stable release of CARLsim on Mac OS X / Linux / Windows
-can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_started.html).
+can be found in our [User Guide](http://uci-carl.github.io/CARLsim5/ch1_getting_started.html).
 
 ### Linux/MacOS
 
@@ -33,9 +33,9 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
 
 2. Unzip the source code.
 
-3. Go into `CARLsim4` folder
+3. Go into `CARLsim5` folder
    ```
-   $ cd CARLsim4
+   $ cd CARLsim5
    ```
 
 4. Make and install
@@ -51,10 +51,10 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    ```
    You will see `CARL` folder
 
-6. Go back to `CARLsim4` folder and start your own project! The "Hello World" project is a goot starting point for this.
+6. Go back to `CARLsim5` folder and start your own project! The "Hello World" project is a goot starting point for this.
    Make sure it runs:
    ```
-   $ cd CARLsim4
+   $ cd CARLsim5
    $ cd projects/hello_world
    $ make
    $ ./hello_world
@@ -66,23 +66,23 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
 
 2. Clone the repo, where `YourUsername` is your actual GitHub user name:
    ```
-   $ git clone --recursive https://github.com/UCI-CARL/CARLsim4.git
-   $ cd CARLsim4
+   $ git clone --recursive https://github.com/UCI-CARL/CARLsim5.git
+   $ cd CARLsim5
    ```
    Note the `--recursive` option: It will make sure Google Test gets installed.
 
 3. Choose between stable release and latest development version:
    - For the latest development branch, you are already on the right branch (`master`).
-   - For stable release, choose from https://github.com/UCI-CARL/CARLsim4/releases
+   - For stable release, choose from https://github.com/UCI-CARL/CARLsim5/releases
 
 4. Choose the installation directory: By default, the CARLsim library lives in `~/CARL/lib`, and CARLsim include files live in `~/CARL/include`.
-    You can overwrite these by exporting an evironment variable called `CARLSIM4_INSTALL_DIR`:
+    You can overwrite these by exporting an evironment variable called `CARLSIM5_INSTALL_DIR`:
     ```
-    $ export CARLSIM4_INSTALL_DIR=/path/to/your/preferred/dir
+    $ export CARLSIM5_INSTALL_DIR=/path/to/your/preferred/dir
     ```
     or
     ```
-    $ export CARLSIM4_INSTALL_DIR=/usr/local
+    $ export CARLSIM5_INSTALL_DIR=/usr/local
     ```
     if you want to install CARLsim library for all users.
     
@@ -97,7 +97,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    $ make -j4
    $ sudo -E make install
    ```
-   Note the `-E` flag, which will cause `sudo` to remember the `CARLSIM4_INSTALL_DIR`.
+   Note the `-E` flag, which will cause `sudo` to remember the `CARLSIM5_INSTALL_DIR`.
 
 7. In order to make sure the installation was successful, you can run the regression suite:
 
@@ -126,11 +126,11 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    file changes to compile the new project, and add all new files to git.
 
 #### Using nvidia docker
-1. Using CARLsim4 on an Nvidia-docker image follows the instructions above. Only important thing to keep in mind is to copy the $CUDA_PATH/samples directory to the docker, which does not come with the nvidia docker image. CARLsim4 uses "helper_functions.h" from the library.
+1. Using CARLsim5 on an Nvidia-docker image follows the instructions above. Only important thing to keep in mind is to copy the $CUDA_PATH/samples directory to the docker, which does not come with the nvidia docker image. CARLsim5 uses "helper_functions.h" from the library.
 
 #### Using CMake
 
-1. Obtatin `CARLsim4`'s source code.
+1. Obtatin `CARLsim5`'s source code.
 
 2. Create a build directory (you can make it anywhere)
 
@@ -154,7 +154,7 @@ can be found in our [User Guide](http://uci-carl.github.io/CARLsim4/ch1_getting_
    If you need debug version then pass `Debug`.
    `CMAKE_INSTALL_PREFIX` specifies a directory which we are going to install the library into.
    `CARLSIM_NO_CUDA` switches on/off support of CUDA inside the library.
-   `<path-to-carlsim>` must be replaced with the path to the CARLsim4's source directory.
+   `<path-to-carlsim>` must be replaced with the path to the CARLsim5's source directory.
 
 4. Build:
 

@@ -11,7 +11,7 @@ cmake_minimum_required(VERSION 3.0)
 
 # Properties
 
-    set_property(TARGET carlsim PROPERTY VERSION "4.0.0")
+    set_property(TARGET carlsim PROPERTY VERSION "5.0.0")
 
 # Linking
 

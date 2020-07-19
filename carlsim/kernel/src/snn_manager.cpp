@@ -41,6 +41,7 @@
 * CARLsim v2.0/v2.1/v2.2: JM, MDR, MA, MB, KDC
 * CARLsim3: MB, KDC, TSC
 * CARLsim4: TSC, HK
+* CARLsim5: HK, JX, KC
 *
 * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
 * Ver 12/31/2016
@@ -5322,7 +5323,7 @@ int SNN::loadSimulation_internal(bool onlyPlastic) {
 		exitSimulation(-1);
 	}
 
-	// skip save and read pre-synapses & post-synapses in CARLsim4 since they are now netID based
+	// skip save and read pre-synapses & post-synapses in CARLsim5 since they are now netID based
 	// read number of pre-synapses
 	// result = fread(&tmpInt, sizeof(int), 1, loadSimFID);
 	// readErr |= (result!=1);

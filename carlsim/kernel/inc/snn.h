@@ -41,6 +41,7 @@
  * CARLsim v2.0/v2.1/v2.2: JM, MDR, MA, MB, KDC
  * CARLsim3: MB, KDC, TSC
  * CARLsim4: TSC, HK
+* CARLsim5: HK, JX, KC
  *
  * CARLsim available from http://socsci.uci.edu/~jkrichma/CARLsim/
  * Ver 12/31/2016

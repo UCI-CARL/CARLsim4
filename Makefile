@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Main Makefile
+##   CARLsim5 Main Makefile
 ##   ----------------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -41,16 +41,16 @@ distclean:
 # print a help message
 help:
 	@ echo 
-	@ echo "CARLsim4 Makefile options:"
+	@ echo "CARLsim5 Makefile options:"
 	@ echo 
-	@ echo "make                Compiles CARLsim4 in default mode (release)"
-	@ echo "make release        Compiles CARLsim4 in release mode (-O3)"
-	@ echo "make release_nocuda Compiles CARLsim4 in release mode without CUDA library"
-	@ echo "make debug          Compiles CARLsim4 in debug mode (-O0 -g -Wall)"
-	@ echo "make debug_nocuda   Compiles CARLsim4 in debug mode without CUDA library"
-	@ echo "make -E install     Installs CARLsim4 library (make sure -E is set; may"
+	@ echo "make                Compiles CARLsim5 in default mode (release)"
+	@ echo "make release        Compiles CARLsim5 in release mode (-O3)"
+	@ echo "make release_nocuda Compiles CARLsim5 in release mode without CUDA library"
+	@ echo "make debug          Compiles CARLsim5 in debug mode (-O0 -g -Wall)"
+	@ echo "make debug_nocuda   Compiles CARLsim5 in debug mode without CUDA library"
+	@ echo "make -E install     Installs CARLsim5 library (make sure -E is set; may"
 	@ echo "                    require root privileges)"
-	@ echo "make -E uninstall   Uninstalls CARLsim4 library (make sure -E is set; may"
+	@ echo "make -E uninstall   Uninstalls CARLsim5 library (make sure -E is set; may"
 	@ echo "                    require root privileges)"
 	@ echo "make clean          Cleans out all object files"
 	@ echo "make distclean      Cleans out all object and output files"

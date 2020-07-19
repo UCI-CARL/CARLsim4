@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Kernel
+##   CARLsim5 Kernel
 ##   ---------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -17,7 +17,7 @@
 ##----------------------------------------------------------------------------##
 
 #------------------------------------------------------------------------------
-# CARLsim4 Interface
+# CARLsim5 Interface
 #------------------------------------------------------------------------------
 
 intf_dir          := carlsim/interface
@@ -30,7 +30,7 @@ SIMINCFL          += -I$(intf_dir)/inc
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Kernel
+# CARLsim5 Kernel
 #------------------------------------------------------------------------------
 
 krnl_dir          := carlsim/kernel
@@ -43,7 +43,7 @@ SIMINCFL          += -I$(krnl_dir)/inc
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Utilities
+# CARLsim5 Utilities
 #------------------------------------------------------------------------------
 
 mon_dir          := carlsim/monitor
@@ -56,7 +56,7 @@ SIMINCFL         += -I$(mon_dir)
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Tools
+# CARLsim5 Tools
 #------------------------------------------------------------------------------
 
 tools_dir        := tools
@@ -106,10 +106,10 @@ output += $(addprefix $(tools_dir)/*/,*.gcda *.gcno)
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Common
+# CARLsim5 Common
 #------------------------------------------------------------------------------
 
-output          += carlsim4
+output          += carlsim5
 objects_cpp     += $(krnl_cpp_obj) $(intf_cpp_obj) $(mon_cpp_obj) $(tools_cpp_obj)
 objects_cu      += $(krnl_cu_obj) $(intf_cu_obj) $(mon_cu_obj) $(tools_cu_obj)
 
@@ -118,18 +118,18 @@ add_files       := $(addprefix carlsim/,configure.mk)
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Targets
+# CARLsim5 Targets
 #------------------------------------------------------------------------------
 
 .PHONY: release release_nocuda release_coverage release_nocuda_coverage debug debug_nocuda archive archive_nocuda prepare prep_nocuda
 
 prep_cuda:
-	$(eval CARLSIM4_FLG += -Wno-deprecated-gpu-targets)
-	$(eval CARLSIM4_LIB += -lcurand)
+	$(eval CARLSIM5_FLG += -Wno-deprecated-gpu-targets)
+	$(eval CARLSIM5_LIB += -lcurand)
 
 prep_nocuda:
 	$(eval CXXFL += -D__NO_CUDA__)
-	$(eval CARLSIM4_FLG += -D __NO_CUDA__)
+	$(eval CARLSIM5_FLG += -D __NO_CUDA__)
 	$(eval NVCCFL += --compiler-options "-O3 -ffast-math")
 	$(eval NVCC := $(CXX))
 	$(eval NVCCINCFL := $(CXXINCFL))
@@ -149,8 +149,8 @@ prep_coverage:
 	$(eval CXXLIBFL += -lgcov)
 	$(eval NVCCFL += --compiler-options "-fprofile-arcs -ftest-coverage")
 	$(eval NVCCLDFL += -lgcov)
-	$(eval CARLSIM4_FLG += -fprofile-arcs -ftest-coverage)
-	$(eval CARLSIM4_LIB += -lgcov)
+	$(eval CARLSIM5_FLG += -fprofile-arcs -ftest-coverage)
+	$(eval CARLSIM5_LIB += -lgcov)
 
 
 release: prep_release prep_cuda $(objects_cpp) $(objects_cu) archive
@@ -160,7 +160,7 @@ release_nocuda_coverage: prep_release prep_coverage prep_nocuda $(objects_cpp) a
 
 
 #------------------------------------------------------------------------------
-# CARLsim4 Rules
+# CARLsim5 Rules
 #------------------------------------------------------------------------------
 
 # rule to compile local cpps

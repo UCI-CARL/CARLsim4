@@ -9,7 +9,7 @@ $ python test.py carlsim "test" USER 1 42
 ```
 
 # Carlsim Folder
-1. /carlsim folder contains the python files required to interface pyNN to CARLsim4.
+1. /carlsim folder contains the python files required to interface pyNN to CARLsim5.
 2. The contents of /carlsim are generated using the contents in the source folder. 
  
 
@@ -63,7 +63,7 @@ $ git clone <CARLsim5 github repo>
 
 1.1.1.2 Move into the PyCARL directory in the CARLsim5 root
 ```
-$ cd CARLsim4/pyCARL/ 
+$ cd CARLsim5/pyCARL/ 
 ```
 
 1.1.1.3 Copy the /carlsim folder to pyNN
@@ -137,7 +137,7 @@ This creates a static library _carlsim.so and a pyNN -> CARLsim interface (carls
  
 # 3. Copy the compiled sources and the carlsim/ folder in the pyCARL repo to pyNN.  
 ```
-$ cp –r CARLsim4/pyCARL/carlsim <root of pyNN Installation>  
+$ cp –r CARLsim5/pyCARL/carlsim <root of pyNN Installation>  
 ```
 3.1 Copy the generated _carlsim.so and carlsim.py file to root-of-pyNN-Installation/carlsim 
 

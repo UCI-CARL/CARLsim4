@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 CARLsim-ECJ PTI interface Makefile
+##   CARLsim5 CARLsim-ECJ PTI interface Makefile
 ##   -------------------------
 ##
 ##   Authors:   Eric Scott <escott8@gmu.edu>
@@ -42,16 +42,16 @@ jar_target := $(proj_src_dir)/java/dist/CARLsim-ECJ.jar
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/include
+# NOTE: If your CARLsim5 installation does not reside in the default path, make
+# sure the environment variable CARLSIM5_INSTALL_DIR is set.
+ifneq ($(CARLSIM5_INSTALL_DIR),)
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/include
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM5_INC_DIR  := /usr/local/include/carlsim
 endif
 
 # include compile flags etc.
-include $(CARLSIM4_INC_DIR)/configure.mk
+include $(CARLSIM5_INC_DIR)/configure.mk
 
 # Version info
 num_ver := $(SIM_MAJOR_NUM).$(SIM_MINOR_NUM)

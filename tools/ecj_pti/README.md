@@ -21,7 +21,7 @@ on how to install ECJ, please go [here](http://cs.gmu.edu/~eclab/projects/ecj/).
 
 3) Type ‘make clean && make && make install’
 
-4) Refer to http://uci-carl.github.io/CARLsim4/ch10_ecj.html and http://uci-carl.github.io/CARLsim4/tut7_pti.html for installation and
+4) Refer to http://uci-carl.github.io/CARLsim5/ch10_ecj.html and http://uci-carl.github.io/CARLsim5/tut7_pti.html for installation and
    how to use CARLsim and ECJ to tune SNNs.
 
 TO UNINSTALL:

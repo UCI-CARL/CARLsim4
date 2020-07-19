@@ -1,6 +1,6 @@
 ##----------------------------------------------------------------------------##
 ##
-##   CARLsim4 Project Makefile
+##   CARLsim5 Project Makefile
 ##   -------------------------
 ##
 ##   Authors:   Michael Beyeler <mbeyeler@uci.edu>
@@ -42,16 +42,16 @@ proj_src_dir   := src
 # Include configuration file
 #------------------------------------------------------------------------------
 
-# NOTE: If your CARLsim4 installation does not reside in the default path, make
-# sure the environment variable CARLSIM4_INSTALL_DIR is set.
-ifneq ($(CARLSIM4_INSTALL_DIR),)
-	CARLSIM4_INC_DIR  := $(CARLSIM4_INSTALL_DIR)/inc
+# NOTE: If your CARLsim5 installation does not reside in the default path, make
+# sure the environment variable CARLSIM5_INSTALL_DIR is set.
+ifneq ($(CARLSIM5_INSTALL_DIR),)
+	CARLSIM5_INC_DIR  := $(CARLSIM5_INSTALL_DIR)/inc
 else
-	CARLSIM4_INC_DIR  := /usr/local/include/carlsim
+	CARLSIM5_INC_DIR  := /usr/local/include/carlsim
 endif
 
 # include compile flags etc.
-include $(CARLSIM4_INC_DIR)/configure.mk
+include $(CARLSIM5_INC_DIR)/configure.mk
 
 
 #------------------------------------------------------------------------------
@@ -85,10 +85,10 @@ default: $(proj_target)
 
 
 $(proj_target): $(main_src_file) $(inc_files) $(cpp_files) $(obj_files)
-	$(NVCC) $(CARLSIM4_INC) $(obj_files) $< -o $(proj_target) $(CARLSIM4_LD) $(CUDA_LD) 
+	$(NVCC) $(CARLSIM5_INC) $(obj_files) $< -o $(proj_target) $(CARLSIM5_LD) $(CUDA_LD) 
 
 no_cuda: $(main_src_file) $(inc_files) $(cpp_files) $(obj_files_no_cuda)
-	$(CXX) $(CARLSIM4_INC) $(obj_files_no_cuda) $< -o $(proj_target) $(CARLSIM4_LD)
+	$(CXX) $(CARLSIM5_INC) $(obj_files_no_cuda) $< -o $(proj_target) $(CARLSIM5_LD)
 
 $(proj_src_dir)/%-cpp.o: $(proj_src_dir)/%.cpp $(inc_files)
 	$(CXX) -c $(CXXINCFL) $(CXXFL) $< -o $@
@@ -103,7 +103,7 @@ distclean:
 	$(RM) $(distclean_files)
 
 help:
-	$(info CARLsim4 Test Suite options:)
+	$(info CARLsim5 Test Suite options:)
 	$(info )
 	$(info make               Compiles test suite
 	$(info make clean         Cleans out all object files)

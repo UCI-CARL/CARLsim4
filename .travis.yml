@@ -25,10 +25,10 @@ before_install:
   - if [[ $LINUX ]]; then gem install coveralls-lcov; fi
 
 install:
-  - mkdir $HOME/carlsim4_install
-  - export CARLSIM4_INSTALL_DIR=$HOME/carlsim4_install
-  - export CARLSIM4_NO_CUDA=1
-  - if [[ $LINUX ]]; then export CARLSIM4_COVERAGE=1; fi
+  - mkdir $HOME/carlsim5_install
+  - export CARLSIM5_INSTALL_DIR=$HOME/carlsim5_install
+  - export CARLSIM5_NO_CUDA=1
+  - if [[ $LINUX ]]; then export CARLSIM5_COVERAGE=1; fi
   - cd external/googletest
   - mkdir build
   - cd build
