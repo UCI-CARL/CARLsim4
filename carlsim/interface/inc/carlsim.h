@@ -364,7 +364,7 @@ public:
 	 * \STATE ::CONFIG_STATE
 	 * \param[in] isSet   a flag to inform whether to run simulation in COBA mode (true) or CUBA mode (false)
 	 */
-	void setConductances(bool isSet);
+// 	void setConductances(bool isSet);
 
 	/*!
 	 * \brief Sets custom values for conduction decay times (instantaneous rise time) or disables COBA alltogether
@@ -382,7 +382,8 @@ public:
 	 * \param[in] tdGABAa time constant for GABAa decay (ms)
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
 	 */
-	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb);
+	// void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb);
+// 	void setConductances(bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb);
 
 	/*!
 	 * \brief Sets custom values for conduction rise and decay times or disables COBA alltogether
@@ -404,7 +405,9 @@ public:
 	 * \param[in] trGABAb time constant for GABAb rise (ms), must be smaller than tdGABAb
 	 * \param[in] tdGABAb time constant for GABAb decay (ms)
 	 */
-	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
+	// void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
+// 	void setConductances(bool isSet, float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb, float tdGABAb);
+// 	void setConductances(bool isSet, float trNMDA, float trGABAb);
 
 	/*!
 	 * \brief Sets custom values for implementation of homeostatic synaptic scaling
@@ -760,7 +763,7 @@ public:
 	 * \note STP will be applied to all outgoing synapses of all neurons in this group. Each neuron in the group will have individual STP parameters drawn from the normal distribution.
 	 * \note All outgoing synapses of a certain (pre-synaptic) neuron share the resources of that same neuron.
 	 */
-	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x);
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x, const STPtdAMPA& STP_tdAMPA, const STPtdNMDA& STP_tdNMDA, const STPtdGABAa& STP_tdGABAa, const STPtdGABAb& STP_tdGABAb, const STPtrNMDA& STP_trNMDA, const STPtrGABAb& STP_trGABAb);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
@@ -1762,7 +1765,9 @@ public:
 	 * \param[in] trGABAb  time constant for GABAb rise (ms)
 	 * \param[in] tdGABAb  time constant for GABAb decay (ms)
 	 */
-	void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
+	// void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
+// 	void setDefaultConductanceTimeConstants(float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb, float tdGABAb);
+// 	void setDefaultConductanceTimeConstants(float trNMDA, float trGABAb);
 
 	/*!
 	 * \brief Sets default homeostasis params
@@ -1831,7 +1836,7 @@ public:
 	 * \see setSTP(int, bool, float, float, float)
 	 * \since v3.0
 	 */
-	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x);
+	void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x, float STP_tdAMPA, float STP_tdNMDA, float STP_tdGABAa, float STP_tdGABAb, float STP_trNMDA, float STP_trGABAb);
 
 
 private:

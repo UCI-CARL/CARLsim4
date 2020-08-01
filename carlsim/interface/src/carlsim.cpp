@@ -94,7 +94,7 @@ public:
 		hasSetHomeoBaseFiringALL_ 	= false;
 		hasSetSTDPALL_ 				= false;
 		hasSetSTPALL_ 				= false;
-		hasSetConductances_			= false;
+// 		hasSetConductances_			= false;
 		carlsimState_				= CONFIG_STATE;
 
 		sim_ = sim;
@@ -433,63 +433,65 @@ public:
 
 
 	// set conductance values, use defaults
-	void setConductances(bool isSet) {
-		std::stringstream funcName; funcName << "setConductances(" << isSet << ")";
-		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-			funcName.str(), "CONFIG.");
-		hasSetConductances_ = true;
+// 	void setConductances(bool isSet) {
+// 		std::stringstream funcName; funcName << "setConductances(" << isSet << ")";
+// 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+// 			funcName.str(), "CONFIG.");
+// 		hasSetConductances_ = true;
 
-		if (isSet) { // enable conductances, use default values
-			snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_);
-		} else { // disable conductances
-			snn_->setConductances(false,0,0,0,0,0,0);
-		}
-	}
+// 		if (isSet) { // enable conductances, use default values
+// 			snn_->setConductances(true,def_tdAMPA_,0,def_tdNMDA_,def_tdGABAa_,0,def_tdGABAb_);
+// 		} else { // disable conductances
+// 			snn_->setConductances(false,0,0,0,0,0,0);
+// 		}
+// 	}
 
 	// set conductances values, CUSTOM
-	void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
-		std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << tdNMDA << ","
-			<< tdGABAa << "," << tdGABAb << ")";
-		UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
-		UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
-		UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
-		UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
-		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-			funcName.str(),"CONFIG.");
-		hasSetConductances_ = true;
+	// void setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
+// 	void setConductances(bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
+// 		std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << tdNMDA << ","
+// 			<< tdGABAa << "," << tdGABAb << ")";
+// 		UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+// 		UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+// 		UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+// 		UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+// 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+// 			funcName.str(),"CONFIG.");
+// 		hasSetConductances_ = true;
 
-		if (isSet) { // enable conductances, use custom values
-			snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb);
-		} else { // disable conductances
-			snn_->setConductances(false,0,0,0,0,0,0);
-		}
-	}
+// 		if (isSet) { // enable conductances, use custom values
+// 			snn_->setConductances(true,tdAMPA,0,tdNMDA,tdGABAa,0,tdGABAb);
+// 		} else { // disable conductances
+// 			snn_->setConductances(false,0,0,0,0,0,0);
+// 		}
+// 	}
 
 	// set conductances values, custom
-	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
-		int tdGABAb)
-	{
-		std::stringstream funcName; funcName << "setConductances(" << isSet << "," << tdAMPA << "," << trNMDA << "," <<
-			tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
-		UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
-		UserErrors::assertTrue(!isSet||trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
-		UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
-		UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
-		UserErrors::assertTrue(!isSet||trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
-		UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
-		UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
-		UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), 
-			"trGABAb and tdGABAb");
-		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-			funcName.str(), "CONFIG.");
-		hasSetConductances_ = true;
+	// void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
+	//	int tdGABAb)
+// 	void setConductances(bool isSet, float trNMDA, float trGABAb)
+// 	{
+// 		std::stringstream funcName; funcName << "setConductances(" << isSet << "," << trNMDA << "," << trGABAb << ")";
+// // 		UserErrors::assertTrue(!isSet||tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+// 		UserErrors::assertTrue(!isSet||trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
+// // 		UserErrors::assertTrue(!isSet||tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+// // 		UserErrors::assertTrue(!isSet||tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+// 		UserErrors::assertTrue(!isSet||trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
+// // 		UserErrors::assertTrue(!isSet||tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "trGABAb");
+// // 		UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
+// // 		UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), 
+// // 			"trGABAb and tdGABAb");
+// 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+// 			funcName.str(), "CONFIG.");
+// 		hasSetConductances_ = true;
 
-		if (isSet) { // enable conductances, use custom values
-			snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
-		} else { // disable conductances
-			snn_->setConductances(false,0,0,0,0,0,0);
-		}
-	}
+// 		if (isSet) { // enable conductances, use custom values
+// // 			snn_->setConductances(true,tdAMPA,trNMDA,tdNMDA,tdGABAa,trGABAb,tdGABAb);
+// 			snn_->setConductances(true,trNMDA,trGABAb);            
+// 		} else { // disable conductances
+// 			snn_->setConductances(false,0,0);
+// 		}
+// 	}
 
 	// set default homeostasis params
 	void setHomeostasis(int grpId, bool isSet) {
@@ -799,20 +801,23 @@ public:
 
 			if (isExcitatoryGroup(preGrpId))
 				// snn_->setSTP(grpId,true,def_STP_U_exc_,def_STP_tau_u_exc_,def_STP_tau_x_exc_);
-				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_exc_mean, def_STP_U_exc_std, def_STP_tau_u_exc_mean, def_STP_tau_u_exc_std, def_STP_tau_x_exc_mean, def_STP_tau_x_exc_std);
+// 				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_exc_mean, def_STP_U_exc_std, def_STP_tau_u_exc_mean, def_STP_tau_u_exc_std, def_STP_tau_x_exc_mean, def_STP_tau_x_exc_std);
+				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_exc_mean, def_STP_U_exc_std, def_STP_tau_u_exc_mean, def_STP_tau_u_exc_std, def_STP_tau_x_exc_mean, def_STP_tau_x_exc_std, def_STP_tdAMPA_exc_mean, def_STP_tdAMPA_exc_std, def_STP_tdNMDA_exc_mean, def_STP_tdNMDA_exc_std, def_STP_tdGABAa_exc_mean, def_STP_tdGABAa_exc_std, def_STP_tdGABAb_exc_mean, def_STP_tdGABAb_exc_std, def_STP_trNMDA_exc_mean, def_STP_trNMDA_exc_std, def_STP_trGABAb_exc_mean, def_STP_trGABAb_exc_std);
 			else if (isInhibitoryGroup(preGrpId))
 				//snn_->setSTP(grpId,true,def_STP_U_inh_,def_STP_tau_u_inh_,def_STP_tau_x_inh_);
-				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_inh_mean, def_STP_U_inh_std, def_STP_tau_u_inh_mean, def_STP_tau_u_inh_std, def_STP_tau_x_inh_mean, def_STP_tau_x_inh_std);
+// 				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_inh_mean, def_STP_U_inh_std, def_STP_tau_u_inh_mean, def_STP_tau_u_inh_std, def_STP_tau_x_inh_mean, def_STP_tau_x_inh_std);
+				snn_->setSTP(preGrpId, postGrpId, isSet, def_STP_U_inh_mean, def_STP_U_inh_std, def_STP_tau_u_inh_mean, def_STP_tau_u_inh_std, def_STP_tau_x_inh_mean, def_STP_tau_x_inh_std, def_STP_tdAMPA_inh_mean, def_STP_tdAMPA_inh_std, def_STP_tdNMDA_inh_mean, def_STP_tdNMDA_inh_std, def_STP_tdGABAa_inh_mean, def_STP_tdGABAa_inh_std, def_STP_tdGABAb_inh_mean, def_STP_tdGABAb_inh_std, def_STP_trNMDA_inh_mean, def_STP_trNMDA_inh_std, def_STP_trGABAb_inh_mean, def_STP_trGABAb_inh_std);
 			else {
 				// otherwise it will fail the assert anyway
 			}
 		} else { // disable STDP
-			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+// 			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
 	// set STP, custom normal distributed STP parameters
-	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x){
+	void setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x, const STPtdAMPA& STP_tdAMPA, const STPtdNMDA& STP_tdNMDA, const STPtdGABAa& STP_tdGABAa, const STPtdGABAb& STP_tdGABAb, const STPtrNMDA& STP_trNMDA, const STPtrGABAb& STP_trGABAb){
 		std::string funcName = "setSTP(\""+getGroupName(preGrpId)+ " ," + getGroupName(postGrpId)+"\")";
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
@@ -823,9 +828,11 @@ public:
 			UserErrors::assertTrue(isExcitatoryGroup(preGrpId) || isInhibitoryGroup(preGrpId), UserErrors::WRONG_NEURON_TYPE,
 				funcName,"setSTP");
 
-			snn_->setSTP(preGrpId, postGrpId, isSet, STP_U.mean, STP_U.std, STP_tau_u.mean, STP_tau_u.std, STP_tau_x.mean, STP_tau_x.std);
+// 			snn_->setSTP(preGrpId, postGrpId, isSet, STP_U.mean, STP_U.std, STP_tau_u.mean, STP_tau_u.std, STP_tau_x.mean, STP_tau_x.std);
+			snn_->setSTP(preGrpId, postGrpId, isSet, STP_U.mean, STP_U.std, STP_tau_u.mean, STP_tau_u.std, STP_tau_x.mean, STP_tau_x.std, STP_tdAMPA.mean, STP_tdAMPA.std, STP_tdNMDA.mean, STP_tdNMDA.std, STP_tdGABAa.mean, STP_tdGABAa.std, STP_tdGABAb.mean, STP_tdGABAb.std, STP_trNMDA.mean, STP_trNMDA.std, STP_trGABAb.mean, STP_trGABAb.std);
 		} else { // disable STDP
-			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+// 			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+			snn_->setSTP(preGrpId, postGrpId, isSet, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
 
@@ -853,9 +860,9 @@ public:
 		// run some checks before running network for the first time
 		if (carlsimState_ != RUN_STATE) {
 			// if user hasn't called setConductances, set to false and disp warning
-			if (!hasSetConductances_) {
-				userWarnings_.push_back("setConductances has not been called. Setting simulation mode to CUBA.");
-			}
+// 			if (!hasSetConductances_) {
+// 				userWarnings_.push_back("setConductances has not been called. Setting simulation mode to CUBA.");
+// 			}
 
 			// make sure user didn't provoque any user warnings
 			handleUserWarnings();
@@ -1141,8 +1148,8 @@ public:
 		else {
 			// try to open spike file
 			if (fileNameLower == "default") {
-				std::string fileNameDefault = "results/nrnstate_" + snn_->getGroupName(grpId) + ".dat";
-				fid = fopen(fileNameDefault.c_str(), "wb");
+				std::string fileNameDefault = "results/nrnstate_" + snn_->getGroupName(grpId) + ".txt";
+				fid = fopen(fileNameDefault.c_str(), "w");
 				if (fid == NULL) {
 					std::string fileError = " Make sure results/ exists.";
 					UserErrors::assertTrue(false, UserErrors::FILE_CANNOT_OPEN, funcName, fileNameDefault, fileError);
@@ -1439,30 +1446,45 @@ public:
 	// +++++++++ PUBLIC METHODS: SET DEFAULTS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
 
 	// set default values for conductance decay times
-	void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb,
-		int tdGABAb)
-	{
-		std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA <<
-			"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
-		UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
-		UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
-		UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
-		UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
-		UserErrors::assertTrue(trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
-		UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
-		UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
-		UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), 
-			"trGABAb and tdGABAb");
-		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
-			"CONFIG.");
+	// void setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb,
+	//	int tdGABAb)
+// 	void setDefaultConductanceTimeConstants(float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb,
+//               float tdGABAb)
+// 	{
+// 		std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" << tdAMPA << "," << trNMDA <<
+// 			"," << tdNMDA << "," << tdGABAa << "," << trGABAb << "," << tdGABAb << ")";
+// 		UserErrors::assertTrue(tdAMPA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdAMPA");
+// 		UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
+// 		UserErrors::assertTrue(tdNMDA>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdNMDA");
+// 		UserErrors::assertTrue(tdGABAa>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAa");
+// 		UserErrors::assertTrue(trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
+// 		UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
+// 		UserErrors::assertTrue(trNMDA!=tdNMDA, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), "trNMDA and tdNMDA");
+// 		UserErrors::assertTrue(trGABAb!=tdGABAb, UserErrors::CANNOT_BE_IDENTICAL, funcName.str(), 
+// 			"trGABAb and tdGABAb");
+// 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+// 			"CONFIG.");
 
-		def_tdAMPA_  = tdAMPA;
-		def_trNMDA_  = trNMDA;
-		def_tdNMDA_  = tdNMDA;
-		def_tdGABAa_ = tdGABAa;
-		def_trGABAb_ = trGABAb;
-		def_tdGABAb_ = tdGABAb;
-	}
+// 		def_tdAMPA_  = tdAMPA;
+// 		def_trNMDA_  = trNMDA;
+// 		def_tdNMDA_  = tdNMDA;
+// 		def_tdGABAa_ = tdGABAa;
+// 		def_trGABAb_ = trGABAb;
+// 		def_tdGABAb_ = tdGABAb;
+// 	}
+    
+// 	void setDefaultConductanceTimeConstants(float trNMDA, float trGABAb)
+// 	{
+// 		std::stringstream funcName;	funcName << "setDefaultConductanceTimeConstants(" trNMDA <<
+// 			"," << trGABAb << ")";
+// 		UserErrors::assertTrue(trNMDA>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trNMDA");
+// 		UserErrors::assertTrue(trGABAb>=0, UserErrors::CANNOT_BE_NEGATIVE, funcName.str(), "trGABAb");
+// 		UserErrors::assertTrue(tdGABAb>0, UserErrors::MUST_BE_POSITIVE, funcName.str(), "tdGABAb");
+// 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName.str(),
+// 			"CONFIG.");
+// 		def_trNMDA_  = trNMDA;
+// 		def_trGABAb_ = trGABAb;
+// 	}
 
 	void setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) {
 		std::string funcName = "setDefaultHomeostasisparams()";
@@ -1546,7 +1568,8 @@ public:
 
 // set default STP values for an EXCITATORY_NEURON or INHIBITORY_NEURON
 	// void setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
-	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x){
+// 	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x){
+	void setDefaultSTPparams(int neurType, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x, const STPtdAMPA& STP_tdAMPA, const STPtdNMDA& STP_tdNMDA, const STPtdGABAa& STP_tdGABAa, const STPtdGABAb& STP_tdGABAb, const STPtrNMDA& STP_trNMDA, const STPtrGABAb& STP_trGABAb){
 		std::string funcName = "setDefaultSTPparams()";
 		UserErrors::assertTrue(neurType==EXCITATORY_NEURON || neurType==INHIBITORY_NEURON, UserErrors::WRONG_NEURON_TYPE,
 			funcName);
@@ -1554,23 +1577,52 @@ public:
 
 		assert(STP_tau_u.mean>0.0f);
 		assert(STP_tau_x.mean>0.0f);
-
+		assert(STP_tdAMPA.mean>0.0f);
+		assert(STP_tdNMDA.mean>0.0f);
+		assert(STP_tdGABAa.mean>0.0f);
+		assert(STP_tdGABAb.mean>0.0f);
+        
+        
 		switch (neurType) {
 			case EXCITATORY_NEURON:
 			def_STP_U_exc_mean = STP_U.mean;
 			def_STP_tau_u_exc_mean = STP_tau_u.mean;
 			def_STP_tau_x_exc_mean = STP_tau_x.mean;
+			def_STP_tdAMPA_exc_mean = STP_tdAMPA.mean;
+			def_STP_tdNMDA_exc_mean = STP_tdNMDA.mean;
+			def_STP_tdGABAa_exc_mean = STP_tdGABAa.mean;
+			def_STP_tdGABAb_exc_mean = STP_tdGABAb.mean;
+			def_STP_trNMDA_exc_mean = STP_trNMDA.mean;
+			def_STP_trGABAb_exc_mean = STP_trGABAb.mean;
 			def_STP_U_exc_std = STP_U.std;
 			def_STP_tau_u_exc_std = STP_tau_u.std;
 			def_STP_tau_x_exc_std = STP_tau_x.std;
+			def_STP_tdAMPA_exc_std = STP_tdAMPA.std;
+			def_STP_tdNMDA_exc_std = STP_tdNMDA.std;
+			def_STP_tdGABAa_exc_std = STP_tdGABAa.std;
+			def_STP_tdGABAb_exc_std = STP_tdGABAb.std;
+			def_STP_trNMDA_exc_std = STP_trNMDA.std;
+			def_STP_trGABAb_exc_std = STP_trGABAb.std;
 			break;
 		case INHIBITORY_NEURON:
 			def_STP_U_inh_mean = STP_U.mean;
 			def_STP_tau_u_inh_mean = STP_tau_u.mean;
 			def_STP_tau_x_inh_mean = STP_tau_x.mean;
+			def_STP_tdAMPA_inh_mean = STP_tdAMPA.mean;
+			def_STP_tdNMDA_inh_mean = STP_tdNMDA.mean;
+			def_STP_tdGABAa_inh_mean = STP_tdGABAa.mean;
+			def_STP_tdGABAb_inh_mean = STP_tdGABAb.mean;
+			def_STP_trNMDA_inh_mean = STP_trNMDA.mean;
+			def_STP_trGABAb_inh_mean = STP_trGABAb.mean;
 			def_STP_U_inh_std = STP_U.std;
 			def_STP_tau_u_inh_std = STP_tau_u.std;
 			def_STP_tau_x_inh_std = STP_tau_x.std;
+			def_STP_tdAMPA_inh_std = STP_tdAMPA.std;
+			def_STP_tdNMDA_inh_std = STP_tdNMDA.std;
+			def_STP_tdGABAa_inh_std = STP_tdGABAa.std;
+			def_STP_tdGABAb_inh_std = STP_tdGABAb.std;
+			def_STP_trNMDA_inh_mean = STP_trNMDA.mean;
+			def_STP_trGABAb_inh_mean = STP_trGABAb.mean;
 			break;
 		default:
 			// some error message instead of assert
@@ -1595,8 +1647,8 @@ private:
 
 		// set default time constants for synaptic current decay
 		// TODO: add ref
-		setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
-
+// 		setDefaultConductanceTimeConstants(5, 0, 150, 6, 0, 150);
+// 		setDefaultConductanceTimeConstants(0, 0);
 		// set default values for STDP params
 		// \deprecated
 		// \TODO: replace with STDP structs
@@ -1605,8 +1657,10 @@ private:
 
 		// set default values for STP params
 		// Misha Tsodyks and Si Wu (2013) Short-term synaptic plasticity. Scholarpedia, 8(10):3153., revision #136920
-		setDefaultSTPparams(EXCITATORY_NEURON, 0.45f, 50.0f, 750.0f);
-		setDefaultSTPparams(INHIBITORY_NEURON, 0.15f, 750.0f, 50.0f);
+// 		setDefaultSTPparams(EXCITATORY_NEURON, 0.45f, 50.0f, 750.0f);
+// 		setDefaultSTPparams(INHIBITORY_NEURON, 0.15f, 750.0f, 50.0f);
+		setDefaultSTPparams(EXCITATORY_NEURON, 0.45f, 50.0f, 750.0f, 5.0f, 150.0f, 6.0f, 150.0f, 0.0f, 0.0f);
+		setDefaultSTPparams(INHIBITORY_NEURON, 0.15f, 750.0f, 50.0f, 5.0f, 150.0f, 6.0f, 150.0f, 0.0f, 0.0f);
 
 		// set default homeostasis params
 		// Ref: Carlson, et al. (2013). Proc. of IJCNN 2013.
@@ -1684,15 +1738,15 @@ private:
 	bool hasSetHomeoBaseFiringALL_;	//!< informs that base firing has been set for ALL groups (can't add more groups)
 	bool hasSetSTDPALL_; 			//!< informs that STDP have been set for ALL groups (can't add more groups)
 	bool hasSetSTPALL_; 			//!< informs that STP have been set for ALL groups (can't add more groups)
-	bool hasSetConductances_;		//!< informs that setConductances has been called
+// 	bool hasSetConductances_;		//!< informs that setConductances has been called
 	CARLsimState carlsimState_;	//!< the current state of carlsim
 
-	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
-	int def_trNMDA_;				//!< default value for NMDA rise (ms)
-	int def_tdNMDA_;				//!< default value for NMDA decay (ms)
-	int def_tdGABAa_;				//!< default value for GABAa decay (ms)
-	int def_trGABAb_;				//!< default value for GABAb rise (ms)
-	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
+// 	int def_tdAMPA_;				//!< default value for AMPA decay (ms)
+// 	int def_trNMDA_;				//!< default value for NMDA rise (ms)
+// 	int def_tdNMDA_;				//!< default value for NMDA decay (ms)
+// 	int def_tdGABAa_;				//!< default value for GABAa decay (ms)
+// 	int def_trGABAb_;				//!< default value for GABAb rise (ms)
+// 	int def_tdGABAb_;				//!< default value for GABAb decay (ms)
 
 	// all default values for STDP
 	STDPType def_STDP_type_;		//!< default mode for STDP
@@ -1709,16 +1763,40 @@ private:
 	float def_STP_U_exc_mean;			//!< default value for STP U excitatory
 	float def_STP_tau_u_exc_mean;		//!< default value for STP u decay (\tau_F) excitatory (ms)
 	float def_STP_tau_x_exc_mean;		//!< default value for STP x decay (\tau_D) excitatory (ms)
+	float def_STP_tdAMPA_exc_mean;		//!< default value for AMPA decay (ms) 
+	float def_STP_tdNMDA_exc_mean;		//!< default value for NMDA decay (ms)
+	float def_STP_tdGABAa_exc_mean;		//!< default value for GABAa decay (ms)
+	float def_STP_tdGABAb_exc_mean;		//!< default value for GABAb decay (ms)
+	float def_STP_trNMDA_exc_mean;		//!< default value for NMDA rise (ms)
+	float def_STP_trGABAb_exc_mean;		//!< default value for GABAb rise (ms)
 	float def_STP_U_exc_std;			//!< default value for STP U excitatory
 	float def_STP_tau_u_exc_std;		//!< default value for STP u decay (\tau_F) excitatory (ms)
 	float def_STP_tau_x_exc_std;		//!< default value for STP x decay (\tau_D) excitatory (ms)
+	float def_STP_tdAMPA_exc_std;		//!< default value for AMPA decay (ms) 
+	float def_STP_tdNMDA_exc_std;		//!< default value for NMDA decay (ms)
+	float def_STP_tdGABAa_exc_std;		//!< default value for GABAa decay (ms)
+	float def_STP_tdGABAb_exc_std;		//!< default value for GABAb decay (ms)
+	float def_STP_trNMDA_exc_std;		//!< default value for NMDA rise (ms)
+	float def_STP_trGABAb_exc_std;		//!< default value for GABAb rise (ms)
 
 	float def_STP_U_inh_mean;			//!< default value for STP U inhibitory
 	float def_STP_tau_u_inh_mean;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
 	float def_STP_tau_x_inh_mean;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
+	float def_STP_tdAMPA_inh_mean;		//!< default value for AMPA decay (ms) 
+	float def_STP_tdNMDA_inh_mean;		//!< default value for NMDA decay (ms)
+	float def_STP_tdGABAa_inh_mean;		//!< default value for GABAa decay (ms)
+	float def_STP_tdGABAb_inh_mean;		//!< default value for GABAb decay (ms)
+	float def_STP_trNMDA_inh_mean;		//!< default value for NMDA rise (ms)
+	float def_STP_trGABAb_inh_mean;		//!< default value for GABAb rise (ms)
 	float def_STP_U_inh_std;			//!< default value for STP U inhibitory
 	float def_STP_tau_u_inh_std;		//!< default value for STP u decay (\tau_F) inhibitory (ms)
 	float def_STP_tau_x_inh_std;		//!< default value for STP x decay (\tau_D) inhibitory (ms)
+	float def_STP_tdAMPA_inh_std;		//!< default value for AMPA decay (ms) 
+	float def_STP_tdNMDA_inh_std;		//!< default value for NMDA decay (ms)
+	float def_STP_tdGABAa_inh_std;		//!< default value for GABAa decay (ms)
+	float def_STP_tdGABAb_inh_std;		//!< default value for GABAb decay (ms)
+	float def_STP_trNMDA_inh_std;		//!< default value for NMDA rise (ms)
+	float def_STP_trGABAb_inh_std;		//!< default value for GABAb rise (ms)
 
 	// all default values for homeostasis
 	float def_homeo_scale_;			//!< default homeoScale
@@ -1801,15 +1879,22 @@ void CARLsim::setCompartmentParameters(int grpId, float couplingUp, float coupli
 }
 
 // set conductances
-void CARLsim::setConductances(bool isSet) {
-	_impl->setConductances(isSet);
-}
-void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
-	_impl->setConductances(isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb);
-}
-void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
-	_impl->setConductances(isSet, tdAMPA, trNMDA, tdNMDA, tdGABAa, trGABAb, tdGABAb);
-}
+// void CARLsim::setConductances(bool isSet) {
+// 	_impl->setConductances(isSet);
+// }
+// void CARLsim::setConductances(bool isSet, int tdAMPA, int tdNMDA, int tdGABAa, int tdGABAb) {
+// void CARLsim::setConductances(bool isSet, float tdAMPA, float tdNMDA, float tdGABAa, float tdGABAb) {
+// 	_impl->setConductances(isSet, tdAMPA, tdNMDA, tdGABAa, tdGABAb);
+// }
+
+// // void CARLsim::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
+// void CARLsim::setConductances(bool isSet, float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb, float tdGABAb) {
+// 	_impl->setConductances(isSet, tdAMPA, trNMDA, tdNMDA, tdGABAa, trGABAb, tdGABAb);
+// }
+
+// void CARLsim::setConductances(bool isSet, float trNMDA, float trGABAb) {
+// 	_impl->setConductances(isSet, trNMDA, trGABAb);
+// }
 
 // set homeostasis params
 void CARLsim::setHomeostasis(int grpId, bool isSet, float homeoScale, float avgTimeScale) {
@@ -1905,9 +1990,14 @@ void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
 	_impl->setISTDP(grpId, isSet, type, curve);
 }
 
+// // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+// void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x) {
+// 	_impl->setSTP(preGrpId, postGrpId, isSet, STP_U, STP_tau_u, STP_tau_x);
+// }
+
 // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x) {
-	_impl->setSTP(preGrpId, postGrpId, isSet, STP_U, STP_tau_u, STP_tau_x);
+void CARLsim::setSTP(int preGrpId, int postGrpId, bool isSet, const STPu& STP_U, const STPtauU& STP_tau_u, const STPtauX& STP_tau_x, const STPtdAMPA& STP_tdAMPA, const STPtdNMDA& STP_tdNMDA, const STPtdGABAa& STP_tdGABAa, const STPtdGABAb& STP_tdGABAb, const STPtrNMDA& STP_trNMDA, const STPtrGABAb& STP_trGABAb) {
+	_impl->setSTP(preGrpId, postGrpId, isSet, STP_U, STP_tau_u, STP_tau_x, STP_tdAMPA, STP_tdNMDA, STP_tdGABAa, STP_tdGABAb, STP_trNMDA, STP_trGABAb);
 }
 
 // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically) using default values
@@ -2123,12 +2213,17 @@ bool CARLsim::isInhibitoryGroup(int grpId) { return _impl->isInhibitoryGroup(grp
 
 bool CARLsim::isPoissonGroup(int grpId) { return _impl->isPoissonGroup(grpId); }
 
-void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
-	int tdGABAb)
-{
-	_impl->setDefaultConductanceTimeConstants(tdAMPA, trNMDA, tdNMDA, tdGABAa, trGABAb, tdGABAb);
-}
-
+// void CARLsim::setDefaultConductanceTimeConstants(int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, 
+//	int tdGABAb)
+// void CARLsim::setDefaultConductanceTimeConstants(float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb,
+//       float tdGABAb)
+// {
+// 	_impl->setDefaultConductanceTimeConstants(tdAMPA, trNMDA, tdNMDA, tdGABAa, trGABAb, tdGABAb);
+// }
+// void CARLsim::setDefaultConductanceTimeConstants(float trNMDA, float trGABAb)
+// {
+// 	_impl->setDefaultConductanceTimeConstants(trNMDA, trGABAb);
+// }
 // Sets default homeostasis params
 void CARLsim::setDefaultHomeostasisParams(float homeoScale, float avgTimeScale) {
 	_impl->setDefaultHomeostasisParams(homeoScale, avgTimeScale);
@@ -2154,7 +2249,12 @@ void CARLsim::setDefaultISTDPparams(float betaLTP, float betaLTD, float lambda, 
 	_impl->setDefaultISTDPparams(betaLTP, betaLTD, lambda, delta, stdpType);
 }
 
+// // Sets default values for STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
+// void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
+// 	_impl->setDefaultSTPparams(neurType, STP_U, STP_tau_u, STP_tau_x);
+// }
+
 // Sets default values for STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
-void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x) {
-	_impl->setDefaultSTPparams(neurType, STP_U, STP_tau_u, STP_tau_x);
+void CARLsim::setDefaultSTPparams(int neurType, float STP_U, float STP_tau_u, float STP_tau_x, float STP_tdAMPA, float STP_tdNMDA, float STP_tdGABAa, float STP_tdGABAb, float STP_trNMDA, float STP_trGABAb) {
+	_impl->setDefaultSTPparams(neurType, STP_U, STP_tau_u, STP_tau_x, STP_tdAMPA, STP_tdNMDA, STP_tdGABAa, STP_tdGABAb, STP_trNMDA, STP_trGABAb);
 }

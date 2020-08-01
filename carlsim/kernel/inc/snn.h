@@ -228,9 +228,9 @@ public:
 	 * \param tGABAa: time constant of GABAa decay (ms); for example, 6.0
 	 * \param tGABAb: time constant of GABAb decay (ms); for example, 150.0
 	 */
-	void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
-
-
+	// void setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb);
+// 	void setConductances(bool isSet, float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb, float tdGABAb);
+// 	void setConductances(bool isSet, float trNMDA, float trGABAb);
 	/*!
 	 * \brief Sets the homeostasis parameters. g is the grpID, enable=true(false) enables(disables) homeostasis,
 	 * homeostasisScale is strength of
@@ -374,7 +374,7 @@ public:
 	 * \param[in] STP_tau_x_mean  mean of decay constant of x (\tau_D)
 	 * \param[in] STP_tau_x_std   sd of decay constant of x (\tau_D)
 	 */
-	void setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std);
+	void setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std, float STP_tdAMPA_mean, float STP_tdAMPA_std, float STP_tdNMDA_mean, float STP_tdNMDA_std, float STP_tdGABAa_mean, float STP_tdGABAa_std, float STP_tdGABAb_mean, float STP_tdGABAb_std, float STP_trNMDA_mean, float STP_trNMDA_std, float STP_trGABAb_mean, float STP_trGABAb_std);
 
 	//! Sets the weight and weight change update parameters
 	/*!
@@ -1103,14 +1103,14 @@ private:
 	bool sim_with_conductances; //!< flag to inform whether we run in COBA mode (true) or CUBA mode (false)
 	bool sim_with_NMDA_rise;    //!< a flag to inform whether to compute NMDA rise time
 	bool sim_with_GABAb_rise;   //!< a flag to inform whether to compute GABAb rise time
-	double dAMPA;               //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	double rNMDA;               //!< multiplication factor for rise time of NMDA
-	double dNMDA;               //!< multiplication factor for decay time of NMDA
-	double sNMDA;               //!< scaling factor for NMDA amplitude
-	double dGABAa;              //!< multiplication factor for decay time of GABAa
-	double rGABAb;              //!< multiplication factor for rise time of GABAb
-	double dGABAb;              //!< multiplication factor for decay time of GABAb
-	double sGABAb;              //!< scaling factor for GABAb amplitude
+// // 	double dAMPA;               //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+// 	double rNMDA;               //!< multiplication factor for rise time of NMDA
+// // 	double dNMDA;               //!< multiplication factor for decay time of NMDA
+// 	double sNMDA;               //!< scaling factor for NMDA amplitude
+// // 	double dGABAa;              //!< multiplication factor for decay time of GABAa
+// 	double rGABAb;              //!< multiplication factor for rise time of GABAb
+// // 	double dGABAb;              //!< multiplication factor for decay time of GABAb
+// 	double sGABAb;              //!< scaling factor for GABAb amplitude
 
 	bool sim_with_compartments;
 	bool sim_with_fixedwts;

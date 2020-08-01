@@ -105,6 +105,15 @@ typedef struct ConnectionInfo_s {
 	float STP_U;
 	float STP_tau_u_inv;
 	float STP_tau_x_inv;
+    float STP_dAMPA;
+    float STP_dNMDA;
+    float STP_dGABAa;
+    float STP_dGABAb;
+    float STP_rNMDA; //!< multiplication factor for rise time of NMDA
+    float STP_sNMDA; //!< scaling factor for NMDA amplitude
+    float STP_rGABAb; //!< multiplication factor for rise time of GABAb
+    float STP_sGABAb; //!< scaling factor for GABAb amplitude
+    
 	bool withSTP;
 
 	bool operator== (const struct ConnectionInfo_s& conn) {
@@ -156,6 +165,20 @@ typedef struct ConnectConfig_s {
 	float					 STP_tau_u_std;
 	float					 STP_tau_x_mean;
 	float					 STP_tau_x_std;
+	float					 STP_dAMPA_mean;
+	float					 STP_dAMPA_std;
+	float					 STP_dNMDA_mean;
+	float					 STP_dNMDA_std;
+	float					 STP_dGABAa_mean;
+	float					 STP_dGABAa_std;
+	float					 STP_dGABAb_mean;
+	float					 STP_dGABAb_std;
+	float					 STP_rNMDA_mean;
+	float					 STP_rNMDA_std;
+	float					 STP_sNMDA;
+	float					 STP_rGABAb_mean;
+	float					 STP_rGABAb_std;
+	float					 STP_sGABAb;
 	STPConfig 				 stpConfig;
 } ConnectConfig;
 
@@ -415,6 +438,14 @@ typedef struct GroupConfigRT_s {
 	float        STP_U;             //!< published by GroupConfig \sa GroupConfig
 	float        STP_tau_u_inv;     //!< published by GroupConfig \sa GroupConfig
 	float        STP_tau_x_inv;     //!< published by GroupConfig \sa GroupConfig
+	float        STP_dAMPA;         //!< published by GroupConfig \sa GroupConfig
+	float        STP_dNMDA;         //!< published by GroupConfig \sa GroupConfig
+	float        STP_dGABAa;        //!< published by GroupConfig \sa GroupConfig
+	float        STP_dGABAb;        //!< published by GroupConfig \sa GroupConfig
+	float        STP_rNMDA;         //!< published by GroupConfig \sa GroupConfig
+	float        STP_sNMDA;         //!< published by GroupConfig \sa GroupConfig
+	float        STP_rGABAb;        //!< published by GroupConfig \sa GroupConfig
+	float        STP_sGABAb;        //!< published by GroupConfig \sa GroupConfig
 	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
 	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
 	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
@@ -525,6 +556,14 @@ typedef struct RuntimeData_s {
 	float* stp_U;
 	float* stp_tau_u_inv;
 	float* stp_tau_x_inv;
+    float* stp_dAMPA;
+    float* stp_dNMDA;
+    float* stp_dGABAa;
+    float* stp_dGABAb;
+    float* stp_rNMDA;
+    float* stp_sNMDA;
+    float* stp_rGABAb;
+    float* stp_sGABAb;
 	bool* withSTP;
 	int* delay;
 
@@ -695,14 +734,14 @@ typedef struct NetworkConfigRT_s  {
 	// conductance configurations
 	bool sim_with_NMDA_rise;  //!< a flag to inform whether to compute NMDA rise time
 	bool sim_with_GABAb_rise; //!< a flag to inform whether to compute GABAb rise time
-	double dAMPA;             //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
-	double rNMDA;             //!< multiplication factor for rise time of NMDA
-	double dNMDA;             //!< multiplication factor for decay time of NMDA
-	double sNMDA;             //!< scaling factor for NMDA amplitude
-	double dGABAa;            //!< multiplication factor for decay time of GABAa
-	double rGABAb;            //!< multiplication factor for rise time of GABAb
-	double dGABAb;            //!< multiplication factor for decay time of GABAb
-	double sGABAb;            //!< scaling factor for GABAb amplitude
+// 	// double dAMPA;             //!< multiplication factor for decay time of AMPA conductance (gAMPA[i] *= dAMPA)
+// 	double rNMDA;             //!< multiplication factor for rise time of NMDA
+// 	// double dNMDA;             //!< multiplication factor for decay time of NMDA
+// 	double sNMDA;             //!< scaling factor for NMDA amplitude
+// 	// double dGABAa;            //!< multiplication factor for decay time of GABAa
+// 	double rGABAb;            //!< multiplication factor for rise time of GABAb
+// 	// double dGABAb;            //!< multiplication factor for decay time of GABAb
+// 	double sGABAb;            //!< scaling factor for GABAb amplitude
 
 	integrationMethod_t simIntegrationMethod; //!< integration method (forward-Euler or Fourth-order Runge-Kutta)
 	int simNumStepsPerMs;					  //!< number of steps per 1 millisecond

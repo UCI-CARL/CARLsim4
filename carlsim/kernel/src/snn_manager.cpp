@@ -144,7 +144,23 @@ short int SNN::connect(int grpId1, int grpId2, const std::string& _type, float i
 	connConfig.STP_tau_u_std = 0.0f;
 	connConfig.STP_tau_x_mean = 0.0f;
 	connConfig.STP_tau_x_std = 0.0f;
+	connConfig.STP_dAMPA_mean = 0.0f;
+	connConfig.STP_dAMPA_std = 0.0f;
+	connConfig.STP_dNMDA_mean = 0.0f;
+	connConfig.STP_dNMDA_std = 0.0f;
+	connConfig.STP_dGABAa_mean = 0.0f;
+	connConfig.STP_dGABAa_std = 0.0f;
+	connConfig.STP_dGABAb_mean = 0.0f;
+	connConfig.STP_dGABAb_std = 0.0f;
+	connConfig.STP_rNMDA_mean = 0.0f;
+	connConfig.STP_rNMDA_std = 0.0f;
+	connConfig.STP_sNMDA = 0.0f;
+	connConfig.STP_rGABAb_mean = 0.0f;
+	connConfig.STP_rGABAb_std = 0.0f;
+	connConfig.STP_sGABAb = 0.0f;    
 
+
+    
 	if ( _type.find("random") != std::string::npos) {
 		connConfig.type = CONN_RANDOM;
 	}
@@ -210,6 +226,20 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	connConfig.STP_tau_u_std = 0.0f;
 	connConfig.STP_tau_x_mean = 0.0f;
 	connConfig.STP_tau_x_std = 0.0f;
+	connConfig.STP_dAMPA_mean = 0.0f;
+	connConfig.STP_dAMPA_std = 0.0f;
+	connConfig.STP_dNMDA_mean = 0.0f;
+	connConfig.STP_dNMDA_std = 0.0f;
+	connConfig.STP_dGABAa_mean = 0.0f;
+	connConfig.STP_dGABAa_std = 0.0f;
+	connConfig.STP_dGABAb_mean = 0.0f;
+	connConfig.STP_dGABAb_std = 0.0f;
+	connConfig.STP_rNMDA_mean = 0.0f;
+	connConfig.STP_rNMDA_std = 0.0f;
+	connConfig.STP_sNMDA = 0.0f;
+	connConfig.STP_rGABAb_mean = 0.0f;
+	connConfig.STP_rGABAb_std = 0.0f;
+	connConfig.STP_sGABAb = 0.0f;    
 	connConfig.stpConfig.WithSTP = false;
 
 	// assign a connection id
@@ -417,57 +447,101 @@ void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingD
 }
 
 
+// // set conductance values for a simulation (custom values or disable conductances alltogether)
+// void SNN::setConductances(bool isSet, float tdAMPA, float trNMDA, float tdNMDA, float tdGABAa, float trGABAb, float tdGABAb) {
+// 	if (isSet) {
+// 		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
+// 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
+// 		assert(trNMDA!=tdNMDA); assert(trGABAb!=tdGABAb); // singularity
+// 	}
+
+// 	// set conductances globally for all connections
+// 	sim_with_conductances  |= isSet;
+// 	dAMPA  = 1.0-1.0/tdAMPA;
+// 	dNMDA  = 1.0-1.0/tdNMDA;
+// 	dGABAa = 1.0-1.0/tdGABAa;
+// 	dGABAb = 1.0-1.0/tdGABAb;
+
+// 	if (trNMDA>0) {
+// 		// use rise time for NMDA
+// 		sim_with_NMDA_rise = true;
+// 		rNMDA = 1.0-1.0/trNMDA;
+
+// 		// compute max conductance under this model to scale it back to 1
+// 		// otherwise the peak conductance will not be equal to the weight
+// 		double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+// 		sNMDA = 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+// 		assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+// 		assert(!isinf(sNMDA) && !isnan(sNMDA) && sNMDA>0);
+// 	}
+
+// 	if (trGABAb>0) {
+// 		// use rise time for GABAb
+// 		sim_with_GABAb_rise = true;
+// 		rGABAb = 1.0-1.0/trGABAb;
+
+// 		// compute max conductance under this model to scale it back to 1
+// 		// otherwise the peak conductance will not be equal to the weight
+// 		double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+// 		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+// 		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
+// 	}
+
+// 	if (sim_with_conductances) {
+// 		KERNEL_INFO("Running COBA mode:");
+// 		KERNEL_INFO("  - AMPA decay time            = %2.3f ms", tdAMPA);
+// 		KERNEL_INFO("  - NMDA rise time %s  = %2.3f ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
+// 		KERNEL_INFO("  - GABAa decay time           = %2.3f ms", tdGABAa);
+// 		KERNEL_INFO("  - GABAb rise time %s = %2.3f ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
+// 		KERNEL_INFO("  - GABAb decay time           = %2.3f ms", tdGABAb);
+// 	} else {
+// 		KERNEL_INFO("Running CUBA mode (all synaptic conductances disabled)");
+// 	}
+// }
 // set conductance values for a simulation (custom values or disable conductances alltogether)
-void SNN::setConductances(bool isSet, int tdAMPA, int trNMDA, int tdNMDA, int tdGABAa, int trGABAb, int tdGABAb) {
-	if (isSet) {
-		assert(tdAMPA>0); assert(tdNMDA>0); assert(tdGABAa>0); assert(tdGABAb>0);
-		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
-		assert(trNMDA!=tdNMDA); assert(trGABAb!=tdGABAb); // singularity
-	}
+// void SNN::setConductances(bool isSet, float trNMDA, float trGABAb) {
+// 	if (isSet) {
+// 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
+// 	}
 
-	// set conductances globally for all connections
-	sim_with_conductances  |= isSet;
-	dAMPA  = 1.0-1.0/tdAMPA;
-	dNMDA  = 1.0-1.0/tdNMDA;
-	dGABAa = 1.0-1.0/tdGABAa;
-	dGABAb = 1.0-1.0/tdGABAb;
+// 	if (trNMDA>0) {
+// 		// use rise time for NMDA
+// 		sim_with_NMDA_rise = true;
+// 		rNMDA = 1.0-1.0/trNMDA;
 
-	if (trNMDA>0) {
-		// use rise time for NMDA
-		sim_with_NMDA_rise = true;
-		rNMDA = 1.0-1.0/trNMDA;
+// // 		// compute max conductance under this model to scale it back to 1
+// // 		// otherwise the peak conductance will not be equal to the weight
+// // 		double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+// // 		sNMDA = 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+// // 		assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+// // 		assert(!isinf(sNMDA) && !isnan(sNMDA) && sNMDA>0);
+// 	}
 
-		// compute max conductance under this model to scale it back to 1
-		// otherwise the peak conductance will not be equal to the weight
-		double tmax = (-tdNMDA*trNMDA*log(1.0*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
-		sNMDA = 1.0/(exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
-		assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
-		assert(!isinf(sNMDA) && !isnan(sNMDA) && sNMDA>0);
-	}
+// 	if (trGABAb>0) {
+// 		// use rise time for GABAb
+// 		sim_with_GABAb_rise = true;
+// 		rGABAb = 1.0-1.0/trGABAb;
 
-	if (trGABAb>0) {
-		// use rise time for GABAb
-		sim_with_GABAb_rise = true;
-		rGABAb = 1.0-1.0/trGABAb;
+// 		// compute max conductance under this model to scale it back to 1
+// 		// otherwise the peak conductance will not be equal to the weight
+// 		double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+// 		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+// 		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
+// 	}
 
-		// compute max conductance under this model to scale it back to 1
-		// otherwise the peak conductance will not be equal to the weight
-		double tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
-		sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
-		assert(!isinf(tmax) && !isnan(tmax)); assert(!isinf(sGABAb) && !isnan(sGABAb) && sGABAb>0);
-	}
+// 	if (sim_with_conductances) {
+// 		KERNEL_INFO("Running COBA mode:");
+// 		KERNEL_INFO("  - AMPA decay time            = %2.3f ms", tdAMPA);
+// 		KERNEL_INFO("  - NMDA rise time %s  = %2.3f ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
+// 		KERNEL_INFO("  - GABAa decay time           = %2.3f ms", tdGABAa);
+// 		KERNEL_INFO("  - GABAb rise time %s = %2.3f ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
+// 		KERNEL_INFO("  - GABAb decay time           = %2.3f ms", tdGABAb);
+// 	} else {
+// 		KERNEL_INFO("Running CUBA mode (all synaptic conductances disabled)");
+// 	}
+// }
 
-	if (sim_with_conductances) {
-		KERNEL_INFO("Running COBA mode:");
-		KERNEL_INFO("  - AMPA decay time            = %5d ms", tdAMPA);
-		KERNEL_INFO("  - NMDA rise time %s  = %5d ms", sim_with_NMDA_rise?"          ":"(disabled)", trNMDA);
-		KERNEL_INFO("  - GABAa decay time           = %5d ms", tdGABAa);
-		KERNEL_INFO("  - GABAb rise time %s = %5d ms", sim_with_GABAb_rise?"          ":"(disabled)",trGABAb);
-		KERNEL_INFO("  - GABAb decay time           = %5d ms", tdGABAb);
-	} else {
-		KERNEL_INFO("Running CUBA mode (all synaptic conductances disabled)");
-	}
-}
+
 
 // set homeostasis for group
 void SNN::setHomeostasis(int gGrpId, bool isSet, float homeoScale, float avgTimeScale) {
@@ -709,13 +783,19 @@ void SNN::setISTDP(int gGrpId, bool isSet, STDPType type, STDPCurve curve, float
 }
 
 // set STP params
-void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std){
 //void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
+// void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std){
+void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, float STP_U_std, float STP_tau_u_mean, float STP_tau_u_std, float STP_tau_x_mean, float STP_tau_x_std, float STP_tdAMPA_mean, float STP_tdAMPA_std, float STP_tdNMDA_mean, float STP_tdNMDA_std, float STP_tdGABAa_mean, float STP_tdGABAa_std, float STP_tdGABAb_mean, float STP_tdGABAb_std, float STP_trNMDA_mean, float STP_trNMDA_std, float STP_trGABAb_mean, float STP_trGABAb_std){
 	assert(preGrpId >= -1);
 	assert(postGrpId >= -1);
 	if (isSet) {
 		assert(STP_U_mean > 0 && STP_U_mean <= 1); assert(STP_tau_u_mean > 0); assert(STP_tau_x_mean > 0);
-		assert(STP_U_std >= 0); assert(STP_tau_u_std >= 0); assert(STP_tau_x_std >= 0);
+		assert(STP_U_std >= 0); assert(STP_tau_u_std >= 0); assert(STP_tau_x_std >= 0); assert(STP_tdAMPA_mean > 0);
+		assert(STP_tdAMPA_std >= 0); assert(STP_tdNMDA_mean > 0); assert(STP_tdNMDA_std >= 0);
+		assert(STP_tdGABAa_mean > 0); assert(STP_tdGABAa_std >= 0); assert(STP_tdGABAb_mean > 0); assert(STP_tdGABAb_std >= 0);
+		assert(STP_trNMDA_mean >= 0); assert(STP_trNMDA_std >= 0); assert(STP_trGABAb_mean >= 0); assert(STP_trGABAb_std >= 0);
+		assert(STP_trNMDA_mean!=STP_tdNMDA_mean); assert(STP_trGABAb_mean!=STP_tdGABAb_mean); // avoid singularity
+// 		assert(STP_trNMDA_std!=STP_tdNMDA_std); assert(STP_trGABAb_std!=STP_tdGABAb_std); // avoid singularity
 	}
 
 	// set STDP for a given group
@@ -732,17 +812,31 @@ void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, floa
 	connectConfigMap[connId].STP_tau_u_std = STP_tau_u_std;
 	connectConfigMap[connId].STP_tau_x_mean = STP_tau_x_mean;
 	connectConfigMap[connId].STP_tau_x_std = STP_tau_x_std;
+	connectConfigMap[connId].STP_dAMPA_mean = STP_tdAMPA_mean;
+	connectConfigMap[connId].STP_dAMPA_std = STP_tdAMPA_std;
+	connectConfigMap[connId].STP_dNMDA_mean = STP_tdNMDA_mean;
+	connectConfigMap[connId].STP_dNMDA_std = STP_tdNMDA_std;
+	connectConfigMap[connId].STP_dGABAa_mean = STP_tdGABAa_mean;
+	connectConfigMap[connId].STP_dGABAa_std = STP_tdGABAa_std;
+	connectConfigMap[connId].STP_dGABAb_mean = STP_tdGABAb_mean;
+	connectConfigMap[connId].STP_dGABAb_std = STP_tdGABAb_std;
+	connectConfigMap[connId].STP_rNMDA_mean = STP_trNMDA_mean;
+	connectConfigMap[connId].STP_rNMDA_std = STP_trNMDA_std;
+	connectConfigMap[connId].STP_rGABAb_mean = STP_trGABAb_mean;
+	connectConfigMap[connId].STP_rGABAb_std = STP_trGABAb_std;
 	connectConfigMap[connId].stpConfig.WithSTP = true;
 
+	sim_with_conductances									|= isSet;
 	sim_with_stp									|= isSet;
 	groupConfigMap[preGrpId].stpConfig.WithSTP		= isSet;
+
 	// groupConfigMap[gGrpId].stpConfig.STP_A			= (STP_U > 0.0f) ? 1.0 / STP_U : 1.0f; // scaling factor
 	// groupConfigMap[gGrpId].stpConfig.STP_U 			= STP_U;
 	// groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv	= 1.0f / STP_tau_u; // facilitatory 
 	// groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv	= 1.0f / STP_tau_x; // depressive
 
-	KERNEL_INFO("STP %s for %d to %d (%s):\t, mean of U: %1.4f, mean of tau_u: %4.0f, mean of tau_x: %4.0f", isSet?"enabled":"disabled",
-					preGrpId, postGrpId, groupConfigMap[preGrpId].grpName.c_str(), STP_U_mean, STP_tau_u_mean, STP_tau_x_mean);
+	KERNEL_INFO("STP %s for %d to %d (%s):\t, mean of U: %1.4f, mean of tau_u: %4.0f, mean of tau_x: %4.0f, \n mean of tau_dAMPA: %2.4f, mean of tau_dNMDA: %2.4f, mean of tau_dGABAa: %2.4f, \n mean of tau_dGABAb: %2.4f, mean of tau_rNMDA: %2.4f, mean of tau_rGABAb: %2.4f", isSet?"enabled":"disabled",
+					preGrpId, postGrpId, groupConfigMap[preGrpId].grpName.c_str(), STP_U_mean, STP_tau_u_mean, STP_tau_x_mean, STP_tdAMPA_mean, STP_tdNMDA_mean, STP_tdGABAa_mean, STP_tdGABAb_mean, STP_trNMDA_mean, STP_trGABAb_mean);
 }
 
 void SNN::setWeightAndWeightChangeUpdate(UpdateInterval wtANDwtChangeUpdateInterval, bool enableWtChangeDecay, float wtChangeDecay) {
@@ -2100,14 +2194,14 @@ void SNN::SNNinit() {
 	// conductance info struct for simulation
 	sim_with_NMDA_rise = false;
 	sim_with_GABAb_rise = false;
-	dAMPA  = 1.0-1.0/5.0;		// some default decay and rise times
-	rNMDA  = 1.0-1.0/10.0;
-	dNMDA  = 1.0-1.0/150.0;
-	sNMDA  = 1.0;
-	dGABAa = 1.0-1.0/6.0;
-	rGABAb = 1.0-1.0/100.0;
-	dGABAb = 1.0-1.0/150.0;
-	sGABAb = 1.0;
+// 	dAMPA  = 1.0-1.0/5.0;		// some default decay and rise times
+// 	rNMDA  = 1.0-1.0/10.0;
+// 	dNMDA  = 1.0-1.0/150.0;
+// 	sNMDA  = 1.0;
+// 	dGABAa = 1.0-1.0/6.0;
+// 	rGABAb = 1.0-1.0/100.0;
+// 	dGABAb = 1.0-1.0/150.0;
+// 	sGABAb = 1.0;
 
 	// default integration method: Forward-Euler with 0.5ms integration step
 	setIntegrationMethod(FORWARD_EULER, 2);
@@ -2864,6 +2958,14 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.stp_U           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.stp_tau_u_inv           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.stp_tau_x_inv           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_dAMPA           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_dNMDA           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_dGABAa           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_dGABAb           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_rNMDA           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_sNMDA           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_rGABAb           = new float[managerRTDSize.maxNumPreSynNet];
+	managerRuntimeData.stp_sGABAb           = new float[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.withSTP           = new bool[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.delay             = new int[managerRTDSize.maxNumPreSynNet];
 	managerRuntimeData.wt           = new float[managerRTDSize.maxNumPreSynNet];
@@ -2879,6 +2981,14 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.stp_U, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.stp_tau_u_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.stp_tau_x_inv, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_dAMPA, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_dNMDA, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_dGABAa, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_dGABAb, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_rNMDA, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_sNMDA, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_rGABAb, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
+	memset(managerRuntimeData.stp_sGABAb, 0, sizeof(float) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.withSTP, 0, sizeof(bool) * managerRTDSize.maxNumPreSynNet);
 	memset(managerRuntimeData.delay, 0, sizeof(int) * managerRTDSize.maxNumPreSynNet);
 
@@ -3099,14 +3209,14 @@ void SNN::generateRuntimeNetworkConfigs() {
 			// conductance configurations
 			networkConfigs[netId].sim_with_NMDA_rise = sim_with_NMDA_rise;
 			networkConfigs[netId].sim_with_GABAb_rise = sim_with_GABAb_rise;
-			networkConfigs[netId].dAMPA = dAMPA;
-			networkConfigs[netId].rNMDA = rNMDA;
-			networkConfigs[netId].dNMDA = dNMDA;
-			networkConfigs[netId].sNMDA = sNMDA;
-			networkConfigs[netId].dGABAa = dGABAa;
-			networkConfigs[netId].rGABAb = rGABAb;
-			networkConfigs[netId].dGABAb = dGABAb;
-			networkConfigs[netId].sGABAb = sGABAb;
+// 			networkConfigs[netId].dAMPA = dAMPA;
+// 			networkConfigs[netId].rNMDA = rNMDA;
+// 			networkConfigs[netId].dNMDA = dNMDA;
+// 			networkConfigs[netId].sNMDA = sNMDA;
+// 			networkConfigs[netId].dGABAa = dGABAa;
+// 			networkConfigs[netId].rGABAb = rGABAb;
+// 			networkConfigs[netId].dGABAb = dGABAb;
+// 			networkConfigs[netId].sGABAb = sGABAb;
 
 			networkConfigs[netId].simIntegrationMethod = glbNetworkConfig.simIntegrationMethod;
 			networkConfigs[netId].simNumStepsPerMs = glbNetworkConfig.simNumStepsPerMs;
@@ -3365,6 +3475,14 @@ void SNN::generateConnectionRuntime(int netId) {
 				managerRuntimeData.stp_U[pre_pos] = connIt->STP_U;
 				managerRuntimeData.stp_tau_u_inv[pre_pos] = connIt->STP_tau_u_inv;
 				managerRuntimeData.stp_tau_x_inv[pre_pos] = connIt->STP_tau_x_inv;
+				managerRuntimeData.stp_dAMPA[pre_pos] = connIt->STP_dAMPA;
+				managerRuntimeData.stp_dNMDA[pre_pos] = connIt->STP_dNMDA;
+				managerRuntimeData.stp_dGABAa[pre_pos] = connIt->STP_dGABAa;
+				managerRuntimeData.stp_dGABAb[pre_pos] = connIt->STP_dGABAb;
+				managerRuntimeData.stp_rNMDA[pre_pos] = connIt->STP_rNMDA;
+				managerRuntimeData.stp_sNMDA[pre_pos] = connIt->STP_sNMDA;
+				managerRuntimeData.stp_rGABAb[pre_pos] = connIt->STP_rGABAb;
+				managerRuntimeData.stp_sGABAb[pre_pos] = connIt->STP_sGABAb;
 				managerRuntimeData.withSTP[pre_pos] = connIt->withSTP;
 				managerRuntimeData.delay[pre_pos] = connIt->delay;
 
@@ -3745,6 +3863,36 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
 			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dAMPA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dAMPA_mean, connectConfigMap[_connId].STP_dAMPA_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dNMDA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dNMDA_mean, connectConfigMap[_connId].STP_dNMDA_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dGABAa = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dGABAa_mean, connectConfigMap[_connId].STP_dGABAa_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dGABAb = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dGABAb_mean, connectConfigMap[_connId].STP_dGABAb_std, std::numeric_limits<float>::epsilon(), -1);
+		if (connectConfigMap[_connId].STP_rNMDA_mean>0) {
+// use rise time for NMDA
+				sim_with_NMDA_rise = true;
+				connInfo.STP_rNMDA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_rNMDA_mean, connectConfigMap[_connId].STP_rNMDA_std, std::numeric_limits<float>::epsilon(), -1);
+				// compute max conductance under this model to scale it back to 1
+				// otherwise the peak conductance will not be equal to the weight
+				float trNMDA = -1.0f / (connInfo.STP_rNMDA - 1.0f);
+				float tdNMDA = -1.0f / (connInfo.STP_dNMDA - 1.0f);
+				float tmax = (-tdNMDA*trNMDA*log(1.0f*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+				connInfo.STP_sNMDA = 1.0f / (exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+				assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+				assert(!isinf(connInfo.STP_sNMDA) && !isnan(connInfo.STP_sNMDA) && connInfo.STP_sNMDA>0);
+	}
+		if (connectConfigMap[_connId].STP_rGABAb_mean>0) {
+				// use rise time for GABAb
+				sim_with_GABAb_rise = true;
+				connInfo.STP_rGABAb = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_rGABAb_mean, connectConfigMap[_connId].STP_rGABAb_std, std::numeric_limits<float>::epsilon(), -1);
+				// compute max conductance under this model to scale it back to 1
+				// otherwise the peak conductance will not be equal to the weight
+				float trGABAb = -1.0f / (connInfo.STP_rGABAb - 1.0f);
+				float tdGABAb = -1.0f / (connInfo.STP_dGABAb - 1.0f);
+				float tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+				connInfo.STP_sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+				assert(!isinf(tmax) && !isnan(tmax));
+				assert(!isinf(connInfo.STP_sGABAb) && !isnan(connInfo.STP_sGABAb) && connInfo.STP_sGABAb>0);
+	}
 			connInfo.withSTP = true;
 			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
 	}
@@ -3782,6 +3930,36 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
 			connInfo.STP_tau_u_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_u_mean, connectConfigMap[_connId].STP_tau_u_std, std::numeric_limits<float>::epsilon(), -1);
 			connInfo.STP_tau_x_inv = 1.0f / generateNormalSample(connectConfigMap[_connId].STP_tau_x_mean, connectConfigMap[_connId].STP_tau_x_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dAMPA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dAMPA_mean, connectConfigMap[_connId].STP_dAMPA_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dNMDA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dNMDA_mean, connectConfigMap[_connId].STP_dNMDA_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dGABAa = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dGABAa_mean, connectConfigMap[_connId].STP_dGABAa_std, std::numeric_limits<float>::epsilon(), -1);
+			connInfo.STP_dGABAb = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_dGABAb_mean, connectConfigMap[_connId].STP_dGABAb_std, std::numeric_limits<float>::epsilon(), -1);
+		if (connectConfigMap[_connId].STP_rNMDA_mean>0) {
+// use rise time for NMDA
+				sim_with_NMDA_rise = true;
+				connInfo.STP_rNMDA = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_rNMDA_mean, connectConfigMap[_connId].STP_rNMDA_std, std::numeric_limits<float>::epsilon(), -1);
+				// compute max conductance under this model to scale it back to 1
+				// otherwise the peak conductance will not be equal to the weight
+				float trNMDA = -1.0f / (connInfo.STP_rNMDA - 1.0f);
+				float tdNMDA = -1.0f / (connInfo.STP_dNMDA - 1.0f);
+				float tmax = (-tdNMDA*trNMDA*log(1.0f*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
+				connInfo.STP_sNMDA = 1.0f / (exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
+				assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
+				assert(!isinf(connInfo.STP_sNMDA) && !isnan(connInfo.STP_sNMDA) && connInfo.STP_sNMDA>0);
+	}
+		if (connectConfigMap[_connId].STP_rGABAb_mean>0) {
+				// use rise time for GABAb
+				sim_with_GABAb_rise = true;
+				connInfo.STP_rGABAb = 1.0f - 1.0f / generateNormalSample(connectConfigMap[_connId].STP_rGABAb_mean, connectConfigMap[_connId].STP_rGABAb_std, std::numeric_limits<float>::epsilon(), -1);
+				// compute max conductance under this model to scale it back to 1
+				// otherwise the peak conductance will not be equal to the weight
+				float trGABAb = -1.0f / (connInfo.STP_rGABAb - 1.0f);
+				float tdGABAb = -1.0f / (connInfo.STP_dGABAb - 1.0f);
+				float tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
+				connInfo.STP_sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
+				assert(!isinf(tmax) && !isnan(tmax));
+				assert(!isinf(connInfo.STP_sGABAb) && !isnan(connInfo.STP_sGABAb) && connInfo.STP_sGABAb>0);
+	}
 			connInfo.withSTP = true;
 			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
 	}
@@ -5894,10 +6072,22 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.stp_U!=NULL) delete[] managerRuntimeData.stp_U;
 	if (managerRuntimeData.stp_tau_u_inv!=NULL) delete[] managerRuntimeData.stp_tau_u_inv;
 	if (managerRuntimeData.stp_tau_x_inv!=NULL) delete[] managerRuntimeData.stp_tau_x_inv;
+	if (managerRuntimeData.stp_dAMPA!=NULL) delete[] managerRuntimeData.stp_dAMPA;
+	if (managerRuntimeData.stp_dNMDA!=NULL) delete[] managerRuntimeData.stp_dNMDA;
+	if (managerRuntimeData.stp_dGABAa!=NULL) delete[] managerRuntimeData.stp_dGABAa;
+	if (managerRuntimeData.stp_dGABAb!=NULL) delete[] managerRuntimeData.stp_dGABAb;
+	if (managerRuntimeData.stp_rNMDA!=NULL) delete[] managerRuntimeData.stp_rNMDA;
+	if (managerRuntimeData.stp_sNMDA!=NULL) delete[] managerRuntimeData.stp_sNMDA;
+	if (managerRuntimeData.stp_rGABAb!=NULL) delete[] managerRuntimeData.stp_rGABAb;
+	if (managerRuntimeData.stp_sGABAb!=NULL) delete[] managerRuntimeData.stp_sGABAb;
 	if (managerRuntimeData.withSTP!=NULL) delete[] managerRuntimeData.withSTP;
 	managerRuntimeData.stpu=NULL; managerRuntimeData.stpx=NULL;
 	managerRuntimeData.stp_U=NULL; managerRuntimeData.stp_tau_u_inv=NULL;
-	managerRuntimeData.stp_tau_x_inv=NULL; managerRuntimeData.withSTP=NULL;
+	managerRuntimeData.stp_tau_x_inv=NULL; managerRuntimeData.stp_dAMPA=NULL;
+	managerRuntimeData.stp_dNMDA=NULL; managerRuntimeData.stp_dGABAa=NULL;
+	managerRuntimeData.stp_dGABAb=NULL; managerRuntimeData.stp_rNMDA=NULL;
+	managerRuntimeData.stp_sNMDA=NULL; managerRuntimeData.stp_rGABAb=NULL;
+	managerRuntimeData.stp_sGABAb=NULL; managerRuntimeData.withSTP=NULL;
 
 	if (managerRuntimeData.avgFiring!=NULL) delete[] managerRuntimeData.avgFiring;
 	if (managerRuntimeData.baseFiring!=NULL) delete[] managerRuntimeData.baseFiring;
