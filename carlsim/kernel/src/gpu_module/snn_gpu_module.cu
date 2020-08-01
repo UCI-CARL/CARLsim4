@@ -3645,29 +3645,40 @@ void SNN::copyNeuronStateBuffer(int netId, int lGrpId, RuntimeData* dest, Runtim
 	checkDestSrcPtrs(dest, src, kind, allocateMem, lGrpId, 0); // check that the destination pointer is properly allocated..
 
 	int ptrPos, length;
-	
+	int total_length = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000;
+
+	assert(src->nVBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nVBuffer, sizeof(float) * total_length));
+
+	assert(src->nUBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nUBuffer, sizeof(float) * total_length));
+
+	assert(src->nIBuffer != NULL);
+	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nIBuffer, sizeof(float) * total_length));
+
 	if (lGrpId == ALL) {
 		ptrPos = 0;
 		length = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000;
+
+		// copy neuron information
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length, kind));
+		CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length, kind));
+
 	} else {
-		ptrPos = lGrpId * MAX_NEURON_MON_GRP_SZIE * 1000;
-		length = MAX_NEURON_MON_GRP_SZIE * 1000;
+		for (int t=0; t<1000; t++){
+			ptrPos = networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * t + lGrpId * MAX_NEURON_MON_GRP_SZIE;
+			length = MAX_NEURON_MON_GRP_SZIE;
+
+			assert((ptrPos + length) <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
+			assert(length > 0);
+
+			// copy neuron information
+			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length, kind));
+			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length, kind));
+			CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length, kind));
+		}
 	}
-	assert(length <= networkConfigs[netId].numGroups * MAX_NEURON_MON_GRP_SZIE * 1000);
-	assert(length > 0);
-	
-	// neuron information
-	assert(src->nVBuffer != NULL);
-	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nVBuffer, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nVBuffer[ptrPos], &src->nVBuffer[ptrPos], sizeof(float) * length, kind));
-
-	assert(src->nUBuffer != NULL);
-	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nUBuffer, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nUBuffer[ptrPos], &src->nUBuffer[ptrPos], sizeof(float) * length, kind));
-
-	assert(src->nIBuffer != NULL);
-	if (allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->nIBuffer, sizeof(float) * length));
-	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->nIBuffer[ptrPos], &src->nIBuffer[ptrPos], sizeof(float) * length, kind));
 }
 
 void SNN::copyTimeTable(int netId, cudaMemcpyKind kind) {

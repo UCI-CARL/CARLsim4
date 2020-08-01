@@ -160,7 +160,7 @@
 #define LONG_SPIKE_MON_DURATION 600000 // about 10 minutes
 #define LARGE_SPIKE_MON_GRP_SIZE 5000 // about 10 minutes
 
-#define MAX_NEURON_MON_BUFFER_SIZE 52428800 // about 50 MB. size is in bytes. (???)
+#define MAX_NEURON_MON_BUFFER_SIZE 524288000 // about 500 MB. size is in bytes. (???)
 #define LONG_NEURON_MON_DURATION 100000       // about 100 seconds
 #define MAX_NEURON_MON_GRP_SZIE 128
 

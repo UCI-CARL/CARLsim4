@@ -180,6 +180,9 @@ TEST(Interface, connectCompartmentsDeath) {
 	// must break during setupNetwork (in verifyCompartments)
 	sim->connectCompartments(reg0, reg1);
 	EXPECT_DEATH({ sim->setupNetwork(); }, "");
+
+	if (sim!=NULL)
+		delete sim;
 }
 
 //! Death tests for createGroup (test all possible silly values)
@@ -294,6 +297,9 @@ TEST(Interface, biasWeightsDeath) {
 
 	EXPECT_DEATH({sim->biasWeights(c1+1, 0.1, false);},""); // invalid connId
 	EXPECT_DEATH({sim->biasWeights(-1,   0.1, false);},""); // invalid connId
+	
+	if (sim!=NULL)
+		delete sim;
 }
 
 TEST(Interface, scaleWeightsDeath) {
@@ -313,6 +319,9 @@ TEST(Interface, scaleWeightsDeath) {
 	EXPECT_DEATH({sim->scaleWeights(c1+1, 0.1, false);},""); // invalid connId
 	EXPECT_DEATH({sim->scaleWeights(-1,   0.1, false);},""); // invalid connId
 	EXPECT_DEATH({sim->scaleWeights(0,   -1.0, false);},""); // scale<0
+	
+	if (sim!=NULL)
+		delete sim;
 }
 
 TEST(Interface, setWeightDeath) {
@@ -336,6 +345,9 @@ TEST(Interface, setWeightDeath) {
 	EXPECT_DEATH({sim->setWeight(0,    0, -1,  0.1, false);},""); // neurIdPost<0
 	EXPECT_DEATH({sim->setWeight(0,    0,101,  0.1, false);},""); // invalid neurIdPost
 	EXPECT_DEATH({sim->setWeight(0,    0,  0, -1.0, false);},""); // weight<0
+
+	if (sim!=NULL)
+		delete sim;
 }
 
 TEST(Interface, getDelayRangeDeath) {
@@ -357,6 +369,9 @@ TEST(Interface, getDelayRangeDeath) {
 	sim->runNetwork(0,20);
 	EXPECT_DEATH({sim->getDelayRange(c1+1);},"");
 	EXPECT_DEATH({sim->getDelayRange(-1);},"");
+
+	if (sim!=NULL)
+		delete sim;
 }
 
 TEST(Interface, getWeightRangeDeath) {
@@ -378,6 +393,9 @@ TEST(Interface, getWeightRangeDeath) {
 	sim->runNetwork(0,20);
 	EXPECT_DEATH({sim->getWeightRange(c1+1);},"");
 	EXPECT_DEATH({sim->getWeightRange(-1);},"");
+
+	if (sim!=NULL)
+		delete sim;
 }
 
 //! trigger all UserErrors
