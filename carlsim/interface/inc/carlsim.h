@@ -538,7 +538,7 @@ public:
 	* \since v3.1
 	*/
 	void setNeuronParameters(int grpId, float izh_C, float izh_k, float izh_vr, float izh_vt,
-		float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d);
+		float izh_a, float izh_b, float izh_vpeak, float izh_c, float izh_d, int izh_ref);
 
 	/*!
 	* \brief Sets Izhikevich params C, k, vr, vt, a, b, vpeak, c, and d with as mean +- standard deviation
@@ -573,7 +573,7 @@ public:
 		float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
 		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
-		float izh_d, float izh_d_sd);
+		float izh_d, float izh_d_sd, int izh_ref);
 
 	/*!
 	 * \brief Sets neuron parameters for a group of LIF spiking neurons

@@ -303,7 +303,7 @@ public:
 		float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
 		float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 		float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
-		float izh_d, float izh_d_sd);
+		float izh_d, float izh_d_sd, int izh_ref);
 
 	//! Sets baseline concentration and decay time constant of neuromodulators (DP, 5HT, ACh, NE) for a neuron group.
 	/*!

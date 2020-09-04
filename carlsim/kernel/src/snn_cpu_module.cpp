@@ -1016,6 +1016,8 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 				float k = runtimeData[netId].Izh_k[lNId];
 				float vr = runtimeData[netId].Izh_vr[lNId];
 				float vt = runtimeData[netId].Izh_vt[lNId];
+				int Izh_ref = runtimeData[netId].Izh_ref[lNId];
+				int Izh_ref_c = runtimeData[netId].Izh_ref_c[lNId];
 				float inverse_C = 1.0f / runtimeData[netId].Izh_C[lNId];
 				float vpeak = runtimeData[netId].Izh_vpeak[lNId];
 				float a = runtimeData[netId].Izh_a[lNId];
@@ -1147,36 +1149,83 @@ float SNN::getCompCurrent(int netid, int lGrpId, int lneurId, float const0, floa
 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 					}
 					else if(!groupConfigs[netId][lGrpId].isLIF){
-						// 9-param Izhikevich
-						float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
-							timeStep);
-						float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
-
-						float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
-							totalCurrent, timeStep);
-						float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
-
-						float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
-							totalCurrent, timeStep);
-						float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
-
-						float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
-							totalCurrent, timeStep);
-						float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
-
-						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
-
-						if (v_next > vpeak) {
-							v_next = vpeak; // break the loop but evaluate u[i]
-							runtimeData[netId].curSpike[lNId] = true;
-							v_next = runtimeData[netId].Izh_c[lNId];
-							u += runtimeData[netId].Izh_d[lNId];
+						if (Izh_ref_c > 0){
+							if(lastIter){
+								runtimeData[netId].Izh_ref_c[lNId] -= 1;
+								v_next = runtimeData[netId].Izh_c[lNId];
+							}
 						}
+						else{
+                            
+							if (v_next > vpeak) {
+								v_next = vpeak; // break the loop but evaluate u[i]
+								runtimeData[netId].curSpike[lNId] = true;
+								v_next = runtimeData[netId].Izh_c[lNId];
+								u += runtimeData[netId].Izh_d[lNId];
+								if(lastIter){
+									runtimeData[netId].Izh_ref_c[lNId] = Izh_ref;
+								}
+								else{
+									runtimeData[netId].Izh_ref_c[lNId] = Izh_ref + 1;
+								}
+							}
+							else{                            
+								// 9-param Izhikevich
+								float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
+										timeStep);
+								float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
 
-						if (v_next < -90.0f) v_next = -90.0f;
+								float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
+										totalCurrent, timeStep);
+								float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
 
-						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+								float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
+										totalCurrent, timeStep);
+								float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+								float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
+										totalCurrent, timeStep);
+								float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+								v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+								if (v_next < -90.0f) v_next = -90.0f;
+
+								u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+							}
+						}
 					}
+// 					else if(!groupConfigs[netId][lGrpId].isLIF){
+// 						// 9-param Izhikevich
+// 						float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
+// 							timeStep);
+// 						float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+
+// 						float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
+// 							totalCurrent, timeStep);
+// 						float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+
+// 						float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
+// 							totalCurrent, timeStep);
+// 						float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+// 						float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
+// 							totalCurrent, timeStep);
+// 						float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+// 						v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+// 						if (v_next > vpeak) {
+// 							v_next = vpeak; // break the loop but evaluate u[i]
+// 							runtimeData[netId].curSpike[lNId] = true;
+// 							v_next = runtimeData[netId].Izh_c[lNId];
+// 							u += runtimeData[netId].Izh_d[lNId];
+// 						}
+
+// 						if (v_next < -90.0f) v_next = -90.0f;
+
+// 						u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+// 					}
 					else{
 						//LIF integration is always FORWARD_EULER
 						if (lif_tau_ref_c > 0){
@@ -2143,6 +2192,8 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		assert(dest->Izh_vr == NULL);
 		assert(dest->Izh_vt == NULL);
 		assert(dest->Izh_vpeak == NULL);
+		assert(dest->Izh_ref == NULL);
+		assert(dest->Izh_ref_c == NULL);
 		assert(dest->lif_tau_m == NULL);
 		assert(dest->lif_tau_ref == NULL);
 		assert(dest->lif_tau_ref_c == NULL);
@@ -2197,6 +2248,14 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, bool al
 		dest->Izh_vpeak = new float[length];
 	memcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length);
 
+	if(allocateMem)
+		dest->Izh_ref = new int[length];
+	memcpy(&dest->Izh_ref[ptrPos], &(managerRuntimeData.Izh_ref[ptrPos]), sizeof(int) * length);
+
+	if(allocateMem)
+		dest->Izh_ref_c = new int[length];
+	memcpy(&dest->Izh_ref_c[ptrPos], &(managerRuntimeData.Izh_ref_c[ptrPos]), sizeof(int) * length);
+    
 	//LIF neuron
 	if(allocateMem)
 		dest->lif_tau_m = new int[length];
@@ -2710,7 +2769,9 @@ void SNN::copySpikeTables(int netId) {
 	delete [] runtimeData[netId].Izh_vr;
 	delete [] runtimeData[netId].Izh_vt;
 	delete [] runtimeData[netId].Izh_vpeak;
-
+	delete [] runtimeData[netId].Izh_ref;
+	delete [] runtimeData[netId].Izh_ref_c;
+        
 	delete [] runtimeData[netId].lif_tau_m;
 	delete [] runtimeData[netId].lif_tau_ref;
 	delete [] runtimeData[netId].lif_tau_ref_c;

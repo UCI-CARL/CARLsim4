@@ -658,8 +658,28 @@ __global__ 	void kernel_findFiring (int simTimeMs, int simTime) {
 					runtimeDataGPU.lastSpikeTime[lNId] = simTime;
 			} else { // Regular neuron
 				if (runtimeDataGPU.curSpike[lNId]) {
-					runtimeDataGPU.curSpike[lNId] = false;
-					needToWrite = true;
+                    if (runtimeDataGPU.lastSpikeTime[lNId] > 20000000) {
+                        runtimeDataGPU.curSpike[lNId] = false;
+                        needToWrite = true;
+                        runtimeDataGPU.lastSpikeTime[lNId] = simTime;
+                    }
+                    else {
+                        int spk_tDiff = simTime - runtimeDataGPU.lastSpikeTime[lNId];
+                        if (spk_tDiff > 1) {
+                            runtimeDataGPU.curSpike[lNId] = false;
+                            needToWrite = true;
+                            runtimeDataGPU.lastSpikeTime[lNId] = simTime;
+                        }
+                        else {
+                            runtimeDataGPU.curSpike[lNId] = false;
+                            needToWrite = false;
+                        }
+                    }
+//                     printf("Current Spike Flag %d at %d and %d \n",runtimeDataGPU.curSpike[lNId],simTimeMs,simTime);
+                    
+// 					runtimeDataGPU.curSpike[lNId] = false;
+
+// 					needToWrite = true;
 				}
 
 				// log v, u value if any active neuron monitor is presented
@@ -1003,6 +1023,8 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 	float vpeak = runtimeDataGPU.Izh_vpeak[nid];
 	float a = runtimeDataGPU.Izh_a[nid];
 	float b = runtimeDataGPU.Izh_b[nid];
+	int Izh_ref = runtimeDataGPU.Izh_ref[nid];
+	int Izh_ref_c = runtimeDataGPU.Izh_ref_c[nid];
 	
 	// pre-load LIF parameters
 	int lif_tau_m = runtimeDataGPU.lif_tau_m[nid];
@@ -1135,39 +1157,171 @@ __device__ void updateNeuronState(int nid, int grpId, int simTimeMs, bool lastIt
 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
 		}
 		else if(!groupConfigsGPU[grpId].isLIF){
-			// 9-param Izhikevich
-			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
-
-			float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
-
-			float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
-
-			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
-			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
-
-			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
-            
-//              if (nid == 1)
-//              {
-//                  printf("%2.3f \n\n\n",v_next);
-//                  printf("%2.3f \n\n\n",totalCurrent);
-//              }
-
-			if (v_next > vpeak) {
-				// record spike but keep integrating
-				runtimeDataGPU.curSpike[nid] = true;
-				v_next = runtimeDataGPU.Izh_c[nid];
-				u += runtimeDataGPU.Izh_d[nid];
+			if (Izh_ref_c > 0){
+				if(lastIteration){
+					runtimeDataGPU.Izh_ref_c[nid] -= 1;
+					v_next = runtimeDataGPU.Izh_c[nid];
+				}
 			}
+			else{                
+				if (v_next > vpeak) {
+					v_next = vpeak; // break the loop but evaluate u[i]
+					runtimeDataGPU.curSpike[nid] = true;
+					v_next = runtimeDataGPU.Izh_c[nid];
+					u += runtimeDataGPU.Izh_d[nid];
+					if(lastIteration){
+//                         if (nid >= 0 && nid <= 100) {
+//                             printf("Last iteration ");
+//                             printf("%d %d %d \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid]);
+//                         }
+//                         if (groupConfigsGPU[grpId].netId == 0 && grpId == 3) {
+//                             if (nid >= 5326 && nid <= 5335) {
+//                             printf("Last iteration for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         else if (groupConfigsGPU[grpId].netId == 2 && grpId == 0) {
+//                             if (nid >= 0 && nid <= 14) {
+//                             printf("Last iteration for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+						runtimeDataGPU.Izh_ref_c[nid] = Izh_ref;
+                        
+//                         if (groupConfigsGPU[grpId].netId == 0 && grpId == 3) {
+//                             if (nid >= 5326 && nid <= 5335) {
+//                             printf("Last iteration for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         else if (groupConfigsGPU[grpId].netId == 2 && grpId == 0) {
+//                             if (nid >= 0 && nid <= 14) {
+//                             printf("Last iteration for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         if (grpId == 1) {
+//                             if (nid >= 9718 && nid <= 9727) {
+//                             printf("Last iteration for %d %d %d at %d ms \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs);
+//                             }
+//                         }
+//                         if (nid >= 0 && nid <= 100) {
+//                             printf("Last iteration ");
+//                             printf("%d %d %d \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid]);
+//                         }
+					}
+					else{
+//                         if (nid >= 0 && nid <= 100) {
+//                             printf("Increasing refractory ");
+//                             printf("%d %d %d \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid]);
+//                         }
+//                         if (groupConfigsGPU[grpId].netId == 0 && grpId == 3) {
+//                             if (nid >= 5326 && nid <= 5335) {
+//                             printf("Increasing Refractory for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         else if (groupConfigsGPU[grpId].netId == 2 && grpId == 0) {
+//                             if (nid >= 0 && nid <= 14) {
+//                             printf("Increasing Refractory for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+						runtimeDataGPU.Izh_ref_c[nid] = Izh_ref + 1;
+//                         if (groupConfigsGPU[grpId].netId == 0 && grpId == 3) {
+//                             if (nid >= 5326 && nid <= 5335) {
+//                             printf("Increased Refractory for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         else if (groupConfigsGPU[grpId].netId == 2 && grpId == 0) {
+//                             if (nid >= 0 && nid <= 14) {
+//                             printf("Increased Refractory for %d %d %d %d at %d ms, curr_spike %d \n",
+//                                    groupConfigsGPU[grpId].netId,
+//                                    grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs,
+//                                    runtimeDataGPU.curSpike[nid]);
+//                             }
+//                         }
+//                         if (grpId == 1) {
+//                             if (nid >= 9718 && nid <= 9727) {
+//                             printf("Increasing Refractory for %d %d %d at %d ms \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid],simTimeMs);
+//                             }
+//                         }
+//                         if (nid >= 0 && nid <= 100) {
+//                             printf("Increasing refractory ");
+//                             printf("%d %d %d \n",grpId,nid,runtimeDataGPU.Izh_ref_c[nid]);
+//                         }
+					}
+				}
+				else{                            
+					// 9-param Izhikevich
+					float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent,
+							timeStep);
+					float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
 
-			if (v_next < -90.0f) v_next = -90.0f;
+					float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+					float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
 
-			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
-		}
-		
+					float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+					float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+
+					float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt,
+							totalCurrent, timeStep);
+					float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+
+					v_next = v + (1.0f / 6.0f) * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+
+					if (v_next < -90.0f) v_next = -90.0f;
+
+					u += (1.0f / 6.0f) * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+				}
+			}
+		}        
+
+// 		else if(!groupConfigsGPU[grpId].isLIF){
+// 			// 9-param Izhikevich
+// 			float k1 = dvdtIzhikevich9(v, u, inverse_C, k, vr, vt, totalCurrent, timeStep);
+// 			float l1 = dudtIzhikevich9(v, u, vr, a, b, timeStep);
+// 
+// 			float k2 = dvdtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+// 			float l2 = dudtIzhikevich9(v + k1 / 2.0f, u + l1 / 2.0f, vr, a, b, timeStep);
+// 
+// 			float k3 = dvdtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, inverse_C, k, vr, vt, totalCurrent, timeStep);
+// 			float l3 = dudtIzhikevich9(v + k2 / 2.0f, u + l2 / 2.0f, vr, a, b, timeStep);
+// 
+// 			float k4 = dvdtIzhikevich9(v + k3, u + l3, inverse_C, k, vr, vt, totalCurrent, timeStep);
+// 			float l4 = dudtIzhikevich9(v + k3, u + l3, vr, a, b, timeStep);
+// 
+// 			v_next = v + one_sixth * (k1 + 2.0f * k2 + 2.0f * k3 + k4);
+//             
+// 			if (v_next > vpeak) {
+// 				// record spike but keep integrating
+// 				runtimeDataGPU.curSpike[nid] = true;
+// 				v_next = runtimeDataGPU.Izh_c[nid];
+// 				u += runtimeDataGPU.Izh_d[nid];
+// 			}
+// 
+// 			if (v_next < -90.0f) v_next = -90.0f;
+// 
+// 			u += one_sixth * (l1 + 2.0f * l2 + 2.0f * l3 + l4);
+// 		}
+// 		
 		else{
 			// LIF integration is always FORWARD_EULER
 			 if (lif_tau_ref_c > 0){
@@ -2533,6 +2687,8 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 		assert(dest->Izh_vr == NULL);
 		assert(dest->Izh_vt == NULL);
 		assert(dest->Izh_vpeak == NULL);
+		assert(dest->Izh_ref == NULL);
+		assert(dest->Izh_ref_c == NULL);
 
 		assert(dest->lif_tau_m == NULL); //LIF parameters
 		assert(dest->lif_tau_ref == NULL);
@@ -2577,7 +2733,13 @@ void SNN::copyNeuronParameters(int netId, int lGrpId, RuntimeData* dest, cudaMem
 
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_vpeak, sizeof(float) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_vpeak[ptrPos], &(managerRuntimeData.Izh_vpeak[ptrPos]), sizeof(float) * length, cudaMemcpyHostToDevice));
+    
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_ref, sizeof(int) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_ref[ptrPos], &(managerRuntimeData.Izh_ref[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
 
+	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->Izh_ref_c, sizeof(int) * length));
+	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->Izh_ref_c[ptrPos], &(managerRuntimeData.Izh_ref_c[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
+    
 	//LIF parameters
 	if(allocateMem) CUDA_CHECK_ERRORS(cudaMalloc((void**)&dest->lif_tau_m, sizeof(int) * length));
 	CUDA_CHECK_ERRORS(cudaMemcpy(&dest->lif_tau_m[ptrPos], &(managerRuntimeData.lif_tau_m[ptrPos]), sizeof(int) * length, cudaMemcpyHostToDevice));
@@ -3161,7 +3323,9 @@ void SNN::deleteRuntimeData_GPU(int netId) {
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vr));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vt));
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_vpeak));
-
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_ref));
+	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].Izh_ref_c));    
+    
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].gAMPA) );
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_m) ); //LIF parameters
 	CUDA_CHECK_ERRORS( cudaFree(runtimeData[netId].lif_tau_ref) );

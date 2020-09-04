@@ -617,18 +617,18 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 	float izh_vr, float izh_vr_sd, float izh_vt, float izh_vt_sd,
 	float izh_a, float izh_a_sd, float izh_b, float izh_b_sd,
 	float izh_vpeak, float izh_vpeak_sd, float izh_c, float izh_c_sd,
-	float izh_d, float izh_d_sd)
+	float izh_d, float izh_d_sd, int izh_ref)
 {
 	assert(gGrpId >= -1);
 	assert(izh_C_sd >= 0); assert(izh_k_sd >= 0); assert(izh_vr_sd >= 0);
 	assert(izh_vt_sd >= 0); assert(izh_a_sd >= 0); assert(izh_b_sd >= 0); assert(izh_vpeak_sd >= 0);
-	assert(izh_c_sd >= 0); assert(izh_d_sd >= 0);
+	assert(izh_c_sd >= 0); assert(izh_d_sd >= 0); assert(izh_ref >= 1);
 
 	if (gGrpId == ALL) { // shortcut for all groups
 		for (int grpId = 0; grpId<numGroups; grpId++) {
 			setNeuronParameters(grpId, izh_C, izh_C_sd, izh_k, izh_k_sd, izh_vr, izh_vr_sd, izh_vt, izh_vt_sd,
 				izh_a, izh_a_sd, izh_b, izh_b_sd, izh_vpeak, izh_vpeak_sd, izh_c, izh_c_sd,
-				izh_d, izh_d_sd);
+				izh_d, izh_d_sd, izh_ref);
 		}
 	}
 	else {
@@ -650,6 +650,8 @@ void SNN::setNeuronParameters(int gGrpId, float izh_C, float izh_C_sd, float izh
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd = izh_vt_sd;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak = izh_vpeak;
 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd = izh_vpeak_sd;
+// 		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_ref = izh_ref;
+		groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_ref = 1;
 		groupConfigMap[gGrpId].withParamModel_9 = 1;
 		groupConfigMap[gGrpId].isLIF = 0;
 		KERNEL_INFO("Set a nine parameter group!");
@@ -2914,6 +2916,8 @@ void SNN::allocateManagerRuntimeData() {
 	managerRuntimeData.Izh_vr	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vt	  = new float[managerRTDSize.maxNumNReg];
 	managerRuntimeData.Izh_vpeak  = new float[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_ref  = new int[managerRTDSize.maxNumNReg];
+	managerRuntimeData.Izh_ref_c  = new int[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_tau_m      = new int[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_tau_ref      = new int[managerRTDSize.maxNumNReg];
 	managerRuntimeData.lif_tau_ref_c      = new int[managerRTDSize.maxNumNReg];
@@ -2937,6 +2941,8 @@ void SNN::allocateManagerRuntimeData() {
 	memset(managerRuntimeData.Izh_vr, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vt, 0, sizeof(float) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.Izh_vpeak, 0, sizeof(float) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_ref, 0, sizeof(int) * managerRTDSize.maxNumNReg);
+	memset(managerRuntimeData.Izh_ref_c, 0, sizeof(int) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_tau_m, 0, sizeof(int) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_tau_ref, 0, sizeof(int) * managerRTDSize.maxNumNReg);
 	memset(managerRuntimeData.lif_tau_ref_c, 0, sizeof(int) * managerRTDSize.maxNumNReg);
@@ -6068,6 +6074,9 @@ void SNN::resetNeuron(int netId, int lGrpId, int lNId) {
 	managerRuntimeData.Izh_vr[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vr_sd * (float)drand48();
 	managerRuntimeData.Izh_vt[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vt_sd * (float)drand48();
 	managerRuntimeData.Izh_vpeak[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak + groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_vpeak_sd * (float)drand48();
+// 	managerRuntimeData.Izh_ref[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.Izh_ref;
+	managerRuntimeData.Izh_ref[lNId] = 1;
+	managerRuntimeData.Izh_ref_c[lNId] = 0;
 	managerRuntimeData.lif_tau_m[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_m;
 	managerRuntimeData.lif_tau_ref[lNId] = groupConfigMap[gGrpId].neuralDynamicsConfig.lif_tau_ref;
 	managerRuntimeData.lif_tau_ref_c[lNId] = 0;
@@ -6208,8 +6217,10 @@ void SNN::deleteManagerRuntimeData() {
 	if (managerRuntimeData.Izh_vr!=NULL) delete[] managerRuntimeData.Izh_vr;
 	if (managerRuntimeData.Izh_vt!=NULL) delete[] managerRuntimeData.Izh_vt;
 	if (managerRuntimeData.Izh_vpeak!=NULL) delete[] managerRuntimeData.Izh_vpeak;
+	if (managerRuntimeData.Izh_ref!=NULL) delete[] managerRuntimeData.Izh_ref;
+	if (managerRuntimeData.Izh_ref_c!=NULL) delete[] managerRuntimeData.Izh_ref_c;
 	managerRuntimeData.Izh_a=NULL; managerRuntimeData.Izh_b=NULL; managerRuntimeData.Izh_c=NULL; managerRuntimeData.Izh_d=NULL;
-	managerRuntimeData.Izh_C = NULL; managerRuntimeData.Izh_k = NULL; managerRuntimeData.Izh_vr = NULL; managerRuntimeData.Izh_vt = NULL; managerRuntimeData.Izh_vpeak = NULL;
+	managerRuntimeData.Izh_C = NULL; managerRuntimeData.Izh_k = NULL; managerRuntimeData.Izh_vr = NULL; managerRuntimeData.Izh_vt = NULL; managerRuntimeData.Izh_vpeak = NULL; managerRuntimeData.Izh_ref = NULL; managerRuntimeData.Izh_ref_c = NULL;
 
 	if (managerRuntimeData.lif_tau_m!=NULL) delete[] managerRuntimeData.lif_tau_m;
 	if (managerRuntimeData.lif_tau_ref!=NULL) delete[] managerRuntimeData.lif_tau_ref;

@@ -233,7 +233,7 @@ typedef struct NeuralDynamicsConfig_s {
 							   Izh_c(-1.0f), Izh_c_sd(-1.0f), Izh_d(-1.0f), Izh_d_sd(-1.0f),
 							   Izh_C(-1.0f), Izh_C_sd(-1.0f), Izh_k(-1.0f), Izh_k_sd(-1.0f),
 							   Izh_vr(-1.0f), Izh_vr_sd(1.0f), Izh_vt(1.0f), Izh_vt_sd(-1.0f),
-							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), lif_tau_m(-1), 
+							   Izh_vpeak(-1.0f), Izh_vpeak_sd(-1.0f), Izh_ref(-1), lif_tau_m(-1), 
 							   lif_tau_ref(-1), lif_vTh(1.0f), lif_vReset(0.0f), lif_minRmem(1.0f),
 							   lif_maxRmem(1.0f)
 	{}
@@ -255,6 +255,7 @@ typedef struct NeuralDynamicsConfig_s {
 	float 		Izh_c_sd;
 	float 		Izh_d;
 	float 		Izh_d_sd;
+	int 		Izh_ref;
 	int 		lif_tau_m; //!< parameters for a LIF spiking group
 	int 		lif_tau_ref;
 	float 		lif_vTh;
@@ -515,6 +516,8 @@ typedef struct RuntimeData_s {
 	float* Izh_b;
 	float* Izh_c;
 	float* Izh_d;
+	int* Izh_ref;
+	int* Izh_ref_c;
 	float* current;
 	float* totalCurrent;
 	float* extCurrent;

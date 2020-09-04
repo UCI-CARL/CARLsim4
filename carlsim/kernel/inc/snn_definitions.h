@@ -162,7 +162,7 @@
 
 #define MAX_NEURON_MON_BUFFER_SIZE 524288000 // about 500 MB. size is in bytes. (???)
 #define LONG_NEURON_MON_DURATION 100000       // about 100 seconds
-#define MAX_NEURON_MON_GRP_SZIE 128
+#define MAX_NEURON_MON_GRP_SZIE 256
 
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
