@@ -95,14 +95,30 @@ int main() {
 					sim->connect(g0,g2,"random",RangeWeight(wt),0.1f,RangeDelay(1));
 					sim->connect(g1,g3,"random",RangeWeight(wt),0.1f,RangeDelay(1));
 
-					if (hasCOBA)
-						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
-					else
-						sim->setConductances(false);
+// 					if (hasCOBA)
+// 						sim->setConductances(true, 5, 0, 150, 6, 0, 150);
+// 					else
+// 						sim->setConductances(false);
 
 					if (hasSTP) {
-						sim->setSTP(g0, g2, true, STPu(0.45f, 0.01f), STPtauU(50.0f, 0.03f), STPtauX(750.0f, 0.05f)); // depressive
-						sim->setSTP(g1, g3, true, STPu(0.15f, 0.02f), STPtauU(750.0f, 0.04f), STPtauX(50.0f, 0.06f)); // facilitative
+                        sim->setSTP(g0, g2, true, STPu(0.45f, 0.01f),
+                                     STPtauU(50.0f, 0.03f),
+                                     STPtauX(750.0f, 0.05f),
+                                     STPtdAMPA(5.0f, 0.0f),
+                                     STPtdNMDA(150.0f, 0.0f),
+                                     STPtdGABAa(6.0f, 0.0f),
+                                     STPtdGABAb(150.0f, 0.0f),
+                                     STPtrNMDA(0.0f, 0.0f),
+                                     STPtrGABAb(0.0f, 0.0f)); // depressive
+                        sim->setSTP(g1, g3, true, STPu(0.15f, 0.02f),
+                                     STPtauU(750.0f, 0.04f),
+                                     STPtauX(50.0f, 0.06f),
+                                     STPtdAMPA(5.0f, 0.0f),
+                                     STPtdNMDA(150.0f, 0.0f),
+                                     STPtdGABAa(6.0f, 0.0f),
+                                     STPtdGABAb(150.0f, 0.0f),
+                                     STPtrNMDA(0.0f, 0.0f),
+                                     STPtrGABAb(0.0f, 0.0f)); // depressive
 					}
 
 					bool spikeAtZero = true;

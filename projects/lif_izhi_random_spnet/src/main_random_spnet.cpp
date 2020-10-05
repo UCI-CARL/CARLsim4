@@ -130,7 +130,7 @@ int main(int argc, const char* argv[]) {
 	sim.setISTDP(gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
 
 	// run CUBA mode
-	sim.setConductances(false);
+// 	sim.setConductances(false);
 
 
 	// ---------------- SETUP STATE -------------------
