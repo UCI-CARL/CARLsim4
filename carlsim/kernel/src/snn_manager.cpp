@@ -3962,8 +3962,8 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 				float tdNMDA = -1.0f / (connInfo.STP_dNMDA - 1.0f);
 				float tmax = (-tdNMDA*trNMDA*log(1.0f*trNMDA/tdNMDA))/(tdNMDA-trNMDA); // t at which cond will be max
 				connInfo.STP_sNMDA = 1.0f / (exp(-tmax/tdNMDA)-exp(-tmax/trNMDA)); // scaling factor, 1 over max amplitude
-				assert(!isinf(tmax) && !isnan(tmax) && tmax>=0);
-				assert(!isinf(connInfo.STP_sNMDA) && !isnan(connInfo.STP_sNMDA) && connInfo.STP_sNMDA>0);
+				assert(!std::isinf(tmax) && !std::isnan(tmax) && tmax>=0);
+				assert(!std::isinf(connInfo.STP_sNMDA) && !std::isnan(connInfo.STP_sNMDA) && connInfo.STP_sNMDA>0);
 	}
 		if (connectConfigMap[_connId].STP_rGABAb_mean>0) {
 				// use rise time for GABAb
@@ -3975,8 +3975,8 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 				float tdGABAb = -1.0f / (connInfo.STP_dGABAb - 1.0f);
 				float tmax = (-tdGABAb*trGABAb*log(1.0*trGABAb/tdGABAb))/(tdGABAb-trGABAb); // t at which cond will be max
 				connInfo.STP_sGABAb = 1.0/(exp(-tmax/tdGABAb)-exp(-tmax/trGABAb)); // scaling factor, 1 over max amplitude
-				assert(!isinf(tmax) && !isnan(tmax));
-				assert(!isinf(connInfo.STP_sGABAb) && !isnan(connInfo.STP_sGABAb) && connInfo.STP_sGABAb>0);
+				assert(!std::isinf(tmax) && !std::isnan(tmax));
+				assert(!std::isinf(connInfo.STP_sGABAb) && !std::isnan(connInfo.STP_sGABAb) && connInfo.STP_sGABAb>0);
 	}
 			connInfo.withSTP = true;
 			//KERNEL_INFO("inside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
@@ -4009,7 +4009,7 @@ inline void SNN::connectNeurons(int netId, int _grpSrc, int _grpDest, int _nSrc,
 	connInfo.STP_tau_u_inv = 1.0f;
 	connInfo.STP_tau_x_inv = 1.0f;
 	connInfo.withSTP = false;
-	
+
 	//KERNEL_INFO("outside netId: %d, grpSrc: %d, grpDest: %d, connId: %d", netId, _grpSrc,_grpDest, connInfo.connId);
 	if (connectConfigMap[_connId].stpConfig.WithSTP){
 			connInfo.STP_U = generateNormalSample(connectConfigMap[_connId].STP_U_mean, connectConfigMap[_connId].STP_U_std, std::numeric_limits<float>::epsilon(), 1);
