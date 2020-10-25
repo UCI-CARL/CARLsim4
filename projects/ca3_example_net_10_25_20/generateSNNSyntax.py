@@ -27,13 +27,8 @@ def generateSNNSyntax(fileName):
                                  sheet_name='syn_conds_int_to_int').dropna();
     dfSynWeightE2I = pd.read_excel(fileName,
                                  sheet_name='syn_conds_ext_to_int').dropna();
-    dfNumContacts = pd.read_excel(fileName,
-                                 sheet_name='num_contacts_int_to_int').dropna();
-    dfNumContactsE2I = pd.read_excel(fileName,
-                                 sheet_name='num_contacts_ext_to_int').dropna();
     dfMultiplier = pd.read_excel(fileName,
                                  sheet_name='syn_conds_multiplier_int_to_int').dropna();
-
     dfSTPU = pd.read_excel(fileName,
                             sheet_name='syn_resource_release_int_to_int'). \
                             dropna();
@@ -61,7 +56,7 @@ def generateSNNSyntax(fileName):
 
     # Clean up the connectivity matrices to retrieve the newest probabilities of
     # connection
-    dfConnMat = dfConnMat.iloc[70:81,:-1];
+    dfConnMat = dfConnMat.iloc[0:9,:];
     dfConnMatE2I = dfConnMatE2I.iloc[0:2,:-3];
 
     # Rename each of the neuron types to a syntax appropriate for group declaration
@@ -76,8 +71,6 @@ def generateSNNSyntax(fileName):
 
     ut.cellTypeNameCARL(dfSynWeight, dfName = "dfSynWeight", newName = "Wij");
     ut.cellTypeNameCARL(dfSynWeightE2I, dfName = "dfSynWeightE2I", newName = "Wij");
-    ut.cellTypeNameCARL(dfNumContacts, dfName = "dfNumContacts", newName = "Nij");
-    ut.cellTypeNameCARL(dfNumContactsE2I, dfName = "dfNumContacts", newName = "Nij");
     ut.cellTypeNameCARL(dfMultiplier, dfName = "dfMultiplier", newName = "Mij");
     ut.cellTypeNameCARL(dfSTPU, dfName = "dfSTPU", newName = "Uij");
     ut.cellTypeNameCARL(dfSTPUE2I, dfName = "dfSTPUE2I", newName = "Uij");
@@ -89,7 +82,7 @@ def generateSNNSyntax(fileName):
     ut.cellTypeNameCARL(dfSTPTauUE2I, dfName = "dfSTPTauUE2I", newName = "TauUij");
 
     # Clean the internal population size dataframe
-    dfPopSizeInternal = dfPopSizeInternal.loc[0:10];
+    dfPopSizeInternal = dfPopSizeInternal.loc[0:8];
 
     # Add an additional row to each matrix reflecting the new group that will be
     # added that splits the CA3_pyramidal into two separate populations for the
@@ -195,16 +188,15 @@ def generateSNNSyntax(fileName):
     # internal-internal synaptic weights
     dfSynWeight = pd.concat([dfSynWeight, dfSynWeightE2I], ignore_index = True);
 
-    sortedColumnsConnMat = list(dfConnMat.iloc[0:11,0]);
+    sortedColumnsConnMat = list(dfConnMat.iloc[0:10,0]);
     sortedColumnsConnMat.insert(0, 'Pre_Post');
     sortedColumnsTMMat = ['CA3_LMR_Targeting_mean', 'CA3_LMR_Targeting_std',
                           'CA3_QuadD_LM_mean', 'CA3_QuadD_LM_std', 'CA3_Axo_Axonic_mean',
                           'CA3_Axo_Axonic_std', 'CA3_Basket_mean', 'CA3_Basket_std',
                           'CA3_BC_CCK_mean', 'CA3_BC_CCK_std', 'CA3_Bistratified_mean',
                           'CA3_Bistratified_std', 'CA3_Ivy_mean', 'CA3_Ivy_std',
-                          'CA3_Trilaminar_mean', 'CA3_Trilaminar_std', 'CA3_MFA_ORDEN_mean',
-                          'CA3_MFA_ORDEN_std', 'CA3_Pyramidal_mean',
-                          'CA3_Pyramidal_std'
+                          'CA3_MFA_ORDEN_mean', 'CA3_MFA_ORDEN_std', 
+                          'CA3_Pyramidal_mean', 'CA3_Pyramidal_std'
                           ];
     sortedColumnsTMMat.insert(0, 'Wij');
     dfConnMat = dfConnMat.reindex(columns=sortedColumnsConnMat);
@@ -212,7 +204,6 @@ def generateSNNSyntax(fileName):
 
     # Before generating the syntax for STP, append the external-internal connections
     # to the dataframe that contains internal-internal connections
-    dfNumContacts = pd.concat([dfNumContacts, dfNumContactsE2I], ignore_index = True);
     dfSTPU = pd.concat([dfSTPU, dfSTPUE2I], ignore_index = True);
     dfSTPTauU = pd.concat([dfSTPTauU, dfSTPTauUE2I], ignore_index = True);
     dfSTPTauX = pd.concat([dfSTPTauX, dfSTPTauXE2I], ignore_index = True);
@@ -222,8 +213,6 @@ def generateSNNSyntax(fileName):
     # within the for loop
     sortedColumnsTMMat[0] = 'Mij';
     dfMultiplier = dfMultiplier.reindex(columns=sortedColumnsTMMat);
-    sortedColumnsTMMat[0] = 'Nij';
-    dfNumContacts = dfNumContacts.reindex(columns=sortedColumnsTMMat);
     sortedColumnsTMMat[0] = 'Uij';
     dfSTPU = dfSTPU.reindex(columns=sortedColumnsTMMat);
     sortedColumnsTMMat[0] = 'TauUij';
@@ -267,7 +256,7 @@ def generateSNNSyntax(fileName):
                                               # Non-zero minimum weights not yet supported by CARLsim4
                                               # wmin = 0.0,
                                               # # winit = dfSynWeight.iloc[x,k+1]*dfNumContacts.iloc[x,k+1],
-                                              winit = dfMultiplier.iloc[x,k+1],
+                                              winit = float(dfMultiplier.iloc[x,k+1]),
                                               # winit = dfSynWeight.iloc[x,k+1],
                                               # # wmax = dfSynWeight.iloc[x,k+1]*dfNumContacts.iloc[x,k+1] + 1.0,
                                               wmax = dfMultiplier.iloc[x,k+1] + 1.0,
@@ -343,7 +332,7 @@ def generateSNNSyntax(fileName):
                                                   # Non-zero minimum weights not yet supported by CARLsim4
                                                   # wmin = 0.0,
                                                   # # winit = dfSynWeight.iloc[x,k+1]*dfNumContacts.iloc[x,k+1],
-                                                  winit = dfMultiplier.iloc[x,k+1],
+                                                  winit = float(dfMultiplier.iloc[x,k+1]),
                                                   # winit = dfSynWeight.iloc[x,k+1],
                                                   # # wmax = dfSynWeight.iloc[x,k+1]*dfNumContacts.iloc[x,k+1] + 1.0,
                                                   wmax = dfMultiplier.iloc[x,k+1] + 1.0,
@@ -521,4 +510,4 @@ def generateSNNSyntax(fileName):
         #FOUT.write(codeSetPoissonRates)
 
 
-generateSNNSyntax("ca3net_06_24_20_hc.xlsm")
+generateSNNSyntax("ca3net_10_14_20.xlsm")

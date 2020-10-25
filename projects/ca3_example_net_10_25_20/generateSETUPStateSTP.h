@@ -12,11 +12,7 @@ sim.setSpikeMonitor(CA3_Bistratified, "DEFAULT");
                                  
 sim.setSpikeMonitor(CA3_Ivy, "DEFAULT");
                                  
-sim.setSpikeMonitor(CA3_Trilaminar, "DEFAULT");
-                                 
 sim.setSpikeMonitor(CA3_MFA_ORDEN, "DEFAULT");
                                  
-sim.setSpikeMonitor(CA3_Pyramidal_a, "DEFAULT");
-                                 
-sim.setSpikeMonitor(CA3_Pyramidal_b, "DEFAULT");
+sim.setSpikeMonitor(CA3_Pyramidal, "DEFAULT");
                                  

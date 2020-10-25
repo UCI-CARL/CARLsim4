@@ -105,44 +105,21 @@ int main() {
 	watch.lap("setupNetwork");
 	sim.setupNetwork();
 
-// Code to load simulations from stored network structures
-//     // before calling setupNetwork, call loadSimulation
-//      FILE* fId = NULL;
-//      fId = fopen("networkZ.dat", "rb");
-//      sim.loadSimulation(fId);
-    
-// 	watch.lap("setupNetwork");
-// 	sim.setupNetwork();
-
-//     // ... wait until after setupNetwork is called
-//      fclose(fId);
-    
 	// Declare variables that will store the start and end ID for the neurons
 	// in the pyramidal group
-	int pyr_a_start = sim.getGroupStartNeuronId(CA3_Pyramidal_a);
-	std::cout << "Beginning neuron ID for Pyramidal A Cells is : " << pyr_a_start << "\n";
-	int pyr_a_end = sim.getGroupEndNeuronId(CA3_Pyramidal_a);
-	std::cout << "Ending neuron ID for Pyramidal A Cells is : " << pyr_a_end << "\n";
-	int pyr_a_range = (pyr_a_end - pyr_a_start) + 1;
-	std::cout << "The range for Pyramidal Cells A is : " << pyr_a_range << "\n";
-
-  int pyr_b_start = sim.getGroupStartNeuronId(CA3_Pyramidal_b);
-	std::cout << "Beginning neuron ID for Pyramidal B Cells is : " << pyr_b_start << "\n";
-	int pyr_b_end = sim.getGroupEndNeuronId(CA3_Pyramidal_b);
-	std::cout << "Ending neuron ID for Pyramidal B Cells is : " << pyr_b_end << "\n";
-	int pyr_b_range = (pyr_b_end - pyr_b_start) + 1;
-	std::cout << "The range for Pyramidal Cells B is : " << pyr_b_range << "\n";
+	int pyr_start = sim.getGroupStartNeuronId(CA3_Pyramidal);
+	std::cout << "Beginning neuron ID for Pyramidal Cells is : " << pyr_start;
+	int pyr_end = sim.getGroupEndNeuronId(CA3_Pyramidal);
+	std::cout << "Ending neuron ID for Pyramidal Cells is : " << pyr_end;
+	int pyr_range = (pyr_end - pyr_start) + 1;
+	std::cout << "The range for Pyramidal Cells is : " << pyr_range;
 
 	// Create vectors that are the length of the number of neurons in the pyramidal
 	// group, and another that will store the current at the position for the
   // random pyramidal cells that will be selected
-	std::vector<int> pyr_a_vec( boost::counting_iterator<int>( 0 ),
-													 boost::counting_iterator<int>( pyr_a_range ));
-  std::vector<float> current_a(pyr_a_range, 0.0f);
-
-  std::vector<int> pyr_b_vec( boost::counting_iterator<int>( 0 ),
-													 boost::counting_iterator<int>( pyr_b_range ));
-  std::vector<float> current_b(pyr_b_range, 0.0f);
+	std::vector<int> pyr_vec( boost::counting_iterator<int>( 0 ),
+													 boost::counting_iterator<int>( pyr_range ));
+  std::vector<float> current(pyr_range, 0.0f);
 
 	// Create vectors that are subsets of the input groups so that we can define
 	// Poisson rates for just this fraction. Currently we are setting the rates
@@ -164,20 +141,19 @@ int main() {
 	#include "../generateSETUPStateSTP.h"
 
   // Define the number of neurons to receive input from the external current
-  int numPyramidalAFire = 50;
-  int numPyramidalBFire = 50;
+  int numPyramidalFire = 10000;
 
 	// Set the seed of the pseudo-random number generator based on the current system time
 	std::srand(std::time(nullptr));
 
   // Set external current for a fraction of pyramidal cells based on the random
   // seed
-  // for (int i = 0; i < numPyramidalFire; i++)
-  // {
-  //   int randPyrCell = pyr_vec.front() + ( std::rand() % ( pyr_vec.back() - pyr_vec.front() ) );
-  //   //std::cout << "The random granule cell chosen is : " << randGranCell;
-  //   current.at(randPyrCell) = 0.000035f;
-  // }
+  for (int i = 0; i < numPyramidalFire; i++)
+  {
+    int randPyrCell = pyr_vec.front() + ( std::rand() % ( pyr_vec.back() - pyr_vec.front() ) );
+    //std::cout << "The random granule cell chosen is : " << randGranCell;
+    current.at(randPyrCell) = 0.000035f;
+  }
 
 	// ---------------- RUN STATE -------------------
 	watch.lap("runNetwork");
@@ -187,42 +163,47 @@ int main() {
 	for (int i=0; i<20; i++) {
     if (i == 0)
     {
-      // Set external current for a fraction of pyramidal cells based on the random
-      // seed
-      // save initial network
-//       sim.saveSimulation("networkA.dat", true); // fileName, saveSynapseInfo
-      for (int i = 0; i < numPyramidalAFire; i++)
-      {
-        int randPyrCellA = pyr_a_vec.front() + ( std::rand() % ( pyr_a_vec.back() - pyr_a_vec.front() ) );
-        //std::cout << "The random granule cell chosen is : " << randGranCell;
-        current_a.at(randPyrCellA) = 45000.0f;
-      }
-        
-      for (int i = 0; i < numPyramidalBFire; i++)
-      {
-        int randPyrCellB = pyr_b_vec.front() + ( std::rand() % ( pyr_b_vec.back() - pyr_b_vec.front() ) );
-        //std::cout << "The random granule cell chosen is : " << randGranCell;
-        current_b.at(randPyrCellB) = 45000.0f;
-      }
-
-      sim.setExternalCurrent(CA3_Pyramidal_a, current_a);
-      sim.setExternalCurrent(CA3_Pyramidal_b, current_b);
+      sim.setExternalCurrent(CA3_Pyramidal, 500.0f);
+      sim.setExternalCurrent(CA3_Axo_Axonic, 150.0f);
+      sim.setExternalCurrent(CA3_BC_CCK, 150.0f);
+      sim.setExternalCurrent(CA3_Basket, 150.0);
+      sim.setExternalCurrent(CA3_Bistratified, 150.0f);
+      sim.setExternalCurrent(CA3_Ivy, 150.0f);
+      sim.setExternalCurrent(CA3_LMR_Targeting, 150.0f);
+      sim.setExternalCurrent(CA3_QuadD_LM, 150.0f);
+      sim.setExternalCurrent(CA3_MFA_ORDEN, 150.0f);
       sim.runNetwork(0,1);
     }
 		if (i == 1)
     {
-      sim.setExternalCurrent(CA3_Pyramidal_a, 0.0f);
-      sim.setExternalCurrent(CA3_Pyramidal_b, 0.0f);
+//       sim.setExternalCurrent(CA3_Pyramidal, 0.0f);
       sim.runNetwork(0,1);
     }
-    if (i >= 2 && i < 19)
+    if (i >=2 && i < 19)
 		{
+      sim.setExternalCurrent(CA3_Pyramidal, 500.0f);
+      sim.setExternalCurrent(CA3_Axo_Axonic, 150.0f);
+      sim.setExternalCurrent(CA3_BC_CCK, 150.0f);
+      sim.setExternalCurrent(CA3_Basket, 150.0);
+      sim.setExternalCurrent(CA3_Bistratified, 150.0f);
+      sim.setExternalCurrent(CA3_Ivy, 150.0f);
+      sim.setExternalCurrent(CA3_LMR_Targeting, 150.0f);
+      sim.setExternalCurrent(CA3_QuadD_LM, 150.0f);
+      sim.setExternalCurrent(CA3_MFA_ORDEN, 150.0f);
       sim.runNetwork(0,500);
 		}
     if (i == 19)
     {
+      sim.setExternalCurrent(CA3_Pyramidal, 500.0f);
+      sim.setExternalCurrent(CA3_Axo_Axonic, 150.0f);
+      sim.setExternalCurrent(CA3_BC_CCK, 150.0f);
+      sim.setExternalCurrent(CA3_Basket, 150.0);
+      sim.setExternalCurrent(CA3_Bistratified, 150.0f);
+      sim.setExternalCurrent(CA3_Ivy, 150.0f);
+      sim.setExternalCurrent(CA3_LMR_Targeting, 150.0f);
+      sim.setExternalCurrent(CA3_QuadD_LM, 150.0f);
+      sim.setExternalCurrent(CA3_MFA_ORDEN, 150.0f);
       sim.runNetwork(0,498);
-//       sim.saveSimulation("networkZ.dat", true); // fileName, saveSynapseInfo
     }
 		//sim.runNetwork(0,500);
 	}

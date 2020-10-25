@@ -1,25 +1,25 @@
-xlName = "ca3net_01_22_20_hc.xlsm";
-connTypeSTPmod = readtable('PrePostSTPCA3modified_v4.csv');
+xlName = "ca3net_10_14_20.xlsm";
+connTypeSTPmod = readtable('PrePostSTPCA3modified_v6.csv');
 connTypeSTPmod = table2cell(connTypeSTPmod);
 
 [~,~,synCondMat] = xlsread(xlName,'syn_conds_int_to_int');
-synCondMat = synCondMat(1:11,:);
+synCondMat = synCondMat(1:10,:);
 
 [~,~,UMat] = xlsread(xlName,'syn_resource_release_int_to_int');
-UMat = UMat(1:11,:);
+UMat = UMat(1:10,:);
 
 [~,~,taurecMat] = xlsread(xlName,'syn_rec_const_int_to_int');
-taurecMat = taurecMat(1:11,:);
+taurecMat = taurecMat(1:10,:);
 
 [~,~,tauIMat] = xlsread(xlName,'syn_decay_const_int_to_int');
-tauIMat = tauIMat(1:11,:);
+tauIMat = tauIMat(1:10,:);
 
 [~,~,taufacilMat] = xlsread(xlName,'syn_facil_const_int_to_int');
-taufacilMat = taufacilMat(1:11,:);
+taufacilMat = taufacilMat(1:10,:);
 
 [~,~,connMat] = xlsread(xlName,'internal_to_internal_conn_prob');
 
-connMat = connMat(71:81,1:11);
+connMat = connMat(1:10,1:10);
 preconnMat = connMat(2:end,1);
 postconnMat = connMat(1,2:end);
 postconnMat = postconnMat';
