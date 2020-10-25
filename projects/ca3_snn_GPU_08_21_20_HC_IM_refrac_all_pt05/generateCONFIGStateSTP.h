@@ -1,34 +1,34 @@
-int CA3_LMR_Targeting = sim.createGroup("CA3_LMR_Targeting", 2679.0,
+int CA3_LMR_Targeting = sim.createGroup("CA3_LMR_Targeting", 267.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 1011.0,
+int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 101.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 1636.0,
+int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 163.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_Basket = sim.createGroup("CA3_Basket", 1218.0,
+int CA3_Basket = sim.createGroup("CA3_Basket", 121.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 1603.0,
+int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 160.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 2098.0,
+int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 209.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
 int CA3_Ivy = sim.createGroup("CA3_Ivy", 104.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_Trilaminar = sim.createGroup("CA3_Trilaminar", 20976.0,
+int CA3_Trilaminar = sim.createGroup("CA3_Trilaminar", 209.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
 int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 328.0,
                               INHIBITORY_NEURON, 0, GPU_CORES);
                               
-int CA3_Pyramidal_a = sim.createGroup("CA3_Pyramidal_a", 90718.0,
+int CA3_Pyramidal_a = sim.createGroup("CA3_Pyramidal_a", 907.0,
                               EXCITATORY_NEURON, 1, GPU_CORES);
                               
-int CA3_Pyramidal_b = sim.createGroup("CA3_Pyramidal_b", 90718.0,
+int CA3_Pyramidal_b = sim.createGroup("CA3_Pyramidal_b", 907.0,
                               EXCITATORY_NEURON, 2, GPU_CORES);
                               
 sim.setNeuronParameters(CA3_LMR_Targeting, 54.0, 0.0, 1.103614344, 0,
