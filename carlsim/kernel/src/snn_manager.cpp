@@ -499,6 +499,7 @@ void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingD
 // 	}
 // }
 // set conductance values for a simulation (custom values or disable conductances alltogether)
+
 // void SNN::setConductances(bool isSet, float trNMDA, float trGABAb) {
 // 	if (isSet) {
 // 		assert(trNMDA>=0); assert(trGABAb>=0); // 0 to disable rise times
@@ -540,8 +541,6 @@ void SNN::setCompartmentParameters(int gGrpId, float couplingUp, float couplingD
 // 		KERNEL_INFO("Running CUBA mode (all synaptic conductances disabled)");
 // 	}
 // }
-
-
 
 // set homeostasis for group
 void SNN::setHomeostasis(int gGrpId, bool isSet, float homeoScale, float avgTimeScale) {
@@ -6994,8 +6993,10 @@ void SNN::updateNeuronMonitor(int gGrpId) {
 		// Later the user may need need to dump these neuron state values to an output file
 		//printf("The numMsMin is: %i; and numMsMax is: %i\n", numMsMin, numMsMax);
 		for (int t = numMsMin; t < numMsMax; t++) {
+			int grpNumNeurons = groupConfigs[netId][lGrpId].lEndN - groupConfigs[netId][lGrpId].lStartN + 1;
 			//printf("The lStartN is: %i; and lEndN is: %i\n", groupConfigs[netId][lGrpId].lStartN, groupConfigs[netId][lGrpId].lEndN);
-			for (int lNId = groupConfigs[netId][lGrpId].lStartN; lNId <= groupConfigs[netId][lGrpId].lEndN; lNId++) {
+			for (int tmpNId = 0; tmpNId < std::min(MAX_NEURON_MON_GRP_SZIE, grpNumNeurons); tmpNId++) {
+				int lNId = groupConfigs[netId][lGrpId].lStartN + tmpNId;
 				float v, u, I;
 
 				// make sure neuron belongs to currently relevant group

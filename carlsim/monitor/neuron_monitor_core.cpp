@@ -222,6 +222,10 @@ void NeuronMonitorCore::writeNeuronFileHeader() {
 	if (!fwrite(&tmpInt,sizeof(int),1,neuronFileId_))
 		KERNEL_ERROR("NeuronMonitorCore: writeNeuronFileHeader has fwrite error");
 
+	// write MAX_NEURON_MON_GRP_SZIE
+	int max_neuron_mon_group_size = MAX_NEURON_MON_GRP_SZIE;
+	if (!fwrite(&max_neuron_mon_group_size,sizeof(int),1,neuronFileId_))
+		KERNEL_ERROR("NeuronMonitorCore: writeNeuronFileHeader has fwrite error");
 
 	needToWriteFileHeader_ = false;
 }

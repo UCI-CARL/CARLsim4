@@ -123,7 +123,7 @@ GENCODE_SM52       := -gencode arch=compute_52,code=sm_52
 GENCODE_SM60       := -gencode arch=compute_60,code=sm_60
 GENCODE_SM61       := -gencode arch=compute_61,code=sm_61
 GENCODE_SM70       := -gencode arch=compute_70,code=sm_70
-GENCODE_SM75       := -gencode arch=compute_75,code=sm_75 -gencode arch=compute_75,code=compute_75
+GENCODE_SM75       := -gencode arch=compute_75,code=sm_75
 
 NVCCFL          += $(GENCODE_SM30) $(GENCODE_SM35) $(GENCODE_SM37) $(GENCODE_SM50) $(GENCODE_SM52) $(GENCODE_SM60) $(GENCODE_SM61) $(GENCODE_SM70) $(GENCODE_SM75)
 # NVCCFL          += $(GENCODE_SM75)

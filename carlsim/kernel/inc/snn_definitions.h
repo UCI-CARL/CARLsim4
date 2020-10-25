@@ -130,7 +130,7 @@
 // increasing the following numbers will increase the load on constant memory
 // until a hard limit is reached, which is given by the datatype of the variable
 #define MAX_CONN_PER_SNN 256	// hard limit: 2^16
-#define MAX_GRP_PER_SNN 128		// hard limit: 2^16
+#define MAX_GRP_PER_SNN 10		// hard limit: 2^16
 #define MAX_NET_PER_SNN 32		// the maximum number of local networks in a simulation
 
 #ifdef __NO_CUDA__
@@ -160,9 +160,10 @@
 #define LONG_SPIKE_MON_DURATION 600000 // about 10 minutes
 #define LARGE_SPIKE_MON_GRP_SIZE 5000 // about 10 minutes
 
-#define MAX_NEURON_MON_BUFFER_SIZE 524288000 // about 500 MB. size is in bytes. (???)
+// #define MAX_NEURON_MON_BUFFER_SIZE 524288000 // about 500 MB. size is in bytes. (???)
+#define MAX_NEURON_MON_BUFFER_SIZE 10485760000 // about 10,000 MB (10 GB). size is in bytes. (???)
 #define LONG_NEURON_MON_DURATION 100000       // about 100 seconds
-#define MAX_NEURON_MON_GRP_SZIE 128
+#define MAX_NEURON_MON_GRP_SZIE 75000
 
 // This flag is used when having a common poisson generator for both CPU and GPU simulation
 // We basically use the CPU poisson generator. Evaluate if there is any firing due to the
