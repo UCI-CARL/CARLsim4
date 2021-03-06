@@ -20,27 +20,89 @@ There are three directories from which SNNs can be simulated: [ca3_example_net_0
 ## Running the networks
 
 ### Users with access to GMU ARGO Cluster
-For users with an ARGO account at GMU, first, one should update their bashrc with the following settings, which will load all modules necessary to compile and install CARLsim, along with compiling and running the simulations:
+For users with an ARGO account at GMU, the following steps will need to be taken:
 
-```
-# User specific aliases and functions
-module load gcc/7.3.1
-module load cuda/10.1
-module load boost/1.67.0
+1. Update the bashrc from your home directory (/home/username) with the following settings, which will load all modules necessary to compile and install CARLsim, along with compiling and running the simulations:
+  ```
+  nano ~/.bashrc
+  ```
 
-# CARLsim4 related
-export PATH=/cm/shared/apps/cuda/10.1/bin:$PATH
-export LD_LIBRARY_PATH=/cm/shared/apps/cuda/10.1/lib64:$LD_LIBRARY_PATH
+  ```
+  # User specific aliases and functions
+  module load gcc/7.3.1
+  module load cuda/10.1
+  module load boost/1.67.0
 
-# CARLsim4 mandatory variables
-export CARLSIM4_INSTALL_DIR=/home/jkopsick/CARL_hc_02_26_21
-export CUDA_PATH=/cm/shared/apps/cuda/10.1
-export CARLSIM_CUDAVER=10
-export CUDA_MAJOR_NUM=7
-export CUDA_MINOR_NUM=0
+  # CARLsim4 related
+  export PATH=/cm/shared/apps/cuda/10.1/bin:$PATH
+  export LD_LIBRARY_PATH=/cm/shared/apps/cuda/10.1/lib64:$LD_LIBRARY_PATH
 
-# CARLsim4 optional variables
-export CARLSIM_FASTMATH=0
-export CARLSIM_CUOPTLEVEL=3
-```
+  # CARLsim4 mandatory variables
+  export CARLSIM4_INSTALL_DIR=/home/jkopsick/CARL_hc_02_26_21
+  export CUDA_PATH=/cm/shared/apps/cuda/10.1
+  export CARLSIM_CUDAVER=10
+  export CUDA_MAJOR_NUM=7
+  export CUDA_MINOR_NUM=0
+
+  # CARLsim4 optional variables
+  export CARLSIM_FASTMATH=0
+  export CARLSIM_CUOPTLEVEL=3
+  ```
+2. Create a Python Virtual Environment using virtualenv, along with installation of packages necessary for syntax generation from an input XL file.
+
+  ```
+  # Load the Python module
+  module load python/3.7.4
+
+  # Create the Python virtualenv
+  python -m virtualenv test-site-virtualenv-3.7.4-no-sys-pack
+
+  # Unload the Python module now that the virtualenv has been created
+  module unload python/3.7.4
+
+  # Switch to the Python virtualenv that has been created
+  source test-site-virtualenv-3.7.4-no-sys-pack/bin/activate
+  
+  # Install necessary packages to run syntax generation code
+  pip install numpy
+  pip install pandas
+  pip install xlrd==1.2.0
+  ```
+3. Switch to the directory of the network that you would like to simulate (the code below uses the example network), and run the following commands:
+
+  ```
+  # Switch directory
+  cd /scratch/username/CARLsim4_hc/projects/ca3_example_net_02_26_21
+
+  # Create the syntax for the SNN to simulate
+  python generateSNNSyntax.py
+
+  # Clear the contents of the results directory and any previous version of executables, and then compile the SNN to create a new executable
+  make distclean && make
+  ```
+  
+4. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
+
+  ```
+  nano slurm_wrapper.sh
+  ```
+
+  ```
+  #!/bin/bash
+  #SBATCH --partition=gpuq
+  #SBATCH --qos gaqos
+  #SBATCH --gres=gpu:1
+  #SBATCH --exclude=NODE0[40,50,56]
+  #SBATCH --job-name="ca3_ex_net"
+  #SBATCH --output /scratch/username/CARLsim4STP_hc_02_26_21/projects/ca3_example_net_02_26_21/HC_IM_02_26_ca3_example_net_results.txt
+  #SBATCH --mail-type=END,FAIL
+  #SBATCH --mail-user=username@gmu.edu
+  #SBATCH --mem=10G
+  srun ./ca3_snn_GPU
+  ```
+  
+5. Submit the SLURM script to the ARGO Supercomputing Cluster:
+  ```
+  sbatch slurm_wrapper.sh
+  ```
 
