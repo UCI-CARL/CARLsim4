@@ -8,9 +8,9 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |module|tested version|
 |---|---|
 |Anaconda|02.2020|
-|Python|3.7.6|
-|pandas|0.25.3|
-|numpy|1.18.1|
+|Python|3.7.4, 3.7.6|
+|pandas|0.25.3, 1.2.3|
+|numpy|1.18.1, 1.20.1|
 |xlrd|1.2.0|
 |boost|1.67.0|
 
