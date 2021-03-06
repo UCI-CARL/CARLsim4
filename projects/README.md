@@ -22,6 +22,7 @@ There are three directories from which SNNs can be simulated: [ca3_example_net_0
 ### Users with access to GMU ARGO Cluster
 For users with an ARGO account at GMU, first, one should update their bashrc with the following settings, which will load all modules necessary to compile and install CARLsim, along with compiling and running the simulations:
 
+```
 # User specific aliases and functions
 module load gcc/7.3.1
 module load cuda/10.1
@@ -41,3 +42,5 @@ export CUDA_MINOR_NUM=0
 # CARLsim4 optional variables
 export CARLSIM_FASTMATH=0
 export CARLSIM_CUOPTLEVEL=3
+```
+
