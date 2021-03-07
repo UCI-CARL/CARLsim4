@@ -82,7 +82,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   
 5. Make and install the CARLsim4 software:
   ```
-  make distclean && make
+  make distclean && make -j32
   make install
   ```
   
