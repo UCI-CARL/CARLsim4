@@ -96,7 +96,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   python generateSNNSyntax.py
 
   # Clear the contents of the results directory and any previous version of executables, and then compile the SNN to create a new executable
-  make distclean && make
+  make distclean && make -j32
   ```
   
 7. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
