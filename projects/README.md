@@ -69,18 +69,22 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   pip install pandas
   pip install xlrd==1.2.0
   ```
+  
 3. Switch to the scratch directory for your account and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
+
   ```
   cd /scratch/username
   git clone https://github.com/UCI-CARL/CARLsim4.git -b feat/meansdSTPPost_hc CARLsim4_hc
   ```
   
 4. Switch to the newly created CARLsim4 folder
+
   ```
   cd CARLsim4_hc
   ```
   
 5. Make and install the CARLsim4 software:
+
   ```
   make distclean && make -j32
   make install
@@ -94,12 +98,48 @@ For users with an ARGO account at GMU, the following steps will need to be taken
 
   # Create the syntax for the SNN to simulate
   python generateSNNSyntax.py
+  ```
+  
+7. The example network uses an order of magnitude less neurons that the full-scale network, so the generateCONFIGStateSTP.h needs to now be updated:
 
+  ```
+  nano generateCONFIGStateSTP.h
+  ```
+  
+  ```
+  int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 328,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 190,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Basket = sim.createGroup("CA3_Basket", 51,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 66,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 463,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Ivy = sim.createGroup("CA3_Ivy", 233,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 152,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 7436,
+                                EXCITATORY_NEURON, 0, GPU_CORES);
+  ```
+
+8. Compile the SNN:
+
+  ```
   # Clear the contents of the results directory and any previous version of executables, and then compile the SNN to create a new executable
   make distclean && make -j32
   ```
-  
-7. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
+
+9. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
 
   ```
   nano slurm_wrapper.sh
@@ -119,19 +159,19 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   srun ./ca3_snn_GPU
   ```
   
-8. Submit the SLURM script to the ARGO Supercomputing Cluster:
+10. Submit the SLURM script to the ARGO Supercomputing Cluster:
 
   ```
   sbatch slurm_wrapper.sh
   ```
   
-9. Verify that a SLURM job was created after running your SLURM script
+11. Verify that a SLURM job was created after running your SLURM script
 
   ```
   squeue -u username
   ```
   
-10. Once the simulation has been finished (either by checking the squeue command to see if the simulation is still running and/or checking the email provided that will update you when the simulation has finished), view the simulation summary:
+12. Once the simulation has been finished (either by checking the squeue command to see if the simulation is still running and/or checking the email provided that will update you when the simulation has finished), view the simulation summary:
 
   ```
   cat HC_IM_02_26_ca3_example_net_results.txt
