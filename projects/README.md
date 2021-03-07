@@ -56,7 +56,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   module load python/3.7.4
 
   # Create the Python virtualenv
-  python -m virtualenv test-site-virtualenv-3.7.4-no-sys-pack
+  python -m virtualenv test-site-virtualenv-3.7.4-no-sys-pack -p /usr/bin/python3
 
   # Unload the Python module now that the virtualenv has been created
   module unload python/3.7.4
