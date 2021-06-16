@@ -85,9 +85,9 @@ The two necessary components to defining a neuron type in CARLsim are the popula
 The three necessary components to defining a connection type in CARLsim are the probability of connection, the short-term synaptic signals, and the conductance delay between two neuron types. In Hippocampome, this can only be performed for neuron types that have either a [known or potential connection](http://hippocampome.org/php/connectivity.php). The current release of Hippocampome includes parameter estimates for the [connection probabilities](http://hippocampome.org/php/synapse_probabilities_sypr.php) and somatic distances of dendrites and axons that can be used for defining a [conductance delay](http://hippocampome.org/php/synapse_probabilities_sd.php). Parameter estimates for the short-term synaptic signals will be made publicly available soon. To create a connection between two neuron types that can define these three parameter types, one must define a connection in CARLsim as follows (illustrated for the CA3 Axo-Axonic to CA3 Pyramidal connection type):
 
 ```
-  // Define a connection between Axo-Axonic and CA3 Pyramidal neuron types
-  sim.connect(CA3_Axo_Axonic, // pre-synaptic neuron type 
-              CA3_Pyramidal, // post-synaptic neuron type
+  // Define a connection between Axo-Axonic and Pyramidal neuron types
+  sim.connect(CA3_Axo_Axonic, // presynaptic neuron type 
+              CA3_Pyramidal, // postsynaptic neuron type
               "random", // create connections randomly between the two neuron types
               RangeWeight(0.0f, 1.45f, 2.45f), // define the lower, initial, and upper weight bounds for the connection type
               0.15f, // define the connection probability
@@ -96,6 +96,20 @@ The three necessary components to defining a connection type in CARLsim are the 
               SYN_PLASTIC, // indicate that the connection type's weight can be modified 
               1.869561088f, // indicate the conductance of the fast currents of the synapse 
               0.0f // indicate the conductance of the slow currents of the synapse);
+              
+   // Define short-term plasticity parameters between the Axo-Axonic and Pyramidal neuron types
+   sim.setSTP(CA3_Axo_Axonic, // presynaptic neuron type 
+              CA3_Pyramidal, // postsynaptic neuron type
+              true, // define short-term plasticity for the connection type
+              STPu(0.1302436377f, 0.0f), // define mean and standard deviation of the U parameter
+              STPtauU(12.93029701f, 0.0f), // define mean and standard deviation of the tauU parameter
+              STPtauX(361.0287219f, 0.0f), // define mean and standard deviation of the tauX parameter
+              STPtdAMPA(5.0f, 0.0f), // define mean and standard deviation of the AMPA receptor current decay time constant
+              STPtdNMDA(150.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current decay time constant
+              STPtdGABAa(7.623472774f, 0.0f), // define mean and standard deviation of the GABAA receptor current decay time constant
+              STPtdGABAb(150.0f, 0.0f), // define mean and standard deviation of the GABAB receptor current decay time constant
+              STPtrNMDA(0.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current rise time constant
+              STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant);
   ```
 
 ## Choosing a network to run
