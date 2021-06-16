@@ -13,6 +13,55 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |xlrd|1.2.0|
 |boost|1.67.0|
 
+## Creation of a network
+The creation of a cell-type and connection-type specific network in CARLsim4 relies on the following critical components, which will each be described in their own section:
+
+### Neuron Type Components
+The two necessary components to defining a neuron type in CARLsim are the population size (i.e., the number of neurons) and the input-output relationship of the neuron type to the current it receives. The current release of Hippocampome includes parameter estimates for the [latter](http://hippocampome.org/php/Izhikevich_model.php) but not the former (although they will soon be publicly available). To create an entity that can define both the population size and input-output relationship for a neuron type, one must define a CARLsim group as follows (illustrated with both the excitatory Pyramidal and inhibitory Axo-Axonic cell types):
+
+```
+  // Define a group for the excitatory neuron type CA3 Pyramidal
+  int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 74366,
+                                EXCITATORY_NEURON, 0, GPU_CORES);
+                                
+  // Define the input-output relationship for CA3 Pyramidal,
+  // based on the RASP.NASP firing pattern phenotype
+  sim.setNeuronParameters(CA3_Pyramidal, 366.0, 0.0, 0.792338703789581, 0.0,
+                          -63.2044008171655, 0.0, -33.6041733124267, 0.0, 0.00838350334098279,
+                          0.0, -42.5524776883928, 0.0, 35.8614648558726,
+                          0.0, -38.8680990294091, 0.0,
+                          588.0, 0.0, 1);
+                          
+  // Define a group for the inhibitory neuron type CA3 Axo-Axonic
+  int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 1909,
+                              INHIBITORY_NEURON, 0, GPU_CORES);
+  
+  // Define the input-output relationship for CA3 Axo-Axonic,
+  // based on the ASP firing pattern phenotype
+  sim.setNeuronParameters(CA3_Axo_Axonic, 165.0, 0.0, 3.96146287759279, 0.0,
+                          -57.099782869594, 0.0, -51.7187562820223, 0.0, 0.00463860807187154,
+                          0.0, 8.68364493653417, 0.0, 27.7986355932787,
+                          0.0, -73.9685042125372, 0.0,
+                          15.0, 0.0, 1);                            
+  ```
+
+### Connection Type Components
+The three necessary components to defining a connection type in CARLsim are the probability of connection, the short-term synaptic signals, and the conductance delay between two neuron types. In Hippocampome, this can only be performed for neuron types that have either a [known or potential connection](http://hippocampome.org/php/connectivity.php). The current release of Hippocampome includes parameter estimates for the [connection probabilities](http://hippocampome.org/php/synapse_probabilities_sypr.php) and somatic distances of dendrites and axons that can be used for defining a [conductance delay](http://hippocampome.org/php/synapse_probabilities_sd.php). Parameter estimates for the short-term synaptic signals will be made publicly available soon. To create a connection between two neuron types that can define these three parameter types, one must define a connection in CARLsim as follows (illustrated for the CA3 Axo-Axonic to CA3 Pyramidal connection type):
+
+```
+  // Define a connection between Axo-Axonic and CA3 Pyramidal neuron types
+  sim.connect(CA3_Axo_Axonic, // pre-synaptic neuron type 
+              CA3_Pyramidal, // post-synaptic neuron type
+              "random", // create connections randomly between the two neuron types
+              RangeWeight(0.0f, 1.45f, 2.45f), // define the lower, initial, and upper weight bounds for the connection type
+              0.15f, // define the connection probability
+              RangeDelay(1), // define the conductance delay 
+              RadiusRF(-1.0), // define that no receptive field should be formed
+              SYN_PLASTIC, // indicate that the connection type's weight can be modified 
+              1.869561088f, // indicate the conductance of the fast currents of the synapse 
+              0.0f // indicate the conductance of the slow currents of the synapse);
+  ```
+
 ## Choosing a network to run
 There are three directories from which SNNs can be simulated: [ca3_example_net_02_26_21](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21), where a scaled-down version of the model can be simulated, [synchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous) where full-scale versions activated by synchronous stimulation can be simulated, and the [asynchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/asynchronous) where full-scale versions activated by asynchronous stimulation can be simulated. Within both the synchronous and asynchronous directories, three full-scale model versions can be simulated -- the baseline, class, and archetype SNNs. The network features are broadly as follows: the baseline SNN maintains neuron and connection-type specificity; the class SNN maintains neuron-type specificity while removing connection-type specificity; and the archetype SNN maintains connection-type specificity while removing neuron-type specificity.
 
