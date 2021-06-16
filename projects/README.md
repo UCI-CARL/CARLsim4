@@ -13,8 +13,8 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |xlrd|1.2.0|
 |boost|1.67.0|
 
-## Creation of a network
-The creation of a cell-type and connection-type specific network in CARLsim4 relies on the following critical components, which will each be described in their own section:
+## Creation of a network simulation
+The creation of a cell-type and connection-type specific network and the subsequent simulation of it in CARLsim4 relies on the following critical components, which will each be described in their own section:
 
 ### Neuron Type Components
 The two necessary components to defining a neuron type in CARLsim are the population size (i.e., the number of neurons) and the input-output relationship of the neuron type to the current it receives. The current release of Hippocampome includes parameter estimates for the [latter](http://hippocampome.org/php/Izhikevich_model.php) but not the former (although they will soon be publicly available). To create an entity that can define both the population size and input-output relationship for a neuron type, one must define a CARLsim group as follows (illustrated with both the excitatory Pyramidal and inhibitory Axo-Axonic cell types):
@@ -111,6 +111,20 @@ The three necessary components to defining a connection type in CARLsim are the 
               STPtrNMDA(0.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current rise time constant
               STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant);
   ```
+
+### Monitoring of specific neuron types
+The membrane potential (intracellular recording) and spikes (extracellular recording) of each neuron of a neuron type can be monitored and stored using the NeuronMonitor and SpikeMonitor CARLsim classes, respectively. To instantiate either monitor in a network simulation, it can be done so as follows:
+
+```
+  // Define a NeuronMonitor for the Pyramidal neuron type
+  sim.setNeuronMonitor(CA3_Pyramidal, // neuron type to be monitored
+                       "DEFAULT" // directory location of the file containing the intracellular recording of membrane potential);
+ 
+   // Define a SpikeMonitor for the Pyramidal neuron type
+  sim.setSpikeMonitor(CA3_Pyramidal, // neuron type to be monitored
+                       "DEFAULT" // directory location of the file containing the extracellular recording of spikes);
+  ```
+
 
 ## Choosing a network to run
 There are three directories from which SNNs can be simulated: [ca3_example_net_02_26_21](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21), where a scaled-down version of the model can be simulated, [synchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous) where full-scale versions activated by synchronous stimulation can be simulated, and the [asynchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/asynchronous) where full-scale versions activated by asynchronous stimulation can be simulated. Within both the synchronous and asynchronous directories, three full-scale model versions can be simulated -- the baseline, class, and archetype SNNs. The network features are broadly as follows: the baseline SNN maintains neuron and connection-type specificity; the class SNN maintains neuron-type specificity while removing connection-type specificity; and the archetype SNN maintains connection-type specificity while removing neuron-type specificity.
