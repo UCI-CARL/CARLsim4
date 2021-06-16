@@ -21,28 +21,64 @@ The two necessary components to defining a neuron type in CARLsim are the popula
 
 ```
   // Define a group for the excitatory neuron type CA3 Pyramidal
-  int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 74366,
-                                EXCITATORY_NEURON, 0, GPU_CORES);
+  int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", // name of the neuron type
+                                      74366, // population size of the neuron type
+                                      EXCITATORY_NEURON, // define whether neuron type is excitatory/inhibitory 
+                                      0, // define the processor (CPU or GPU) to create the group on
+                                      GPU_CORES // define whether the group will be created on CPU/GPU);
                                 
   // Define the input-output relationship for CA3 Pyramidal,
   // based on the RASP.NASP firing pattern phenotype
-  sim.setNeuronParameters(CA3_Pyramidal, 366.0, 0.0, 0.792338703789581, 0.0,
-                          -63.2044008171655, 0.0, -33.6041733124267, 0.0, 0.00838350334098279,
-                          0.0, -42.5524776883928, 0.0, 35.8614648558726,
-                          0.0, -38.8680990294091, 0.0,
-                          588.0, 0.0, 1);
+  sim.setNeuronParameters(CA3_Pyramidal, // neuron type
+                          366.0, // mean C parameter
+                          0.0, // standard deviation C parameter
+                          0.792338703789581, // mean k parameter
+                          0.0, // standard deviation k parameter
+                          -63.2044008171655, // mean resting membrane potential parameter
+                          0.0, // standard deviation resting membrane potential parameter
+                          -33.6041733124267, // mean spike threshold membrane potential parameter
+                          0.0, // standard deviation spike threshold membrane potential parameter
+                          0.00838350334098279, // mean a parameter
+                          0.0, // standard deviation a parameter
+                          -42.5524776883928, // mean b parameter
+                          0.0, // standard deviation b parameter
+                          35.8614648558726, // mean spike peak membrane potential parameter
+                          0.0, // standard deviation spike peak membrane potential parameter
+                          -38.8680990294091, // mean c parameter
+                          0.0, // standard deviation c parameter
+                          588.0, // mean d parameter
+                          0.0, // standard deviation d parameter
+                          1 // mean refractory period parameter);
                           
   // Define a group for the inhibitory neuron type CA3 Axo-Axonic
-  int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 1909,
-                              INHIBITORY_NEURON, 0, GPU_CORES);
+  int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 
+                                       1909,
+                                       INHIBITORY_NEURON, 
+                                       0, 
+                                       GPU_CORES);
   
   // Define the input-output relationship for CA3 Axo-Axonic,
   // based on the ASP firing pattern phenotype
-  sim.setNeuronParameters(CA3_Axo_Axonic, 165.0, 0.0, 3.96146287759279, 0.0,
-                          -57.099782869594, 0.0, -51.7187562820223, 0.0, 0.00463860807187154,
-                          0.0, 8.68364493653417, 0.0, 27.7986355932787,
-                          0.0, -73.9685042125372, 0.0,
-                          15.0, 0.0, 1);                            
+  sim.setNeuronParameters(CA3_Axo_Axonic, 
+                          165.0, 
+                          0.0, 
+                          3.96146287759279, 
+                          0.0,
+                          -57.099782869594,
+                          0.0, 
+                          -51.7187562820223, 
+                          0.0, 
+                          0.00463860807187154,
+                          0.0, 
+                          8.68364493653417, 
+                          0.0, 
+                          27.7986355932787,
+                          0.0, 
+                          -73.9685042125372, 
+                          0.0,
+                          15.0, 
+                          0.0, 
+                          1);                            
   ```
 
 ### Connection Type Components
