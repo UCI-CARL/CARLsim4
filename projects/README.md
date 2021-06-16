@@ -126,7 +126,7 @@ The membrane potential (intracellular recording) and spikes (extracellular recor
   ```
 
 ### Running a simulation
-Once the neuron type and connection type properties have been defined through CARLsim, along with the specific monitors needed to record intracellular and extracellular activity, the stimulation protocol and simulation duration are defined. For this particular example, we use the synchronous stimulation paradigm that will activate a random subset of 100 Pyramidal cells in the network (more details can be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/src/main_ca3_snn_GPU.cpp):
+Once the neuron type and connection type properties have been defined through CARLsim, along with the specific monitors needed to record intracellular and extracellular activity, the stimulation protocol and simulation duration are defined. For this particular example, we use the synchronous stimulation paradigm that will activate a random subset of 100 Pyramidal cells in the network (more details can be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/src/main_ca3_snn_GPU.cpp)):
 
 ```
   // Declare variables that will store the start and end ID for the neurons
