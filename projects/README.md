@@ -125,6 +125,75 @@ The membrane potential (intracellular recording) and spikes (extracellular recor
                        "DEFAULT" // directory location of the file containing the extracellular recording of spikes);
   ```
 
+### Running a simulation
+Once the neuron type and connection type properties have been defined through CARLsim, along with the specific monitors needed to record intracellular and extracellular activity, the stimulation protocol and simulation duration are defined. For this particular example, we use the synchronous stimulation paradigm that will activate a random subset of 100 Pyramidal cells in the network (more details can be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/src/main_ca3_snn_GPU.cpp):
+
+```
+  // Declare variables that will store the start and end ID for the neurons
+	// in the pyramidal group
+	int pyr_start = sim.getGroupStartNeuronId(CA3_Pyramidal);
+	std::cout << "Beginning neuron ID for Pyramidal Cells is : " << pyr_start;
+	int pyr_end = sim.getGroupEndNeuronId(CA3_Pyramidal);
+	std::cout << "Ending neuron ID for Pyramidal Cells is : " << pyr_end;
+	int pyr_range = (pyr_end - pyr_start) + 1;
+	std::cout << "The range for Pyramidal Cells is : " << pyr_range;
+
+	// Create vectors that are the length of the number of neurons in the pyramidal
+	// group, and another that will store the current at the position for the
+  // random pyramidal cells that will be selected
+	std::vector<int> pyr_vec( boost::counting_iterator<int>( 0 ),
+							              boost::counting_iterator<int>( pyr_range ));
+  std::vector<float> current(pyr_range, 0.0f);
+  
+  // Define the number of neurons to receive input from the external current
+  int numPyramidalFire = 100;
+  
+  // Set the seed of the pseudo-random number generator based on the current system time,
+  // which will allow for a random subset of 100 Pyramidal cells to be chosen to receive
+  // transient input.
+	std::srand(std::time(nullptr));
+  
+  // run for a total of 9 seconds
+	// at the end of each runNetwork call, SpikeMonitor stats will be printed
+	for (int i=0; i<20; i++) 
+	{
+    	if (i == 0)
+        {
+            // Set external current for a fraction of pyramidal cells based on the random
+            // seed
+            for (int i = 0; i < numPyramidalFire; i++)
+            {
+                int randPyrCell = pyr_vec.front() + ( std::rand() % ( pyr_vec.back() - pyr_vec.front() ) );
+                current.at(randPyrCell) = 45000.0f;
+            }
+            
+            // Set the external current for all Pyramidal cells and run the network
+            // for one ms
+            sim.setExternalCurrent(CA3_Pyramidal, current);
+            sim.runNetwork(0,1);
+        }
+        
+		if (i == 1)
+		{
+    		// Set the external current for all Pyramidal cells to zero and run the 
+    		// network for one ms
+    		sim.setExternalCurrent(CA3_Pyramidal, 0.0f);
+    		sim.runNetwork(0,1);
+        }
+        
+        if (i >= 2 && i < 19)
+		{
+    		// Run the network for 500 ms
+    		sim.runNetwork(0,500);
+		}
+		
+        if (i == 19)
+        {
+            // Run the network for 498 ms
+            sim.runNetwork(0,498);
+        }
+	}
+  ```
 
 ## Choosing a network to run
 There are three directories from which SNNs can be simulated: [ca3_example_net_02_26_21](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21), where a scaled-down version of the model can be simulated, [synchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous) where full-scale versions activated by synchronous stimulation can be simulated, and the [asynchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/asynchronous) where full-scale versions activated by asynchronous stimulation can be simulated. Within both the synchronous and asynchronous directories, three full-scale model versions can be simulated -- the baseline, class, and archetype SNNs. The network features are broadly as follows: the baseline SNN maintains neuron and connection-type specificity; the class SNN maintains neuron-type specificity while removing connection-type specificity; and the archetype SNN maintains connection-type specificity while removing neuron-type specificity.
