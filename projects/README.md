@@ -1,6 +1,8 @@
 # Simulation of Data-Driven, Neuron-Type Specific CA3 SNNs 
 This repository includes information as to how to run an example and full-scale spiking neural network (SNN) model of hippocampal subregion CA3. The following instructions assume that the user has Ubuntu installed or is using a supercomputing cluster that is Linux-based. Additionally, installation instructions of the CARLsim software can be found in the parent directory's [README](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc), but will also be provided here.
 
+## Table of Contents:
+[Module Dependences](#module-dependencies-for-the-software)
 ## Module Dependencies for the Software:
 Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one will need to install Python 3 as well as the package dependencies included in the table below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
 
