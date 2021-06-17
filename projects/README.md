@@ -3,7 +3,9 @@ This repository includes information as to how to run an example and full-scale 
 
 ## Table of Contents:
 [Module Dependencies](#module-dependencies-for-the-software)
+
 [Choosing a Network to Run](#choosing-a-network-to-run)
+
 [Installation and Simulation of SNNs](#installation-and-simulation-of-the-SNNs)
 
 ## Module Dependencies for the Software:
