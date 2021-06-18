@@ -214,7 +214,6 @@ For users compiling and running simulations with Ubuntu, the following steps wil
 
   ```
   nano ~/.bashrc
-  
   ```
 
   ```
@@ -230,7 +229,6 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   # CARLsim4 optional variables
   export CARLSIM_FASTMATH=0
   export CARLSIM_CUOPTLEVEL=3
-  
   ```
   
 2. Switch to your home directory and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
