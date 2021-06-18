@@ -207,6 +207,134 @@ There are three directories from which SNNs can be simulated: [ca3_example_net_0
 
 ## Installation and Simulation of the SNNs
 
+### Ubuntu Users
+For users compiling and running simulations with Ubuntu, the following steps will need to be taken:
+  
+1. Update the bashrc from your home directory (/home/username) with the following settings, which will load all modules necessary to compile and install CARLsim, along with compiling and running the simulations:
+
+  ```
+  nano ~/.bashrc
+  ```
+
+  ```
+  # CARLsim4 related
+  export PATH=/path/to/cuda/bin:$PATH # path to CUDA bin
+  export LD_LIBRARY_PATH=/path/to/cuda/lib64:$LD_LIBRARY_PATH # path to CUDA library
+  
+  # CARLsim4 mandatory variables
+  export CARLSIM4_INSTALL_DIR=/home/username/CARL_hc # path to install CARL directory
+  export CUDA_PATH=/path/to/cuda # path to CUDA samples necessary for compilation
+  export CARLSIM_CUDAVER=10 # cuda version installed; 10 used in example
+  export CUDA_MAJOR_NUM=7 # compute capability major revision number; 7 used in example
+  export CUDA_MINOR_NUM=0 # compute capability major revision number; ; 0 used in example
+
+  # CARLsim4 optional variables
+  export CARLSIM_FASTMATH=0
+  export CARLSIM_CUOPTLEVEL=3
+  ```  
+  
+2. Switch to your home directory and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
+
+  ```
+  cd /home/username
+  git clone https://github.com/UCI-CARL/CARLsim4.git -b feat/meansdSTPPost_hc CARLsim4_hc
+  ```
+  
+3. Switch to the newly created CARLsim4 folder
+
+  ```
+  cd CARLsim4_hc
+  ```
+  
+4. Make and install the CARLsim4 software:
+
+  ```
+  make distclean && make -j32
+  make install
+  ```
+  
+5. Switch to the directory of the network that you would like to simulate (the code below uses the example network), and run the following commands:
+
+  ```
+  # Switch directory
+  cd /home/username/CARLsim4_hc/projects/ca3_example_net_02_26_21
+
+  # Create the syntax for the SNN to simulate
+  python3 generateSNNSyntax.py
+  ```
+  
+6. The example network uses an order of magnitude less neurons than the full-scale network, and doesn't involve the monitoring of the membrane potential due to memory constraints, so the generateCONFIGStateSTP.h needs to now be updated:
+
+  ```
+  nano generateCONFIGStateSTP.h
+  ```
+  
+  ```
+  // These variable declarations are at the beginning of the header file 
+  int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 328,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 190,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Basket = sim.createGroup("CA3_Basket", 51,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 66,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 463,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Ivy = sim.createGroup("CA3_Ivy", 233,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 152,
+                                INHIBITORY_NEURON, 0, GPU_CORES);
+
+  int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 7436,
+                                EXCITATORY_NEURON, 0, GPU_CORES);
+
+  // These commands are at the end of the header file 
+  
+  // sim.setNeuronMonitor(CA3_QuadD_LM, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_Axo_Axonic, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_Basket, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_BC_CCK, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_Bistratified, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_Ivy, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_MFA_ORDEN, "DEFAULT");
+                                 
+  // sim.setNeuronMonitor(CA3_Pyramidal, "DEFAULT");
+  ```
+
+8. Compile the SNN:
+
+  ```
+  # Clear the contents of the results directory and any previous version of executables, and then compile the SNN to create a new executable
+  make distclean && make -j32
+  ```
+  
+9. Run the compiled simulation in the background using nohup and output the simulation summary to a text file
+
+  ```
+  nohup ./ca3_snn_GPU > HC_IM_02_26_ca3_example_net_results.txt &
+  ```
+  
+10. Once the simulation has been finished (either by checking the squeue command to see if the simulation is still running and/or checking the email provided that will update you when the simulation has finished), view the simulation summary:
+
+  ```
+  cat HC_IM_02_26_ca3_example_net_results.txt
+  ```
+
+
+
 ### Users with access to GMU ARGO Cluster
 For users with an ARGO account at GMU, the following steps will need to be taken:
   
