@@ -17,11 +17,13 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |module|tested version|
 |---|---|
 |Anaconda|02.2020|
-|Python|3.7.4, 3.7.6|
+|Python|3.7.4, 3.7.6, 3.8.5|
 |pandas|0.25.3, 1.2.3|
 |numpy|1.18.1, 1.20.1|
 |xlrd|1.2.0|
 |boost|1.67.0|
+|gcc|7.3.3, 7.5.0|
+|nohup|8.30|
 
 ## Creation of a network simulation
 The creation of a cell-type and connection-type specific network and the subsequent simulation of it in CARLsim4 relies on the following critical components, which will each be described in their own section:
