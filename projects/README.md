@@ -22,6 +22,7 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |numpy|1.18.1, 1.20.1|
 |xlrd|1.2.0|
 |boost|1.67.0|
+|make|4.2.1|
 |gcc|7.3.3, 7.5.0|
 |nohup|8.30|
 
