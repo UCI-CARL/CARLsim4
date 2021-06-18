@@ -220,12 +220,14 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   # CARLsim4 related
   export PATH=/path/to/cuda/bin:$PATH # path to CUDA bin
   export LD_LIBRARY_PATH=/path/to/cuda/lib64:$LD_LIBRARY_PATH # path to CUDA library
+  
   # CARLsim4 mandatory variables
   export CARLSIM4_INSTALL_DIR=/home/username/CARL_hc # path to install CARL directory
   export CUDA_PATH=/path/to/cuda # path to CUDA samples necessary for compilation
   export CARLSIM_CUDAVER=10 # cuda version installed; 10 used in example
   export CUDA_MAJOR_NUM=7 # compute capability major revision number; 7 used in example
   export CUDA_MINOR_NUM=0 # compute capability major revision number; ; 0 used in example
+  
   # CARLsim4 optional variables
   export CARLSIM_FASTMATH=0
   export CARLSIM_CUOPTLEVEL=3
