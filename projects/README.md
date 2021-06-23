@@ -10,6 +10,7 @@ This repository includes information as to how to run an example and full-scale 
 	* [Ubuntu Users](#ubuntu-users)
 	* [GMU ARGO Users](#users-with-access-to-GMU-ARGO-cluster)
 
+* [Framework to Test Hippocampal Hypotheses](#A-framework-to-test-hypotheses-of-the-hippocampal-formation) 
 
 ## Module Dependencies for the Software:
 Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one will need to install Python 3 as well as the package dependencies included in the table below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
@@ -501,3 +502,171 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   cat HC_IM_02_26_ca3_example_net_results.txt
   ```
 
+## A framework to test hypotheses of the hippocampal formation
+The examples shown above describe how a network model of CA3 consisting of eight neuron types and fifty-one connection types can be utilized to test the network's stability and robustness to a transient, synchronous or asynchronous stimulation protocol. What if we wanted to test different hypotheses regarding CA3, or other subregions of the hippocampal formation? Hippocampal network models created in CARLsim are flexible enough to test additional hypotheses, which we provide an example of below.
+
+Suppose we wanted to understand how different representative cell types in area CA3 were involved in pattern storage and completion. One way we could approach this is by using the cell types involved in the [archetype network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_archetype) with a population of dentate gyrus granule cells as external input to the network. The following code will walk through how to create and simulate such a network and the scenario of pattern storage and completion.
+
+1. Declare groups for each representative neuron type, along with Izhikevich parameter sets, how they connect to other representative neuron types, and their short-term plasticity rules. Additionally we set the max synaptic weight to 5 nS for each connection type:
+
+```
+int CA3_Basket = sim.createGroup("CA3_Basket", 3089,
+                              INHIBITORY_NEURON, 0, GPU_CORES);
+                              
+int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 11771,
+                              INHIBITORY_NEURON, 0, GPU_CORES);
+                              
+int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 74366,
+                              EXCITATORY_NEURON, 0, GPU_CORES);
+                              
+sim.setNeuronParameters(CA3_Basket, 45.0, 0.0, 0.9951729, 0.0,
+                                                -57.506126, 0.0, -23.378766, 0.0, 0.003846186,
+                                                0.0, 9.2642765, 0.0, 18.454934,
+                                                0.0, -47.555661, 0.0,
+                                                -6.0, 0.0, 1);
+                     
+sim.setNeuronParameters(CA3_MFA_ORDEN, 209.0, 0.0, 1.37980713457205, 0.0,
+                                                -57.076423571379, 0.0, -39.1020427841762, 0.0, 0.00783805979364104,
+                                                0.0, 12.9332855397722, 0.0, 16.3132681887705,
+                                                0.0, -40.6806648852695, 0.0,
+                                                0.0, 0.0, 1);
+                     
+sim.setNeuronParameters(CA3_Pyramidal, 366.0, 0.0, 0.792338703789581, 0.0,
+                                                -63.2044008171655, 0.0, -33.6041733124267, 0.0, 0.00838350334098279,
+                                                0.0, -42.5524776883928, 0.0, 35.8614648558726,
+                                                0.0, -38.8680990294091, 0.0,
+                                                588.0, 0.0, 1);
+                     
+sim.connect(CA3_Basket, CA3_Basket, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.005f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 3.281611994f, 0.0f);
+                                       
+sim.connect(CA3_Basket, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 5.0f), 0.005f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.808726221f, 0.0f);
+                                       
+sim.connect(CA3_Basket, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.15f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.572405696f, 0.0f);
+                                       
+sim.connect(CA3_MFA_ORDEN, CA3_Basket, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.0072882240621001f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.972333716f, 0.0f);
+                                       
+sim.connect(CA3_MFA_ORDEN, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 5.0f), 0.00210548528014741f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.552656079f, 0.0f);
+                                       
+sim.connect(CA3_MFA_ORDEN, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.0417555599977689f,
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.360315289f, 0.0f);
+                                       
+sim.connect(CA3_Pyramidal, CA3_Basket, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.0197417562762975f,
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 1.172460639f, 0.0f);
+                                   
+sim.connect(CA3_Pyramidal, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 1.25f, 5.0f), 0.0209934225689348f,
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.88025265f, 0.0f);
+                                   
+sim.connect(CA3_Pyramidal, CA3_Pyramidal, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.0250664662231983f,
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.553062478f, 0.0f);
+                                   
+sim.setSTP(CA3_Basket, CA3_Basket, true, STPu(0.38950627465000004f, 0.0f),
+                                         STPtauU(11.19042564f, 0.0f),
+                                         STPtauX(689.5059466f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(3.007016545f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_Basket, CA3_MFA_ORDEN, true, STPu(0.301856475f, 0.0f),
+                                         STPtauU(19.60369075f, 0.0f),
+                                         STPtauX(581.9355018f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(5.230610278f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_Basket, CA3_Pyramidal, true, STPu(0.12521945645000002f, 0.0f),
+                                         STPtauU(16.73589406f, 0.0f),
+                                         STPtauX(384.3363321f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(7.63862234f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_MFA_ORDEN, CA3_Basket, true, STPu(0.36184299919999996f, 0.0f),
+                                         STPtauU(15.70448009f, 0.0f),
+                                         STPtauX(759.1190877f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(3.896195604f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_MFA_ORDEN, CA3_MFA_ORDEN, true, STPu(0.2855712375f, 0.0f),
+                                         STPtauU(22.52027885f, 0.0f),
+                                         STPtauX(642.0975453f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(5.533747322f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_MFA_ORDEN, CA3_Pyramidal, true, STPu(0.11893441670000002f, 0.0f),
+                                         STPtauU(20.61711347f, 0.0f),
+                                         STPtauX(496.0484093f, 0.0f),
+                                         STPtdAMPA(5.0f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(7.149050278f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(CA3_Pyramidal, CA3_Basket, true, STPu(0.12174287290000001f, 0.0f),
+                                     STPtauU(21.16086172f, 0.0f),
+                                     STPtauX(691.4177768f, 0.0f),
+                                     STPtdAMPA(3.97130389f, 0.0f),
+                                     STPtdNMDA(150.0f, 0.0f),
+                                     STPtdGABAa(6.0f, 0.0f),
+                                     STPtdGABAb(150.0f, 0.0f),
+                                     STPtrNMDA(0.0f, 0.0f),
+                                     STPtrGABAb(0.0f, 0.0f));
+                                 
+sim.setSTP(CA3_Pyramidal, CA3_MFA_ORDEN, true, STPu(0.14716404225000002f, 0.0f),
+                                     STPtauU(29.01335489f, 0.0f),
+                                     STPtauX(444.9925289f, 0.0f),
+                                     STPtdAMPA(5.948303553f, 0.0f),
+                                     STPtdNMDA(150.0f, 0.0f),
+                                     STPtdGABAa(6.0f, 0.0f),
+                                     STPtdGABAb(150.0f, 0.0f),
+                                     STPtrNMDA(0.0f, 0.0f),
+                                     STPtrGABAb(0.0f, 0.0f));
+                                 
+sim.setSTP(CA3_Pyramidal, CA3_Pyramidal, true, STPu(0.27922089865f, 0.0f),
+                                     STPtauU(21.44820657f, 0.0f),
+                                     STPtauX(318.510891f, 0.0f),
+                                     STPtdAMPA(10.21893984f, 0.0f),
+                                     STPtdNMDA(150.0f, 0.0f),
+                                     STPtdGABAa(6.0f, 0.0f),
+                                     STPtdGABAb(150.0f, 0.0f),
+                                     STPtrNMDA(0.0f, 0.0f),
+                                     STPtrGABAb(0.0f, 0.0f));
+```
+
+2. We set excitatory and inhibitory spike-time dependent plasticity for each group, using default parameters:
+
+```
+sim.setESTDP(CA3_Basket, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
+
+sim.setISTDP(CA3_Basket, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f));
+
+sim.setESTDP(CA3_MFA_ORDEN, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
+
+sim.setISTDP(CA3_MFA_ORDEN, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f));
+
+sim.setESTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
+
+sim.setISTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f));
+```
