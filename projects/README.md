@@ -518,6 +518,9 @@ int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 11771,
                               
 int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 74366,
                               EXCITATORY_NEURON, 0, GPU_CORES);
+
+int DG_Granule = sim.createSpikeGeneratorGroup("DG_Granule", 394502,
+                              EXCITATORY_NEURON, 0, GPU_CORES);
                               
 sim.setNeuronParameters(CA3_Basket, 45.0, 0.0, 0.9951729, 0.0,
                                                 -57.506126, 0.0, -23.378766, 0.0, 0.003846186,
@@ -563,6 +566,15 @@ sim.connect(CA3_Pyramidal, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 1.25f, 5.0
                                    
 sim.connect(CA3_Pyramidal, CA3_Pyramidal, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.0250664662231983f,
                                       RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.553062478f, 0.0f);
+
+sim.connect(DG_Granule, CA3_Basket, "random", RangeWeight(0.0f, 0.65f, 2.0f), 0.001f,
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.4977493f, 0.0f);
+                                       
+sim.connect(DG_Granule, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 2.0f), 0.001f,
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.35876774f, 0.0f);
+                                       
+sim.connect(DG_Granule, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 2.0f), 0.002f,
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.262911855f, 0.0f);
                                    
 sim.setSTP(CA3_Basket, CA3_Basket, true, STPu(0.38950627465000004f, 0.0f),
                                          STPtauU(11.19042564f, 0.0f),
@@ -653,9 +665,39 @@ sim.setSTP(CA3_Pyramidal, CA3_Pyramidal, true, STPu(0.27922089865f, 0.0f),
                                      STPtdGABAb(150.0f, 0.0f),
                                      STPtrNMDA(0.0f, 0.0f),
                                      STPtrGABAb(0.0f, 0.0f));
+
+sim.setSTP(DG_Granule, CA3_Basket, true, STPu(0.187709502f, 0.0f),
+                                         STPtauU(30.28628071f, 0.0f),
+                                         STPtauX(744.6556525f, 0.0f),
+                                         STPtdAMPA(3.582783578f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(5.0f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+					 
+sim.setSTP(DG_Granule, CA3_MFA_ORDEN, true, STPu(0.194481964f, 0.0f),
+                                         STPtauU(48.64778619f, 0.0f),
+                                         STPtauX(453.6458777f, 0.0f),
+                                         STPtdAMPA(4.86667462f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(5.0f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
+                                     
+sim.setSTP(DG_Granule, CA3_Pyramidal, true, STPu(0.156887286f, 0.0f),
+                                         STPtauU(42.00785645f, 0.0f),
+                                         STPtauX(347.4434166f, 0.0f),
+                                         STPtdAMPA(7.425713188f, 0.0f),
+                                         STPtdNMDA(150.0f, 0.0f),
+                                         STPtdGABAa(5.0f, 0.0f),
+                                         STPtdGABAb(150.0f, 0.0f),
+                                         STPtrNMDA(0.0f, 0.0f),
+                                         STPtrGABAb(0.0f, 0.0f));
 ```
 
-2. We set excitatory and inhibitory spike-time dependent plasticity for each group, using default parameters:
+2. We set excitatory and inhibitory spike-time dependent plasticity for each neuron type, using default parameters:
 
 ```
 sim.setESTDP(CA3_Basket, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
@@ -669,4 +711,28 @@ sim.setISTDP(CA3_MFA_ORDEN, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f))
 sim.setESTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
 
 sim.setISTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f));
+```
+
+3. Create SpikeMonitors and NeuronMonitors for each neuron type:
+
+```
+sim.setNeuronMonitor(CA3_Basket, "DEFAULT");
+
+sim.setNeuronMonitor(CA3_MFA_ORDEN, "DEFAULT");
+                                 
+sim.setNeuronMonitor(CA3_Pyramidal, "DEFAULT");
+
+sim.setSpikeMonitor(CA3_Basket, "DEFAULT");
+
+sim.setSpikeMonitor(CA3_MFA_ORDEN, "DEFAULT");
+                                 
+sim.setSpikeMonitor(CA3_Pyramidal, "DEFAULT");
+```
+
+4. Create a PoissonRate object for the Granule cell population, and set the mean firing rate of all neurons to baseline levels observed in vivo:
+
+```
+PoissonRate DG_Granule_rate(394502, true); // create PoissonRate object for all Granule cells
+DG_Granule_rate.setRates(0.4f); // set all mean firing rates for the object to 0.4 Hz
+sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // link the object with defined Granule cell group, with refractory period 1 ms
 ```
