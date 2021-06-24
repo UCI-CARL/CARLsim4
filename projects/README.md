@@ -736,3 +736,80 @@ PoissonRate DG_Granule_rate(394502, true); // create PoissonRate object for all 
 DG_Granule_rate.setRates(0.4f); // set all mean firing rates for the object to 0.4 Hz
 sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // link the object with defined Granule cell group, with refractory period 1 ms
 ```
+
+5. In the main simulation script file, we now declare variables and vectors that will be used to select a subset of the granule cell population to increase their firing rates:
+
+```
+// Declare variables that will store the start and end ID for the neurons
+// in the granule group
+int DG_start = sim.getGroupStartNeuronId(DG_Granule);
+int DG_end = sim.getGroupEndNeuronId(DG_Granule);
+int DG_range = (DG_end - DG_start) + 1;
+
+// Create a vector that are the length of the number of neurons in the granule population
+std::vector<int> DG_vec( boost::counting_iterator<int>( 0 ),
+                         boost::counting_iterator<int>( DG_range ));
+			 
+// Define the number of granule and stellate cells to fire
+int numGranuleFire = 10;
+
+std::vector<int> DG_vec_A;
+
+// Define the location of those granule and stellate cells so that we choose the same granule and stellate cells
+for (int i = 0; i < numGranuleFire; i++)
+{
+    DG_vec_A.push_back(5*(i+1));
+    MEC_vec_A.push_back(5*(i+1));
+}
+
+// run for a total of 10 seconds
+// at the end of each runNetwork call, SpikeMonitor stats will be printed
+for (int i=0; i<20; i++)
+{
+	if (i >= 0 && i < 10) 
+    {
+		sim.runNetwork(0,500);
+	}
+	
+	if ( i == 10)
+	{
+		for (int j = 0; j < numGranuleFire; j++)
+		{
+			int randGranCell = DG_vec.front() + DG_vec_A[j];
+			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate);
+		}
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
+		sim.runNetwork(0,25);
+	}
+	
+	if (i == 11)
+	{
+		DG_Granule_rate.setRates(0.5f);
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
+        sim.runNetwork(0,75);
+	}
+
+	if ( i == 12)
+	{
+		for (int j = 0; j < numGranuleFire; j++)
+		{
+			int randGranCell = DG_vec.front() + DG_vec_A[j];
+			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate);
+		}
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
+		sim.runNetwork(0,25);
+        }
+		
+	if (i == 13)
+	{
+		DG_Granule_rate.setRates(0.5f);
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);
+		sim.runNetwork(0,75);
+	}
+        
+	if (i >=14 && i < 20)
+	{
+		sim.runNetwork(0,500);
+	}
+}
+```
