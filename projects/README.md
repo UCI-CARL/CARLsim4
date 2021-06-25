@@ -750,7 +750,7 @@ DG_Granule_rate.setRates(0.4f); // set all mean firing rates for the object to 0
 sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // link the object with defined Granule cell group, with refractory period 1 ms
 ```
 
-5. In the main simulation script file, we now declare variables and vectors that will be used to select a subset of the granule cell population to increase their firing rates:
+5. In the main simulation script file, we now declare variables and vectors that will be used to select a subset of the granule cell population to increase their firing rates. Ten granule cells are chosen from the assigned set of {0,5,10,...,45}:
 
 ```
 // Declare variables that will store the start and end ID for the neurons
@@ -773,7 +773,11 @@ for (int i = 0; i < numGranuleFire; i++)
 {
     DG_vec_A.push_back(5*(i+1));
 }
+```
 
+6. A simulation protocol is now defined which runs the simulation for 10 seconds, where halfway through the simulation the ten granule cells selected have their firing rates elevated to the defined firing rate of 100 Hz within two 25 ms time windows (corresponding to gamma cycles):
+
+```
 // run for a total of 10 seconds
 // at the end of each runNetwork call, SpikeMonitor stats will be printed
 for (int i=0; i<20; i++)
