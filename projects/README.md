@@ -5,6 +5,8 @@ This repository includes information as to how to run an example and full-scale 
 * [Module Dependencies](#module-dependencies-for-the-software)
 
 * [Choosing a Network to Run](#choosing-a-network-to-run)
+	* [Ubuntu Users](#ubuntu)
+	* [GMU ARGO Users](#GMU-ARGO-cluster)
 
 * [Installation and Simulation of SNNs](#installation-and-simulation-of-the-SNNs)
 	* [Ubuntu Users](#ubuntu-users)
@@ -15,6 +17,7 @@ This repository includes information as to how to run an example and full-scale 
 ## Module Dependencies for the Software:
 Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one will need to install Python 3 as well as the package dependencies included in the table below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
 
+### Ubuntu 
 |module|tested version|
 |---|---|
 |Anaconda|02.2020|
@@ -26,6 +29,16 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |make|4.2.1|
 |gcc|7.3.3, 7.5.0|
 |nohup|8.30|
+
+### GMU ARGO Cluster
+|module|tested version|
+|---|---|
+|Anaconda|02.2020|
+|Python|3.7.4, 3.7.6, 3.8.5|
+|pandas|0.25.3, 1.2.3|
+|numpy|1.18.1, 1.20.1|
+|xlrd|1.2.0|
+|boost|1.67.0|
 
 ## Creation of a network simulation
 The creation of a cell-type and connection-type specific network and the subsequent simulation of it in CARLsim4 relies on the following critical components, which will each be described in their own section:
