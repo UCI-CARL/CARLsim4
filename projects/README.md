@@ -3,6 +3,8 @@ This repository includes information as to how to run an example and full-scale 
 
 ## Table of Contents:
 * [Module Dependencies](#module-dependencies-for-the-software)
+	* [Ubuntu Users](#ubuntu)
+	* [GMU ARGO Users](#GMU-ARGO-cluster)
 
 * [Creation of a network simulation](#creation-of-a-network-simulation)
 	* [Neuron Type Components](#neuron-type-components)
@@ -11,8 +13,6 @@ This repository includes information as to how to run an example and full-scale 
 	* [Running a Simulation](#running-a-simulation)
 
 * [Choosing a Network to Run](#choosing-a-network-to-run)
-	* [Ubuntu Users](#ubuntu)
-	* [GMU ARGO Users](#GMU-ARGO-cluster)
 
 * [Installation and Simulation of SNNs](#installation-and-simulation-of-the-SNNs)
 	* [Ubuntu Users](#ubuntu-users)
