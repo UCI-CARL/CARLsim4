@@ -780,8 +780,13 @@ for (int i = 0; i < numGranuleFire; i++)
     DG_vec_A.push_back(5*(i+1));
 }
 ```
+6. Before the first simulation begins, the newly created network structure be saved by calling the saveSimulation function:
 
-6. A simulation protocol is now defined which runs the simulation for 10 seconds, where halfway through the simulation the ten granule cells selected have their firing rates elevated to the defined firing rate of 100 Hz within two 25 ms time windows (corresponding to gamma cycles):
+```
+ sim.saveSimulation("ca3SNN1.dat", true); // define where to save the network structure to and save synapse info
+```
+
+7. A simulation protocol is now defined which runs the simulation for 10 seconds, where halfway through the simulation the ten granule cells selected have their firing rates elevated to the defined firing rate of 100 Hz within two 25 ms time windows (corresponding to gamma cycles):
 
 ```
 // run for a total of 10 seconds
@@ -835,3 +840,54 @@ for (int i=0; i<20; i++)
 	}
 }
 ```
+
+8. The outcome of the simulation can now be saved by calling the saveSimulation function, which will save the network structure:
+
+```
+ sim.saveSimulation("ca3SNN2.dat", true); // define where to save the network structure to and save synapse info
+```
+
+9. The saved network can now be loaded in additional simulation runs, by calling the loadSimulation function before the setupNetwork is called (invokes the SETUP simulation state):
+
+```
+// before calling setupNetwork, call loadSimulation
+FILE* fId = NULL;
+fId = fopen("ca3SNN2.dat", "rb");
+sim.loadSimulation(fId);
+```
+
+10. Now the setupNetwork function can be called and after its completion the connection to the network structure file can be closed:
+
+```
+sim.setupNetwork();
+
+// ... wait until after setupNetwork is called
+fclose(fId);
+```
+
+11. The same stimulation protocol from steps 5-10 can be called in additional runs to save and load the network structure to make the pattern stored more robustly. Once the user believes that the pattern has been robustly stored within the network structure, the stimulation protocol can be changed to test for pattern completion by selecting fewer neurons than the original set of granule cells. In the example below, only seven ({0,5,10,...,30}) of the original ten granule cells are selected for testing pattern completion:
+
+```
+// Declare variables that will store the start and end ID for the neurons
+// in the granule group
+int DG_start = sim.getGroupStartNeuronId(DG_Granule);
+int DG_end = sim.getGroupEndNeuronId(DG_Granule);
+int DG_range = (DG_end - DG_start) + 1;
+
+// Create a vector that is the length of the number of neurons in the granule population
+std::vector<int> DG_vec( boost::counting_iterator<int>( 0 ),
+                         boost::counting_iterator<int>( DG_range ));
+			 
+// Define the number of granule cells to fire
+int numGranuleFire = 7;
+
+std::vector<int> DG_vec_A;
+
+// Define the location of those granule cells so that we choose the same granule cells each time we call setRates
+for (int i = 0; i < numGranuleFire; i++)
+{
+    DG_vec_A.push_back(5*(i+1));
+}
+```
+
+12. Steps 6-10 can be followed again to see if the stored pattern was successfully recalled, which can be observed in MATLAB using the [CARLsim MATLAB Analysis Toolbox](http://uci-carl.github.io/CARLsim4/ch9_matlab_oat.html) and custom built functions and scripts used to interact with the Toolbox [here](https://github.com/Hippocampome-Org/snn_analysis/).
