@@ -18,7 +18,7 @@ This repository includes information as to how to run an example and full-scale 
 Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one will need to install Python 3 as well as the package dependencies included in the table below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
 
 ### Ubuntu 
-|module|tested version|
+|module|tested version(s)|
 |---|---|
 |Anaconda|02.2020|
 |Python|3.7.4, 3.7.6, 3.8.5|
@@ -31,7 +31,7 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 |nohup|8.30|
 
 ### GMU ARGO Cluster
-|module|tested version|
+|module|tested version(s)|
 |---|---|
 |Anaconda|02.2020|
 |Python|3.7.4, 3.7.6, 3.8.5|
