@@ -746,20 +746,19 @@ int DG_start = sim.getGroupStartNeuronId(DG_Granule);
 int DG_end = sim.getGroupEndNeuronId(DG_Granule);
 int DG_range = (DG_end - DG_start) + 1;
 
-// Create a vector that are the length of the number of neurons in the granule population
+// Create a vector that is the length of the number of neurons in the granule population
 std::vector<int> DG_vec( boost::counting_iterator<int>( 0 ),
                          boost::counting_iterator<int>( DG_range ));
 			 
-// Define the number of granule and stellate cells to fire
+// Define the number of granule cells to fire
 int numGranuleFire = 10;
 
 std::vector<int> DG_vec_A;
 
-// Define the location of those granule and stellate cells so that we choose the same granule and stellate cells
+// Define the location of those granule cells so that we choose the same granule cells each time we call setRates
 for (int i = 0; i < numGranuleFire; i++)
 {
     DG_vec_A.push_back(5*(i+1));
-    MEC_vec_A.push_back(5*(i+1));
 }
 
 // run for a total of 10 seconds
@@ -767,49 +766,49 @@ for (int i = 0; i < numGranuleFire; i++)
 for (int i=0; i<20; i++)
 {
 	if (i >= 0 && i < 10) 
-    {
-		sim.runNetwork(0,500);
+	{
+		sim.runNetwork(0,500); // run network for 500 ms
 	}
 	
 	if ( i == 10)
 	{
 		for (int j = 0; j < numGranuleFire; j++)
 		{
-			int randGranCell = DG_vec.front() + DG_vec_A[j];
-			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate);
+			int randGranCell = DG_vec.front() + DG_vec_A[j]; // choose the jth random granule cell
+			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate); // set the firing rate for the jth random granule cell
 		}
-		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
-		sim.runNetwork(0,25);
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // update the firing rates of all granule cells before the next run of the simulation           
+		sim.runNetwork(0,25); // run network for 25 ms
 	}
 	
 	if (i == 11)
 	{
-		DG_Granule_rate.setRates(0.5f);
-		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
-        sim.runNetwork(0,75);
+		DG_Granule_rate.setRates(0.4f); // set the firing rates for all granule cells back to baseline firing rate
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // update the firing rates of all granule cells before the next run of the simulation          
+        sim.runNetwork(0,75); // run network for 75 ms
 	}
 
 	if ( i == 12)
 	{
 		for (int j = 0; j < numGranuleFire; j++)
 		{
-			int randGranCell = DG_vec.front() + DG_vec_A[j];
-			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate);
+			int randGranCell = DG_vec.front() + DG_vec_A[j]; // choose the jth random granule cell
+			DG_Granule_rate.setRate(DG_vec.at(randGranCell), DG_Granule_frate); // set the firing rate for the jth random granule cell
 		}
-		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);           
-		sim.runNetwork(0,25);
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // update the firing rates of all granule cells before the next run of the simulation           
+		sim.runNetwork(0,25); // run network for 25 ms
         }
 		
 	if (i == 13)
 	{
-		DG_Granule_rate.setRates(0.5f);
-		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1);
-		sim.runNetwork(0,75);
+		DG_Granule_rate.setRates(0.4f); // set the firing rates for all granule cells back to baseline firing rate
+		sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // update the firing rates of all granule cells before the next run of the simulation
+		sim.runNetwork(0,75); // run network for 75 ms
 	}
         
 	if (i >=14 && i < 20)
 	{
-		sim.runNetwork(0,500);
+		sim.runNetwork(0,500); // run network for 500 ms
 	}
 }
 ```
