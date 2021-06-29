@@ -50,7 +50,7 @@ Beyond the dependencies of CARLsim4 described at the link above, to generate the
 The creation of a cell-type and connection-type specific network and the subsequent simulation of it in CARLsim4 relies on the following critical components, which will each be described in their own section:
 
 ### Neuron Type Components
-The two necessary components to defining a neuron type in CARLsim are the population size (i.e., the number of neurons) and the input-output relationship of the neuron type to the current it receives (i.e. parameters that govern the neuron type's firing patterns). The current release of [Hippocampome.org](http://hippocampome.org/php/index.php) includes parameter estimates for the [latter](http://hippocampome.org/php/Izhikevich_model.php) but not the former (although they will soon be publicly available). Using the examples of the excitatory CA3 Pyramidal and inhibitory CA3 Axo-Axonic neuron types, the parameter estimates for their input-output relationships as defined by the Izhikevich model can be found [here](http://hippocampome.org/php/neuron_page.php?id=2000) and [here](http://hippocampome.org/php/neuron_page.php?id=2028) under the Izhikevich Model section of the pages (subtype 1 parameter sets are used for both neuron types). To create an entity that can define both the population size and input-output relationship for a neuron type, one must define a CARLsim group as follows (more details can be found at the top of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateCONFIGStateSTP.h):
+The two necessary components to defining a neuron type in CARLsim are the population size (i.e., the number of neurons) and the input-output relationship of the neuron type to the current it receives (i.e. parameters that govern the neuron type's firing patterns). The current release of [Hippocampome.org](http://hippocampome.org/php/index.php) includes parameter estimates for the [latter](http://hippocampome.org/php/Izhikevich_model.php) but not the former (although they will soon be publicly available). Using the examples of the excitatory CA3 Pyramidal and inhibitory CA3 Axo-Axonic neuron types, the parameter estimates for their input-output relationships as defined by the Izhikevich model can be found [here](http://hippocampome.org/php/neuron_page.php?id=2000) and [here](http://hippocampome.org/php/neuron_page.php?id=2028) under the Izhikevich Model section of the pages (subtype 1 parameter sets are used for both neuron types). To create an entity that can define both the population size and input-output relationship for a neuron type, one must define a CARLsim group as follows (more details can be found at the top of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateCONFIGStateSTP.h)):
 
 ```
   // Define a group for the excitatory neuron type CA3 Pyramidal
@@ -152,7 +152,7 @@ The three necessary components to defining a connection type in CARLsim are the 
   ```
 
 ### Monitoring of specific neuron types
-The membrane potential (intracellular recording) and spikes (extracellular recording) of each neuron of a neuron type can be monitored and stored using the NeuronMonitor and SpikeMonitor CARLsim classes, respectively. To instantiate either monitor in a network simulation, it can be done so as follows (more details can be found at the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateCONFIGStateSTP.h) and the top of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateCONFIGStateSTP.h)):
+The membrane potential (intracellular recording) and spikes (extracellular recording) of each neuron of a neuron type can be monitored and stored using the NeuronMonitor and SpikeMonitor CARLsim classes, respectively. To instantiate either monitor in a network simulation, it can be done so as follows (more details can be found at the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateCONFIGStateSTP.h) and the top of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/generateSETUPStateSTP.h)):
 
 ```
   // Define a NeuronMonitor for the Pyramidal neuron type
@@ -288,7 +288,7 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   make install
   ```
   
-5. Switch to the directory of the network that you would like to simulate (the code below uses the example network), and run the following commands:
+5. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
 
   ```
   # Switch directory
@@ -298,7 +298,7 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   python3 generateSNNSyntax.py
   ```
   
-6. The example network uses an order of magnitude less neurons than the full-scale network, and doesn't involve the monitoring of the membrane potential due to memory constraints, so the generateCONFIGStateSTP.h needs to now be updated:
+6. The example network uses an order of magnitude less neurons than the full-scale network, and doesn't involve the monitoring of the membrane potential due to memory constraints, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
 
   ```
   nano generateCONFIGStateSTP.h
@@ -450,7 +450,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   make install
   ```
   
-6. Switch to the directory of the network that you would like to simulate (the code below uses the example network), and run the following commands:
+6. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
 
   ```
   # Switch directory
@@ -460,7 +460,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   python generateSNNSyntax.py
   ```
   
-7. The example network uses an order of magnitude less neurons that the full-scale network, so the generateCONFIGStateSTP.h needs to now be updated:
+7. The example network uses an order of magnitude less neurons that the full-scale network, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
 
   ```
   nano generateCONFIGStateSTP.h
