@@ -140,14 +140,14 @@ The three necessary components to defining a connection type in CARLsim are the 
               CA3_Pyramidal, // postsynaptic neuron type
               true, // define short-term plasticity for the connection type
               STPu(0.1302436377f, 0.0f), // define mean and standard deviation of the U parameter
-              STPtauU(12.93029701f, 0.0f), // define mean and standard deviation of the tauU parameter
-              STPtauX(361.0287219f, 0.0f), // define mean and standard deviation of the tauX parameter
+              STPtauU(12.93029701f, 0.0f), // define mean and standard deviation of the tauU parameter; tau_f on Hippocampome
+              STPtauX(361.0287219f, 0.0f), // define mean and standard deviation of the tauX parameter; tau_r on Hippocampome
               STPtdAMPA(5.0f, 0.0f), // define mean and standard deviation of the AMPA receptor current decay time constant
               STPtdNMDA(150.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current decay time constant
               STPtdGABAa(7.623472774f, 0.0f), // define mean and standard deviation of the GABAA receptor current decay time constant
               STPtdGABAb(150.0f, 0.0f), // define mean and standard deviation of the GABAB receptor current decay time constant
-              STPtrNMDA(0.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current rise time constant
-              STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant
+              STPtrNMDA(0.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current rise time constant; disabled by default but can be enabled with non-zero input
+              STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant; disabled by default but can be enabled with non-zero input
 	      );
   ```
 
