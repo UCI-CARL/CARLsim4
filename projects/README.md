@@ -557,7 +557,7 @@ The examples shown above describe how a network model of CA3 consisting of eight
 
 Suppose we wanted to understand how different representative cell types in area CA3 were involved in pattern storage and completion. One way we could approach this is by using the cell types involved in the [archetype network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_archetype) with a population of dentate gyrus granule cells as external input to the network. The following code will walk through how to create and simulate such a network and the scenario of pattern storage and completion. A directory containing the code to run this example can be found [here](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion).
 
-1. Declare groups for each representative neuron type, along with Izhikevich parameter sets, how they connect to other representative neuron types, and their short-term plasticity rules. Additionally we set the max synaptic weight to 5 nS for each connection type:
+1. Declare groups for each representative neuron type, along with Izhikevich parameter sets, how they connect to other representative neuron types, and their short-term plasticity rules. Additionally we set the max synaptic weight to 5 nS for each connection type (more details can be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/generateCONFIGStateSTP.h)):
 
 ```
 int CA3_Basket = sim.createGroup("CA3_Basket", 3089,
@@ -778,7 +778,7 @@ sim.setSTP(DG_Granule, CA3_Pyramidal, true, STPu(0.156887286f, 0.0f),
 	  );
 ```
 
-2. We set excitatory and inhibitory spike-time dependent plasticity for each neuron type, using default parameters:
+2. We set excitatory and inhibitory spike-time dependent plasticity for each neuron type, using default parameters (more details can be found near the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/generateCONFIGStateSTP.h)):
 
 ```
 sim.setESTDP(CA3_Basket, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f));
@@ -794,7 +794,7 @@ sim.setESTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(0.1f, 20.0f, -0.1f, 20.0f))
 sim.setISTDP(CA3_Pyramidal, true, STANDARD, ExpCurve(-0.1f, 20.0f, 0.1f, 20.0f));
 ```
 
-3. Create SpikeMonitors and NeuronMonitors for each neuron type:
+3. Create SpikeMonitors and NeuronMonitors for each neuron type (more details can be found at the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/generateCONFIGStateSTP.h) and at the top of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/generateSETUPStateSTP.h)):
 
 ```
 sim.setNeuronMonitor(CA3_Basket, "DEFAULT");
@@ -810,7 +810,7 @@ sim.setSpikeMonitor(CA3_MFA_ORDEN, "DEFAULT");
 sim.setSpikeMonitor(CA3_Pyramidal, "DEFAULT");
 ```
 
-4. Create a [PoissonRate object](http://uci-carl.github.io/CARLsim4/ch6_input.html#ch6s1s1_poisson_rate) for the Granule cell population and set the mean firing rate of all neurons to 0.4 Hz. This provides a constant source of random input to the network exhibited during baseline network activity (other forms of network stimulation are described [here](http://uci-carl.github.io/CARLsim4/ch6_input.html)):
+4. Create a [PoissonRate object](http://uci-carl.github.io/CARLsim4/ch6_input.html#ch6s1s1_poisson_rate) for the Granule cell population and set the mean firing rate of all neurons to 0.4 Hz. This provides a constant source of random input to the network exhibited during baseline network activity (other forms of network stimulation are described [here](http://uci-carl.github.io/CARLsim4/ch6_input.html); more details can also be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/generateSETUPStateSTP.h)):
 
 ```
 int DG_Granule_frate = 100.0f;
@@ -820,7 +820,7 @@ DG_Granule_rate.setRates(0.4f); // set all mean firing rates for the object to 0
 sim.setSpikeRate(DG_Granule, &DG_Granule_rate, 1); // link the object with defined Granule cell group, with refractory period 1 ms
 ```
 
-5. In the main simulation script file, we now declare variables and vectors that will be used to select a subset of the granule cell population to increase their firing rates. Ten granule cells are chosen from the assigned set of {0,5,10,...,45}:
+5. In the main simulation script file, we now declare variables and vectors that will be used to select a subset of the granule cell population to increase their firing rates. Ten granule cells are chosen from the assigned set of {0,5,10,...,45} (more details can be found near the middle of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
 // Declare variables that will store the start and end ID for the neurons
@@ -844,13 +844,13 @@ for (int i = 0; i < numGranuleFire; i++)
     DG_vec_A.push_back(5*(i+1));
 }
 ```
-6. Before the first simulation begins, the newly created network structure be saved by calling the saveSimulation function:
+6. Before the first simulation begins, the newly created network structure be saved by calling the saveSimulation function (more details can be found near the middle of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
  sim.saveSimulation("ca3SNN1.dat", true); // define where to save the network structure to and save synapse info
 ```
 
-7. A simulation protocol is now defined which runs the simulation for 10 seconds, where halfway through the simulation the ten granule cells selected have their firing rates elevated to the defined firing rate of 100 Hz within two 25 ms time windows (corresponding to gamma cycles):
+7. A simulation protocol is now defined which runs the simulation for 10 seconds, where halfway through the simulation the ten granule cells selected have their firing rates elevated to the defined firing rate of 100 Hz within two 25 ms time windows (corresponding to gamma cycles; more details can be found near the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
 // run for a total of 10 seconds
@@ -905,13 +905,13 @@ for (int i=0; i<20; i++)
 }
 ```
 
-8. The outcome of the simulation can now be saved by calling the saveSimulation function, which will save the network structure:
+8. The outcome of the simulation can now be saved by calling the saveSimulation function, which will save the network structure (more details can be found near the bottom of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
  sim.saveSimulation("ca3SNN2.dat", true); // define where to save the network structure to and save synapse info
 ```
 
-9. The saved network can now be loaded in additional simulation runs, by calling the loadSimulation function before the setupNetwork is called (invokes the SETUP simulation state):
+9. The saved network can now be loaded in additional simulation runs, by calling the loadSimulation function before the setupNetwork is called (invokes the SETUP simulation state; more details can be found near the middle of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
 // before calling setupNetwork, call loadSimulation
@@ -920,7 +920,7 @@ fId = fopen("ca3SNN2.dat", "rb");
 sim.loadSimulation(fId);
 ```
 
-10. Now the setupNetwork function can be called and after its completion the connection to the network structure file can be closed:
+10. Now the setupNetwork function can be called and after its completion the connection to the network structure file can be closed (more details can be found near the middle of the page [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/ca3_snn_GPU_06_25_21_ca3_snn_pattern_completion/src/main_ca3_snn_GPU.cpp)):
 
 ```
 sim.setupNetwork();
