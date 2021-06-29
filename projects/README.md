@@ -12,6 +12,7 @@ This repository includes information as to how to run an example and full-scale 
 	* [Connection Type Components](#connection-type-components)
 	* [Monitoring of specific neuron types](#monitoring-of-specific-neuron-types)
 	* [Running a Simulation](#running-a-simulation)
+	* [The Simulation Summary](#the-simulation-summary)
 
 * [Choosing a Network to Run](#choosing-a-network-to-run)
 
@@ -242,6 +243,40 @@ Once the neuron type and connection type properties have been defined through CA
         }
 	}
   ```
+
+### The Simulation Summary
+After each simulation is executed, the output of the network to the terminal can be saved to a text file. This allows for a user to get a quick and informative summary of what the network activity looked like during the simulation. An example simulation summary is shown below for the synchronous network with 100 random Pyramidal cells transiently activated (more details can be found [here](https://github.com/UCI-CARL/CARLsim4/blob/feat/meansdSTPPost_hc/projects/synchronous/ca3_snn_GPU_02_16_20_HC_IM_baseline/HC_IM_02_16_ca3_snn_sync_baseline.txt)):
+
+```
+--------------------------------------------------------------------------------
+| Stopwatch                                                                    |
+|------------------------------------------------------------------------------|
+|                  Tag         Start          Stop           Lap         Total |
+|                start  00:00:00.000  00:00:00.057  00:00:00.057  00:00:00.057 |
+|         setupNetwork  00:00:00.057  00:13:42.719  00:13:42.662  00:13:42.719 |
+|           runNetwork  00:13:42.719  01:35:09.850  01:21:27.131  01:35:09.850 |
+--------------------------------------------------------------------------------
+
+
+********************    Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 89226 (numNExcReg:numNInhReg = 83.3:16.7)
+			numSynapses = 250078223
+			maxDelay = 2
+Simulation Mode:	COBA
+Random Seed:		10
+Timing:			Model Simulation Time = 9 sec
+			Actual Execution Time = 4887.13 sec
+Average Firing Rate:	2+ms delay = 1.975 Hz
+			1ms delay = 5.155 Hz
+			Overall = 2.505 Hz
+Overall Spike Count Transferred:
+			2+ms delay = 0
+			1ms delay = 0
+Overall Spike Count:	2+ms delay = 1321930
+			1ms delay = 689466
+			Total = 2011396
+*********************************************************************************
+```
 
 ## Choosing a network to run
 There are three directories from which SNNs can be simulated: [ca3_example_net_02_26_21](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21), where a scaled-down version of the model can be simulated, [synchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/synchronous) where full-scale versions activated by synchronous stimulation can be simulated, and the [asynchronous](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/asynchronous) where full-scale versions activated by asynchronous stimulation can be simulated. Within both the synchronous and asynchronous directories, three full-scale model versions can be simulated -- the baseline, class, and archetype SNNs. The network features are broadly as follows: the baseline SNN maintains neuron and connection-type specificity; the class SNN maintains neuron-type specificity while removing connection-type specificity; and the archetype SNN maintains connection-type specificity while removing neuron-type specificity.
