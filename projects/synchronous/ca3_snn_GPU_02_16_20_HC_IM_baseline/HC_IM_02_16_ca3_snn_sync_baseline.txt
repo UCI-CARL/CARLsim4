@@ -1,0 +1,1143 @@
+Created results directory "results/".
+*********************************************************************************
+********************      Welcome to CARLsim 4.0      ***************************
+*********************************************************************************
+
+***************************** Configuring Network ********************************
+Starting CARLsim simulation "ca3_snn_GPU" in USER mode
+Random number seed: 10
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+Set a nine parameter group!
+STP enabled for 0 to 1 (CA3_QuadD_LM):	, mean of U: 0.1525, mean of tau_u:   22, mean of tau_x:  635, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.1685, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 0 to 2 (CA3_QuadD_LM):	, mean of U: 0.3363, mean of tau_u:   16, mean of tau_x:  663, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.2931, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 0 to 3 (CA3_QuadD_LM):	, mean of U: 0.2078, mean of tau_u:   18, mean of tau_x:  597, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.8308, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 0 to 7 (CA3_QuadD_LM):	, mean of U: 0.1065, mean of tau_u:   25, mean of tau_x:  382, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 9.1073, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 1 to 7 (CA3_Axo_Axonic):	, mean of U: 0.1302, mean of tau_u:   13, mean of tau_x:  361, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 7.6235, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 0 (CA3_Basket):	, mean of U: 0.3068, mean of tau_u:   19, mean of tau_x:  589, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.1624, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 1 (CA3_Basket):	, mean of U: 0.1910, mean of tau_u:   23, mean of tau_x:  725, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 3.8003, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 2 (CA3_Basket):	, mean of U: 0.3895, mean of tau_u:   11, mean of tau_x:  690, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 3.0070, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 3 (CA3_Basket):	, mean of U: 0.2359, mean of tau_u:   17, mean of tau_x:  637, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.2068, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 4 (CA3_Basket):	, mean of U: 0.1754, mean of tau_u:   17, mean of tau_x:  680, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.7205, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 6 (CA3_Basket):	, mean of U: 0.3019, mean of tau_u:   20, mean of tau_x:  582, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.2306, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 2 to 7 (CA3_Basket):	, mean of U: 0.1252, mean of tau_u:   17, mean of tau_x:  384, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 7.6386, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 0 (CA3_BC_CCK):	, mean of U: 0.2187, mean of tau_u:   17, mean of tau_x:  398, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.4801, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 1 (CA3_BC_CCK):	, mean of U: 0.1235, mean of tau_u:   19, mean of tau_x:  477, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.4385, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 2 (CA3_BC_CCK):	, mean of U: 0.2836, mean of tau_u:   15, mean of tau_x:  505, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.6885, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 3 (CA3_BC_CCK):	, mean of U: 0.1186, mean of tau_u:   23, mean of tau_x:  283, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.8867, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 4 (CA3_BC_CCK):	, mean of U: 0.1260, mean of tau_u:   15, mean of tau_x:  478, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.9733, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 6 (CA3_BC_CCK):	, mean of U: 0.2106, mean of tau_u:   18, mean of tau_x:  421, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.5387, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 3 to 7 (CA3_BC_CCK):	, mean of U: 0.0802, mean of tau_u:   14, mean of tau_x:  377, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 9.1010, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 0 (CA3_Bistratified):	, mean of U: 0.2952, mean of tau_u:   18, mean of tau_x:  594, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.5295, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 1 (CA3_Bistratified):	, mean of U: 0.1675, mean of tau_u:   19, mean of tau_x:  686, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.5685, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 2 (CA3_Bistratified):	, mean of U: 0.3656, mean of tau_u:   15, mean of tau_x:  695, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 3.8572, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 3 (CA3_Bistratified):	, mean of U: 0.2211, mean of tau_u:   18, mean of tau_x:  592, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.5778, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 4 (CA3_Bistratified):	, mean of U: 0.1728, mean of tau_u:   14, mean of tau_x:  775, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.5765, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 5 (CA3_Bistratified):	, mean of U: 0.3042, mean of tau_u:   14, mean of tau_x:  707, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.3802, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 6 (CA3_Bistratified):	, mean of U: 0.2912, mean of tau_u:   18, mean of tau_x:  605, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.5374, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 4 to 7 (CA3_Bistratified):	, mean of U: 0.1173, mean of tau_u:   17, mean of tau_x:  482, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 7.4863, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 0 (CA3_Ivy):	, mean of U: 0.2989, mean of tau_u:   26, mean of tau_x:  563, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.8942, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 1 (CA3_Ivy):	, mean of U: 0.1713, mean of tau_u:   26, mean of tau_x:  652, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.6738, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 2 (CA3_Ivy):	, mean of U: 0.3700, mean of tau_u:   19, mean of tau_x:  665, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.7456, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 3 (CA3_Ivy):	, mean of U: 0.2297, mean of tau_u:   21, mean of tau_x:  614, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.3989, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 4 (CA3_Ivy):	, mean of U: 0.1723, mean of tau_u:   23, mean of tau_x:  660, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.2405, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 5 (CA3_Ivy):	, mean of U: 0.3133, mean of tau_u:   18, mean of tau_x:  676, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.5139, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 6 (CA3_Ivy):	, mean of U: 0.2954, mean of tau_u:   28, mean of tau_x:  579, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.9610, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 5 to 7 (CA3_Ivy):	, mean of U: 0.1208, mean of tau_u:   23, mean of tau_x:  440, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 9.0071, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 0 (CA3_MFA_ORDEN):	, mean of U: 0.2895, mean of tau_u:   21, mean of tau_x:  638, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.5172, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 1 (CA3_MFA_ORDEN):	, mean of U: 0.1648, mean of tau_u:   21, mean of tau_x:  763, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.5497, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 2 (CA3_MFA_ORDEN):	, mean of U: 0.3618, mean of tau_u:   16, mean of tau_x:  759, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 3.8962, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 3 (CA3_MFA_ORDEN):	, mean of U: 0.2210, mean of tau_u:   17, mean of tau_x:  694, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.3222, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 4 (CA3_MFA_ORDEN):	, mean of U: 0.1684, mean of tau_u:   17, mean of tau_x:  777, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.9583, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 5 (CA3_MFA_ORDEN):	, mean of U: 0.2973, mean of tau_u:   14, mean of tau_x:  806, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 4.3171, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 6 (CA3_MFA_ORDEN):	, mean of U: 0.2856, mean of tau_u:   23, mean of tau_x:  642, 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 5.5337, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 6 to 7 (CA3_MFA_ORDEN):	, mean of U: 0.1189, mean of tau_u:   21, mean of tau_x:  496, 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+[33;1m[WARNING carlsim/kernel/src/snn_manager.cpp:1353] Due to limited memory space, only the first 128 neurons can be monitored by NeuronMonitor[0m 
+ mean of tau_dAMPA: 5.0000, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 7.1491, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 0 (CA3_Pyramidal):	, mean of U: 0.1498, mean of tau_u:   27, mean of tau_x:  453, 
+ mean of tau_dAMPA: 5.8158, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 1 (CA3_Pyramidal):	, mean of U: 0.2564, mean of tau_u:   26, mean of tau_x:  631, 
+ mean of tau_dAMPA: 4.9230, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 2 (CA3_Pyramidal):	, mean of U: 0.1217, mean of tau_u:   21, mean of tau_x:  691, 
+ mean of tau_dAMPA: 3.9713, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 3 (CA3_Pyramidal):	, mean of U: 0.2049, mean of tau_u:   22, mean of tau_x:  530, 
+ mean of tau_dAMPA: 4.2936, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 4 (CA3_Pyramidal):	, mean of U: 0.2647, mean of tau_u:   24, mean of tau_x:  569, 
+ mean of tau_dAMPA: 5.3677, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 5 (CA3_Pyramidal):	, mean of U: 0.1247, mean of tau_u:   19, mean of tau_x:  623, 
+ mean of tau_dAMPA: 4.4812, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 6 (CA3_Pyramidal):	, mean of U: 0.1472, mean of tau_u:   29, mean of tau_x:  445, 
+ mean of tau_dAMPA: 5.9483, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+STP enabled for 7 to 7 (CA3_Pyramidal):	, mean of U: 0.2792, mean of tau_u:   21, mean of tau_x:  319, 
+ mean of tau_dAMPA: 10.2189, mean of tau_dNMDA: 150.0000, mean of tau_dGABAa: 6.0000, 
+ mean of tau_dGABAb: 150.0000, mean of tau_rNMDA: 0.0000, mean of tau_rGABAb: 0.0000
+NeuronMonitor set for group 0 (CA3_QuadD_LM)
+NeuronMonitor set for group 1 (CA3_Axo_Axonic)
+NeuronMonitor set for group 2 (CA3_Basket)
+NeuronMonitor set for group 3 (CA3_BC_CCK)
+NeuronMonitor set for group 4 (CA3_Bistratified)
+NeuronMonitor set for group 5 (CA3_Ivy)
+NeuronMonitor set for group 6 (CA3_MFA_ORDEN)
+NeuronMonitor set for group 7 (CA3_Pyramidal)
+
+
+************************** Global Network Configuration *******************************
+The number of neurons in the network (numN) = 89226
+The number of regular neurons in the network (numNReg:numNExcReg:numNInhReg) = 89226:74366:14860
+The number of poisson neurons in the network (numNPois:numNExcPois:numInhPois) = 0:0:0
+The maximum axonal delay in the network (maxDelay) = 2
+CUDA devices Configuration:
+  - Number of CUDA devices          =         1
+  - CUDA device ID with max GFLOPs  =         0
+  + Use CUDA device[0]              = Tesla V100-PCIE-32GB
+  + CUDA Compute Capability (CC)    =       7.0
+
++ Local Network (0)
+|-+ Group List:
+  |-+ Local Group CA3_QuadD_LM(G:0,L:1): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =     3280
+    |- Start Id                   = (G:74366,L:74366)
+    |- End Id                     = (G:77645,L:77645)
+    |- numPostSynapses            = 29242271
+    |- numPreSynapses             =  3474272
+    |-+ STP:
+  |-+ Local Group CA3_Axo_Axonic(G:1,L:2): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =     1909
+    |- Start Id                   = (G:77646,L:77646)
+    |- End Id                     = (G:79554,L:79554)
+    |- numPostSynapses            = 21293866
+    |- numPreSynapses             =  2281504
+    |-+ STP:
+  |-+ Local Group CA3_Basket(G:2,L:3): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =      515
+    |- Start Id                   = (G:79555,L:79555)
+    |- End Id                     = (G:80069,L:80069)
+    |- numPostSynapses            =  5845528
+    |- numPreSynapses             =   919699
+    |-+ STP:
+  |-+ Local Group CA3_BC_CCK(G:3,L:4): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =      665
+    |- Start Id                   = (G:80070,L:80070)
+    |- End Id                     = (G:80734,L:80734)
+    |- numPostSynapses            =  7590328
+    |- numPreSynapses             =  1001951
+    |-+ STP:
+  |-+ Local Group CA3_Bistratified(G:4,L:5): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =     4631
+    |- Start Id                   = (G:80735,L:80735)
+    |- End Id                     = (G:85365,L:85365)
+    |- numPostSynapses            = 10612171
+    |- numPreSynapses             =  6515427
+    |-+ STP:
+  |-+ Local Group CA3_Ivy(G:5,L:6): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =     2334
+    |- Start Id                   = (G:85366,L:85366)
+    |- End Id                     = (G:87699,L:87699)
+    |- numPostSynapses            = 12849335
+    |- numPreSynapses             =  4440702
+    |-+ STP:
+  |-+ Local Group CA3_MFA_ORDEN(G:6,L:7): 
+    |- Type                       =    INHIB
+    |- Num of Neurons             =     1526
+    |- Start Id                   = (G:87700,L:87700)
+    |- End Id                     = (G:89225,L:89225)
+    |- numPostSynapses            =  4830259
+    |- numPreSynapses             =  2518742
+    |-+ STP:
+  |-+ Local Group CA3_Pyramidal(G:7,L:0): 
+    |- Type                       =    EXCIT
+    |- Num of Neurons             =    74366
+    |- Start Id                   = (G:0,L:0)
+    |- End Id                     = (G:74365,L:74365)
+    |- numPostSynapses            = 157814465
+    |- numPreSynapses             = 228925926
+    |-+ STP:
+|-+ Connection List:
+  |-+ Local Connection Id 0: CA3_QuadD_LM(0) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 32947
+    |- Avg numPreSynapses         =    17.26
+    |- Avg numPostSynapses        =    10.04
+  |-+ Local Connection Id 1: CA3_QuadD_LM(0) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 112851
+    |- Avg numPreSynapses         =   219.13
+    |- Avg numPostSynapses        =    34.41
+  |-+ Local Connection Id 2: CA3_QuadD_LM(0) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 108071
+    |- Avg numPreSynapses         =   162.51
+    |- Avg numPostSynapses        =    32.95
+  |-+ Local Connection Id 3: CA3_QuadD_LM(0) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 28988402
+    |- Avg numPreSynapses         =   389.81
+    |- Avg numPostSynapses        =  8837.93
+  |-+ Local Connection Id 4: CA3_Axo_Axonic(1) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 21293866
+    |- Avg numPreSynapses         =   286.34
+    |- Avg numPostSynapses        = 11154.46
+  |-+ Local Connection Id 5: CA3_Basket(2) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 8421
+    |- Avg numPreSynapses         =     2.57
+    |- Avg numPostSynapses        =    16.35
+  |-+ Local Connection Id 6: CA3_Basket(2) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 24332
+    |- Avg numPreSynapses         =    12.75
+    |- Avg numPostSynapses        =    47.25
+  |-+ Local Connection Id 7: CA3_Basket(2) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 1332
+    |- Avg numPreSynapses         =     2.59
+    |- Avg numPostSynapses        =     2.59
+  |-+ Local Connection Id 8: CA3_Basket(2) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 1699
+    |- Avg numPreSynapses         =     2.55
+    |- Avg numPostSynapses        =     3.30
+  |-+ Local Connection Id 9: CA3_Basket(2) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 59470
+    |- Avg numPreSynapses         =    12.84
+    |- Avg numPostSynapses        =   115.48
+  |-+ Local Connection Id 10: CA3_Basket(2) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 3917
+    |- Avg numPreSynapses         =     2.57
+    |- Avg numPostSynapses        =     7.61
+  |-+ Local Connection Id 11: CA3_Basket(2) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 5746357
+    |- Avg numPreSynapses         =    77.27
+    |- Avg numPostSynapses        = 11157.97
+  |-+ Local Connection Id 12: CA3_BC_CCK(3) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 54563
+    |- Avg numPreSynapses         =    16.64
+    |- Avg numPostSynapses        =    82.05
+  |-+ Local Connection Id 13: CA3_BC_CCK(3) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 31737
+    |- Avg numPreSynapses         =    16.62
+    |- Avg numPostSynapses        =    47.72
+  |-+ Local Connection Id 14: CA3_BC_CCK(3) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 1656
+    |- Avg numPreSynapses         =     3.22
+    |- Avg numPostSynapses        =     2.49
+  |-+ Local Connection Id 15: CA3_BC_CCK(3) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 2181
+    |- Avg numPreSynapses         =     3.28
+    |- Avg numPostSynapses        =     3.28
+  |-+ Local Connection Id 16: CA3_BC_CCK(3) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 76852
+    |- Avg numPreSynapses         =    16.60
+    |- Avg numPostSynapses        =   115.57
+  |-+ Local Connection Id 17: CA3_BC_CCK(3) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 5106
+    |- Avg numPreSynapses         =     3.35
+    |- Avg numPostSynapses        =     7.68
+  |-+ Local Connection Id 18: CA3_BC_CCK(3) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 7418233
+    |- Avg numPreSynapses         =    99.75
+    |- Avg numPostSynapses        = 11155.24
+  |-+ Local Connection Id 19: CA3_Bistratified(4) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 117810
+    |- Avg numPreSynapses         =    35.92
+    |- Avg numPostSynapses        =    25.44
+  |-+ Local Connection Id 20: CA3_Bistratified(4) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 58211
+    |- Avg numPreSynapses         =    30.49
+    |- Avg numPostSynapses        =    12.57
+  |-+ Local Connection Id 21: CA3_Bistratified(4) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 22132
+    |- Avg numPreSynapses         =    42.97
+    |- Avg numPostSynapses        =     4.78
+  |-+ Local Connection Id 22: CA3_Bistratified(4) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 13311
+    |- Avg numPreSynapses         =    20.02
+    |- Avg numPostSynapses        =     2.87
+  |-+ Local Connection Id 23: CA3_Bistratified(4) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 700636
+    |- Avg numPreSynapses         =   151.29
+    |- Avg numPostSynapses        =   151.29
+  |-+ Local Connection Id 24: CA3_Bistratified(4) => CA3_Ivy(5)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.65000
+    |- Initial weight             =  0.65000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 41780
+    |- Avg numPreSynapses         =    17.90
+    |- Avg numPostSynapses        =     9.02
+  |-+ Local Connection Id 25: CA3_Bistratified(4) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 61328
+    |- Avg numPreSynapses         =    40.19
+    |- Avg numPostSynapses        =    13.24
+  |-+ Local Connection Id 26: CA3_Bistratified(4) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 9596963
+    |- Avg numPreSynapses         =   129.05
+    |- Avg numPostSynapses        =  2072.33
+  |-+ Local Connection Id 27: CA3_Ivy(5) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 15240
+    |- Avg numPreSynapses         =     4.65
+    |- Avg numPostSynapses        =     6.53
+  |-+ Local Connection Id 28: CA3_Ivy(5) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 18768
+    |- Avg numPreSynapses         =     9.83
+    |- Avg numPostSynapses        =     8.04
+  |-+ Local Connection Id 29: CA3_Ivy(5) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 19488
+    |- Avg numPreSynapses         =    37.84
+    |- Avg numPostSynapses        =     8.35
+  |-+ Local Connection Id 30: CA3_Ivy(5) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 16727
+    |- Avg numPreSynapses         =    25.15
+    |- Avg numPostSynapses        =     7.17
+  |-+ Local Connection Id 31: CA3_Ivy(5) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 183719
+    |- Avg numPreSynapses         =    39.67
+    |- Avg numPostSynapses        =    78.71
+  |-+ Local Connection Id 32: CA3_Ivy(5) => CA3_Ivy(5)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.65000
+    |- Initial weight             =  0.65000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 20499
+    |- Avg numPreSynapses         =     8.78
+    |- Avg numPostSynapses        =     8.78
+  |-+ Local Connection Id 33: CA3_Ivy(5) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 60158
+    |- Avg numPreSynapses         =    39.42
+    |- Avg numPostSynapses        =    25.77
+  |-+ Local Connection Id 34: CA3_Ivy(5) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 12514736
+    |- Avg numPreSynapses         =   168.29
+    |- Avg numPostSynapses        =  5361.93
+  |-+ Local Connection Id 35: CA3_MFA_ORDEN(6) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 18920
+    |- Avg numPreSynapses         =     5.77
+    |- Avg numPostSynapses        =    12.40
+  |-+ Local Connection Id 36: CA3_MFA_ORDEN(6) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 12923
+    |- Avg numPreSynapses         =     6.77
+    |- Avg numPostSynapses        =     8.47
+  |-+ Local Connection Id 37: CA3_MFA_ORDEN(6) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 5585
+    |- Avg numPreSynapses         =    10.84
+    |- Avg numPostSynapses        =     3.66
+  |-+ Local Connection Id 38: CA3_MFA_ORDEN(6) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 5162
+    |- Avg numPreSynapses         =     7.76
+    |- Avg numPostSynapses        =     3.38
+  |-+ Local Connection Id 39: CA3_MFA_ORDEN(6) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.30000
+    |- Initial weight             =  1.30000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 34061
+    |- Avg numPreSynapses         =     7.35
+    |- Avg numPostSynapses        =    22.32
+  |-+ Local Connection Id 40: CA3_MFA_ORDEN(6) => CA3_Ivy(5)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.65000
+    |- Initial weight             =  0.65000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 9574
+    |- Avg numPreSynapses         =     4.10
+    |- Avg numPostSynapses        =     6.27
+  |-+ Local Connection Id 41: CA3_MFA_ORDEN(6) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.75000
+    |- Initial weight             =  0.75000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 4802
+    |- Avg numPreSynapses         =     3.15
+    |- Avg numPostSynapses        =     3.15
+  |-+ Local Connection Id 42: CA3_MFA_ORDEN(6) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        1
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 4739232
+    |- Avg numPreSynapses         =    63.73
+    |- Avg numPostSynapses        =  3105.66
+  |-+ Local Connection Id 43: CA3_Pyramidal(7) => CA3_QuadD_LM(0)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.25000
+    |- Initial weight             =  1.25000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 3259318
+    |- Avg numPreSynapses         =   993.69
+    |- Avg numPostSynapses        =    43.83
+  |-+ Local Connection Id 44: CA3_Pyramidal(7) => CA3_Axo_Axonic(1)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.70000
+    |- Initial weight             =  0.70000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 2102586
+    |- Avg numPreSynapses         =  1101.41
+    |- Avg numPostSynapses        =    28.27
+  |-+ Local Connection Id 45: CA3_Pyramidal(7) => CA3_Basket(2)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.45000
+    |- Initial weight             =  1.45000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 756655
+    |- Avg numPreSynapses         =  1469.23
+    |- Avg numPostSynapses        =    10.17
+  |-+ Local Connection Id 46: CA3_Pyramidal(7) => CA3_BC_CCK(3)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.00000
+    |- Initial weight             =  1.00000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 854800
+    |- Avg numPreSynapses         =  1285.41
+    |- Avg numPostSynapses        =    11.49
+  |-+ Local Connection Id 47: CA3_Pyramidal(7) => CA3_Bistratified(4)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.70000
+    |- Initial weight             =  0.70000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 5460689
+    |- Avg numPreSynapses         =  1179.16
+    |- Avg numPostSynapses        =    73.43
+  |-+ Local Connection Id 48: CA3_Pyramidal(7) => CA3_Ivy(5)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.35000
+    |- Initial weight             =  1.35000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 4368849
+    |- Avg numPreSynapses         =  1871.83
+    |- Avg numPostSynapses        =    58.75
+  |-+ Local Connection Id 49: CA3_Pyramidal(7) => CA3_MFA_ORDEN(6)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  2.25000
+    |- Initial weight             =  1.25000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 2383431
+    |- Avg numPreSynapses         =  1561.88
+    |- Avg numPostSynapses        =    32.05
+  |-+ Local Connection Id 50: CA3_Pyramidal(7) => CA3_Pyramidal(7)
+    |- Type                       =  PLASTIC
+    |- Min weight                 =  0.00000
+    |- Max weight                 =  1.55000
+    |- Initial weight             =  0.55000
+    |- Min delay                  =        1
+    |- Max delay                  =        2
+    |- Radius X                   =    -1.00
+    |- Radius Y                   =    -1.00
+    |- Radius Z                   =    -1.00
+    |- Num of synapses            = 138628137
+    |- Avg numPreSynapses         =  1864.13
+    |- Avg numPostSynapses        =  1864.13
+
+*****************      Initializing GPU 0 Runtime      *************************
+GPU Memory Management: (Total 32510.500 MB)
+Data			Size		Total Used	Total Available
+Init:			32510.500 MB	375.312 MB	32135.188 MB
+Random Gen:		2.000 MB	377.312 MB	32133.188 MB
+Static Load:		2.000 MB	379.312 MB	32131.188 MB
+Conn Info:		3818.000 MB	4197.312 MB	28313.188 MB
+Syn State:		13596.000 MB	17793.312 MB	14717.188 MB
+Neuron State:		3922.000 MB	21715.312 MB	10795.188 MB
+Group State:		0.000 MB	21715.312 MB	10795.188 MB
+Auxiliary Data:		1642.000 MB	23357.312 MB	9153.188 MB
+
+
+Beginning neuron ID for Pyramidal Cells is : 0Ending neuron ID for Pyramidal Cells is : 74365The range for Pyramidal Cells is : 74366SpikeMonitor set for group 0 (CA3_QuadD_LM)
+SpikeMonitor set for group 1 (CA3_Axo_Axonic)
+SpikeMonitor set for group 2 (CA3_Basket)
+SpikeMonitor set for group 3 (CA3_BC_CCK)
+SpikeMonitor set for group 4 (CA3_Bistratified)
+SpikeMonitor set for group 5 (CA3_Ivy)
+SpikeMonitor set for group 6 (CA3_MFA_ORDEN)
+SpikeMonitor set for group 7 (CA3_Pyramidal)
+
+******************** Running the simulation on 1 GPU(s) and 0 CPU(s) ***************************
+
+(t=0.001s) SpikeMonitor for group CA3_QuadD_LM(0) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_Axo_Axonic(1) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_Basket(2) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_BC_CCK(3) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_Bistratified(4) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_Ivy(5) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.001s) SpikeMonitor for group CA3_Pyramidal(7) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_Basket(2) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_BC_CCK(3) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_Bistratified(4) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_Ivy(5) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 0 spikes in 1ms (0.00 +/- 0.00 Hz)
+(t=0.002s) SpikeMonitor for group CA3_Pyramidal(7) has 100 spikes in 1ms (1.34 +/- 36.63 Hz)
+(t=0.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_Basket(2) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_BC_CCK(3) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_Bistratified(4) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_Ivy(5) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=0.502s) SpikeMonitor for group CA3_Pyramidal(7) has 0 spikes in 500ms (0.00 +/- 0.00 Hz)
+(t=1.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 1140 spikes in 500ms (0.70 +/- 0.95 Hz)
+(t=1.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 1091 spikes in 500ms (1.14 +/- 1.03 Hz)
+(t=1.002s) SpikeMonitor for group CA3_Basket(2) has 995 spikes in 500ms (3.86 +/- 0.50 Hz)
+(t=1.002s) SpikeMonitor for group CA3_BC_CCK(3) has 4 spikes in 500ms (0.01 +/- 0.15 Hz)
+(t=1.002s) SpikeMonitor for group CA3_Bistratified(4) has 6158 spikes in 500ms (2.66 +/- 1.18 Hz)
+(t=1.002s) SpikeMonitor for group CA3_Ivy(5) has 83 spikes in 500ms (0.07 +/- 0.37 Hz)
+(t=1.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 36 spikes in 500ms (0.05 +/- 0.30 Hz)
+(t=1.002s) SpikeMonitor for group CA3_Pyramidal(7) has 8398 spikes in 500ms (0.23 +/- 0.68 Hz)
+(t=1.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 5658 spikes in 500ms (3.45 +/- 1.32 Hz)
+(t=1.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7320 spikes in 500ms (7.67 +/- 1.56 Hz)
+(t=1.502s) SpikeMonitor for group CA3_Basket(2) has 2390 spikes in 500ms (9.28 +/- 2.58 Hz)
+(t=1.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1259 spikes in 500ms (3.79 +/- 1.07 Hz)
+(t=1.502s) SpikeMonitor for group CA3_Bistratified(4) has 17611 spikes in 500ms (7.61 +/- 1.49 Hz)
+(t=1.502s) SpikeMonitor for group CA3_Ivy(5) has 1023 spikes in 500ms (0.88 +/- 1.00 Hz)
+(t=1.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 483 spikes in 500ms (0.63 +/- 1.03 Hz)
+(t=1.502s) SpikeMonitor for group CA3_Pyramidal(7) has 53471 spikes in 500ms (1.44 +/- 2.15 Hz)
+(t=2.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 7890 spikes in 500ms (4.81 +/- 1.36 Hz)
+(t=2.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 6956 spikes in 500ms (7.29 +/- 1.56 Hz)
+(t=2.002s) SpikeMonitor for group CA3_Basket(2) has 1205 spikes in 500ms (4.68 +/- 2.72 Hz)
+(t=2.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1271 spikes in 500ms (3.82 +/- 1.26 Hz)
+(t=2.002s) SpikeMonitor for group CA3_Bistratified(4) has 12773 spikes in 500ms (5.52 +/- 1.38 Hz)
+(t=2.002s) SpikeMonitor for group CA3_Ivy(5) has 267 spikes in 500ms (0.23 +/- 0.69 Hz)
+(t=2.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 543 spikes in 500ms (0.71 +/- 1.13 Hz)
+(t=2.002s) SpikeMonitor for group CA3_Pyramidal(7) has 72388 spikes in 500ms (1.95 +/- 2.69 Hz)
+(t=2.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 10290 spikes in 500ms (6.27 +/- 1.45 Hz)
+(t=2.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7135 spikes in 500ms (7.48 +/- 1.65 Hz)
+(t=2.502s) SpikeMonitor for group CA3_Basket(2) has 3489 spikes in 500ms (13.55 +/- 2.64 Hz)
+(t=2.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1460 spikes in 500ms (4.39 +/- 1.21 Hz)
+(t=2.502s) SpikeMonitor for group CA3_Bistratified(4) has 16350 spikes in 500ms (7.06 +/- 1.45 Hz)
+(t=2.502s) SpikeMonitor for group CA3_Ivy(5) has 1283 spikes in 500ms (1.10 +/- 1.39 Hz)
+(t=2.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1015 spikes in 500ms (1.33 +/- 1.49 Hz)
+(t=2.502s) SpikeMonitor for group CA3_Pyramidal(7) has 80976 spikes in 500ms (2.18 +/- 2.63 Hz)
+(t=3.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11260 spikes in 500ms (6.87 +/- 1.44 Hz)
+(t=3.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7507 spikes in 500ms (7.86 +/- 1.63 Hz)
+(t=3.002s) SpikeMonitor for group CA3_Basket(2) has 3362 spikes in 500ms (13.06 +/- 2.49 Hz)
+(t=3.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1530 spikes in 500ms (4.60 +/- 1.25 Hz)
+(t=3.002s) SpikeMonitor for group CA3_Bistratified(4) has 15778 spikes in 500ms (6.81 +/- 1.45 Hz)
+(t=3.002s) SpikeMonitor for group CA3_Ivy(5) has 2132 spikes in 500ms (1.83 +/- 1.71 Hz)
+(t=3.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1651 spikes in 500ms (2.16 +/- 1.78 Hz)
+(t=3.002s) SpikeMonitor for group CA3_Pyramidal(7) has 82076 spikes in 500ms (2.21 +/- 2.63 Hz)
+(t=3.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11589 spikes in 500ms (7.07 +/- 1.46 Hz)
+(t=3.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7581 spikes in 500ms (7.94 +/- 1.63 Hz)
+(t=3.502s) SpikeMonitor for group CA3_Basket(2) has 3515 spikes in 500ms (13.65 +/- 2.33 Hz)
+(t=3.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1565 spikes in 500ms (4.71 +/- 1.26 Hz)
+(t=3.502s) SpikeMonitor for group CA3_Bistratified(4) has 15926 spikes in 500ms (6.88 +/- 1.46 Hz)
+(t=3.502s) SpikeMonitor for group CA3_Ivy(5) has 2393 spikes in 500ms (2.05 +/- 1.77 Hz)
+(t=3.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1864 spikes in 500ms (2.44 +/- 1.77 Hz)
+(t=3.502s) SpikeMonitor for group CA3_Pyramidal(7) has 83662 spikes in 500ms (2.25 +/- 2.61 Hz)
+(t=4.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11899 spikes in 500ms (7.26 +/- 1.48 Hz)
+(t=4.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7822 spikes in 500ms (8.19 +/- 1.64 Hz)
+(t=4.002s) SpikeMonitor for group CA3_Basket(2) has 3465 spikes in 500ms (13.46 +/- 2.60 Hz)
+(t=4.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1497 spikes in 500ms (4.50 +/- 1.16 Hz)
+(t=4.002s) SpikeMonitor for group CA3_Bistratified(4) has 15916 spikes in 500ms (6.87 +/- 1.41 Hz)
+(t=4.002s) SpikeMonitor for group CA3_Ivy(5) has 2727 spikes in 500ms (2.34 +/- 1.84 Hz)
+(t=4.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 2024 spikes in 500ms (2.65 +/- 1.82 Hz)
+(t=4.002s) SpikeMonitor for group CA3_Pyramidal(7) has 84443 spikes in 500ms (2.27 +/- 2.64 Hz)
+(t=4.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11780 spikes in 500ms (7.18 +/- 1.47 Hz)
+(t=4.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7636 spikes in 500ms (8.00 +/- 1.61 Hz)
+(t=4.502s) SpikeMonitor for group CA3_Basket(2) has 3404 spikes in 500ms (13.22 +/- 2.59 Hz)
+(t=4.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1572 spikes in 500ms (4.73 +/- 1.23 Hz)
+(t=4.502s) SpikeMonitor for group CA3_Bistratified(4) has 15879 spikes in 500ms (6.86 +/- 1.42 Hz)
+(t=4.502s) SpikeMonitor for group CA3_Ivy(5) has 2512 spikes in 500ms (2.15 +/- 1.78 Hz)
+(t=4.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1997 spikes in 500ms (2.62 +/- 1.77 Hz)
+(t=4.502s) SpikeMonitor for group CA3_Pyramidal(7) has 85786 spikes in 500ms (2.31 +/- 2.67 Hz)
+(t=5.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11689 spikes in 500ms (7.13 +/- 1.48 Hz)
+(t=5.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7653 spikes in 500ms (8.02 +/- 1.59 Hz)
+(t=5.002s) SpikeMonitor for group CA3_Basket(2) has 3438 spikes in 500ms (13.35 +/- 2.53 Hz)
+(t=5.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1528 spikes in 500ms (4.60 +/- 1.29 Hz)
+(t=5.002s) SpikeMonitor for group CA3_Bistratified(4) has 16078 spikes in 500ms (6.94 +/- 1.39 Hz)
+(t=5.002s) SpikeMonitor for group CA3_Ivy(5) has 2368 spikes in 500ms (2.03 +/- 1.80 Hz)
+(t=5.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1910 spikes in 500ms (2.50 +/- 1.80 Hz)
+(t=5.002s) SpikeMonitor for group CA3_Pyramidal(7) has 85944 spikes in 500ms (2.31 +/- 2.67 Hz)
+(t=5.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11600 spikes in 500ms (7.07 +/- 1.45 Hz)
+(t=5.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7614 spikes in 500ms (7.98 +/- 1.60 Hz)
+(t=5.502s) SpikeMonitor for group CA3_Basket(2) has 3406 spikes in 500ms (13.23 +/- 2.57 Hz)
+(t=5.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1472 spikes in 500ms (4.43 +/- 1.33 Hz)
+(t=5.502s) SpikeMonitor for group CA3_Bistratified(4) has 15914 spikes in 500ms (6.87 +/- 1.37 Hz)
+(t=5.502s) SpikeMonitor for group CA3_Ivy(5) has 2314 spikes in 500ms (1.98 +/- 1.75 Hz)
+(t=5.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1918 spikes in 500ms (2.51 +/- 1.78 Hz)
+(t=5.502s) SpikeMonitor for group CA3_Pyramidal(7) has 86440 spikes in 500ms (2.32 +/- 2.67 Hz)
+(t=6.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11704 spikes in 500ms (7.14 +/- 1.50 Hz)
+(t=6.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7298 spikes in 500ms (7.65 +/- 1.62 Hz)
+(t=6.002s) SpikeMonitor for group CA3_Basket(2) has 3543 spikes in 500ms (13.76 +/- 2.32 Hz)
+(t=6.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1491 spikes in 500ms (4.48 +/- 1.34 Hz)
+(t=6.002s) SpikeMonitor for group CA3_Bistratified(4) has 15907 spikes in 500ms (6.87 +/- 1.39 Hz)
+(t=6.002s) SpikeMonitor for group CA3_Ivy(5) has 2171 spikes in 500ms (1.86 +/- 1.71 Hz)
+(t=6.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1887 spikes in 500ms (2.47 +/- 1.78 Hz)
+(t=6.002s) SpikeMonitor for group CA3_Pyramidal(7) has 86609 spikes in 500ms (2.33 +/- 2.68 Hz)
+(t=6.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11074 spikes in 500ms (6.75 +/- 1.42 Hz)
+(t=6.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7214 spikes in 500ms (7.56 +/- 1.59 Hz)
+(t=6.502s) SpikeMonitor for group CA3_Basket(2) has 3440 spikes in 500ms (13.36 +/- 2.49 Hz)
+(t=6.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1506 spikes in 500ms (4.53 +/- 1.19 Hz)
+(t=6.502s) SpikeMonitor for group CA3_Bistratified(4) has 15841 spikes in 500ms (6.84 +/- 1.40 Hz)
+(t=6.502s) SpikeMonitor for group CA3_Ivy(5) has 2295 spikes in 500ms (1.97 +/- 1.74 Hz)
+(t=6.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1885 spikes in 500ms (2.47 +/- 1.77 Hz)
+(t=6.502s) SpikeMonitor for group CA3_Pyramidal(7) has 86639 spikes in 500ms (2.33 +/- 2.69 Hz)
+(t=7.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11397 spikes in 500ms (6.95 +/- 1.47 Hz)
+(t=7.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7234 spikes in 500ms (7.58 +/- 1.54 Hz)
+(t=7.002s) SpikeMonitor for group CA3_Basket(2) has 3302 spikes in 500ms (12.82 +/- 2.75 Hz)
+(t=7.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1526 spikes in 500ms (4.59 +/- 1.21 Hz)
+(t=7.002s) SpikeMonitor for group CA3_Bistratified(4) has 14371 spikes in 500ms (6.21 +/- 1.34 Hz)
+(t=7.002s) SpikeMonitor for group CA3_Ivy(5) has 2327 spikes in 500ms (1.99 +/- 1.77 Hz)
+(t=7.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 2005 spikes in 500ms (2.63 +/- 1.74 Hz)
+(t=7.002s) SpikeMonitor for group CA3_Pyramidal(7) has 85119 spikes in 500ms (2.29 +/- 2.66 Hz)
+(t=7.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11759 spikes in 500ms (7.17 +/- 1.47 Hz)
+(t=7.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7578 spikes in 500ms (7.94 +/- 1.62 Hz)
+(t=7.502s) SpikeMonitor for group CA3_Basket(2) has 3047 spikes in 500ms (11.83 +/- 2.59 Hz)
+(t=7.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1544 spikes in 500ms (4.64 +/- 1.19 Hz)
+(t=7.502s) SpikeMonitor for group CA3_Bistratified(4) has 15468 spikes in 500ms (6.68 +/- 1.39 Hz)
+(t=7.502s) SpikeMonitor for group CA3_Ivy(5) has 2205 spikes in 500ms (1.89 +/- 1.72 Hz)
+(t=7.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1960 spikes in 500ms (2.57 +/- 1.83 Hz)
+(t=7.502s) SpikeMonitor for group CA3_Pyramidal(7) has 82703 spikes in 500ms (2.22 +/- 2.62 Hz)
+(t=8.002s) SpikeMonitor for group CA3_QuadD_LM(0) has 11849 spikes in 500ms (7.22 +/- 1.46 Hz)
+(t=8.002s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7462 spikes in 500ms (7.82 +/- 1.62 Hz)
+(t=8.002s) SpikeMonitor for group CA3_Basket(2) has 3359 spikes in 500ms (13.04 +/- 2.58 Hz)
+(t=8.002s) SpikeMonitor for group CA3_BC_CCK(3) has 1522 spikes in 500ms (4.58 +/- 1.20 Hz)
+(t=8.002s) SpikeMonitor for group CA3_Bistratified(4) has 15882 spikes in 500ms (6.86 +/- 1.40 Hz)
+(t=8.002s) SpikeMonitor for group CA3_Ivy(5) has 2192 spikes in 500ms (1.88 +/- 1.73 Hz)
+(t=8.002s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1917 spikes in 500ms (2.51 +/- 1.75 Hz)
+(t=8.002s) SpikeMonitor for group CA3_Pyramidal(7) has 84875 spikes in 500ms (2.28 +/- 2.63 Hz)
+(t=8.502s) SpikeMonitor for group CA3_QuadD_LM(0) has 11759 spikes in 500ms (7.17 +/- 1.47 Hz)
+(t=8.502s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7737 spikes in 500ms (8.11 +/- 1.62 Hz)
+(t=8.502s) SpikeMonitor for group CA3_Basket(2) has 3347 spikes in 500ms (13.00 +/- 2.68 Hz)
+(t=8.502s) SpikeMonitor for group CA3_BC_CCK(3) has 1539 spikes in 500ms (4.63 +/- 1.23 Hz)
+(t=8.502s) SpikeMonitor for group CA3_Bistratified(4) has 16026 spikes in 500ms (6.92 +/- 1.38 Hz)
+(t=8.502s) SpikeMonitor for group CA3_Ivy(5) has 2329 spikes in 500ms (2.00 +/- 1.77 Hz)
+(t=8.502s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1977 spikes in 500ms (2.59 +/- 1.75 Hz)
+(t=8.502s) SpikeMonitor for group CA3_Pyramidal(7) has 85541 spikes in 500ms (2.30 +/- 2.67 Hz)
+(t=9.000s) SpikeMonitor for group CA3_QuadD_LM(0) has 11626 spikes in 498ms (7.12 +/- 1.47 Hz)
+(t=9.000s) SpikeMonitor for group CA3_Axo_Axonic(1) has 7543 spikes in 498ms (7.93 +/- 1.60 Hz)
+(t=9.000s) SpikeMonitor for group CA3_Basket(2) has 3306 spikes in 498ms (12.89 +/- 2.85 Hz)
+(t=9.000s) SpikeMonitor for group CA3_BC_CCK(3) has 1501 spikes in 498ms (4.53 +/- 1.20 Hz)
+(t=9.000s) SpikeMonitor for group CA3_Bistratified(4) has 15714 spikes in 498ms (6.81 +/- 1.41 Hz)
+(t=9.000s) SpikeMonitor for group CA3_Ivy(5) has 2153 spikes in 498ms (1.85 +/- 1.69 Hz)
+(t=9.000s) SpikeMonitor for group CA3_MFA_ORDEN(6) has 1884 spikes in 498ms (2.48 +/- 1.72 Hz)
+(t=9.000s) SpikeMonitor for group CA3_Pyramidal(7) has 86760 spikes in 498ms (2.34 +/- 2.74 Hz)
+
+--------------------------------------------------------------------------------
+| Stopwatch                                                                    |
+|------------------------------------------------------------------------------|
+|                  Tag         Start          Stop           Lap         Total |
+|                start  00:00:00.000  00:00:00.057  00:00:00.057  00:00:00.057 |
+|         setupNetwork  00:00:00.057  00:13:42.719  00:13:42.662  00:13:42.719 |
+|           runNetwork  00:13:42.719  01:35:09.850  01:21:27.131  01:35:09.850 |
+--------------------------------------------------------------------------------
+
+
+********************    Simulation Summary      ***************************
+Network Parameters: 	numNeurons = 89226 (numNExcReg:numNInhReg = 83.3:16.7)
+			numSynapses = 250078223
+			maxDelay = 2
+Simulation Mode:	COBA
+Random Seed:		10
+Timing:			Model Simulation Time = 9 sec
+			Actual Execution Time = 4887.13 sec
+Average Firing Rate:	2+ms delay = 1.975 Hz
+			1ms delay = 5.155 Hz
+			Overall = 2.505 Hz
+Overall Spike Count Transferred:
+			2+ms delay = 0
+			1ms delay = 0
+Overall Spike Count:	2+ms delay = 1321930
+			1ms delay = 689466
+			Total = 2011396
+*********************************************************************************
+
