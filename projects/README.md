@@ -57,8 +57,9 @@ The two necessary components to defining a neuron type in CARLsim are the popula
   int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", // name of the neuron type
                                       74366, // population size of the neuron type
                                       EXCITATORY_NEURON, // define whether neuron type is excitatory/inhibitory 
-                                      0, // define the processor (CPU or GPU) to create the group on
-                                      GPU_CORES // define whether the group will be created on CPU/GPU);
+                                      0, // define the processor (CPU or GPU) to create the group on (e.g., GPU = 0)
+                                      GPU_CORES // define whether the group will be created on CPU/GPU
+				      );
                                 
   // Define the input-output relationship for CA3 Pyramidal,
   // based on the RASP.NASP firing pattern phenotype
@@ -81,14 +82,16 @@ The two necessary components to defining a neuron type in CARLsim are the popula
                           0.0, // standard deviation c parameter
                           588.0, // mean d parameter
                           0.0, // standard deviation d parameter
-                          1 // mean refractory period parameter);
+                          1 // mean refractory period parameter
+			  );
                           
   // Define a group for the inhibitory neuron type CA3 Axo-Axonic
   int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 
                                        1909,
                                        INHIBITORY_NEURON, 
                                        0, 
-                                       GPU_CORES);
+                                       GPU_CORES
+				       );
   
   // Define the input-output relationship for CA3 Axo-Axonic,
   // based on the ASP firing pattern phenotype
@@ -111,7 +114,8 @@ The two necessary components to defining a neuron type in CARLsim are the popula
                           0.0,
                           15.0, 
                           0.0, 
-                          1);                            
+                          1
+			  );                            
   ```
 
 ### Connection Type Components
@@ -128,7 +132,8 @@ The three necessary components to defining a connection type in CARLsim are the 
               RadiusRF(-1.0), // define that no receptive field should be formed
               SYN_PLASTIC, // indicate that the connection type's weight can be modified 
               1.869561088f, // indicate the conductance of the fast currents of the synapse 
-              0.0f // indicate the conductance of the slow currents of the synapse);
+              0.0f // indicate the conductance of the slow currents of the synapse
+	      );
               
    // Define short-term plasticity parameters between the Axo-Axonic and Pyramidal neuron types
    sim.setSTP(CA3_Axo_Axonic, // presynaptic neuron type 
@@ -142,7 +147,8 @@ The three necessary components to defining a connection type in CARLsim are the 
               STPtdGABAa(7.623472774f, 0.0f), // define mean and standard deviation of the GABAA receptor current decay time constant
               STPtdGABAb(150.0f, 0.0f), // define mean and standard deviation of the GABAB receptor current decay time constant
               STPtrNMDA(0.0f, 0.0f), // define mean and standard deviation of the NMDA receptor current rise time constant
-              STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant);
+              STPtrGABAb(0.0f, 0.0f) // define mean and standard deviation of the GABAB receptor current rise time constant
+	      );
   ```
 
 ### Monitoring of specific neuron types
@@ -151,11 +157,13 @@ The membrane potential (intracellular recording) and spikes (extracellular recor
 ```
   // Define a NeuronMonitor for the Pyramidal neuron type
   sim.setNeuronMonitor(CA3_Pyramidal, // neuron type to be monitored
-                       "DEFAULT" // directory location of the file containing the intracellular recording of membrane potential);
+                       "DEFAULT" // directory location of the file containing the intracellular recording of membrane potential
+		       );
  
    // Define a SpikeMonitor for the Pyramidal neuron type
   sim.setSpikeMonitor(CA3_Pyramidal, // neuron type to be monitored
-                       "DEFAULT" // directory location of the file containing the extracellular recording of spikes);
+                       "DEFAULT" // directory location of the file containing the extracellular recording of spikes
+		       );
   ```
 
 ### Running a simulation
@@ -299,28 +307,36 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   ```
   // These variable declarations are at the beginning of the header file 
   int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 328,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				    );
 
   int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 190,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				      );
 
   int CA3_Basket = sim.createGroup("CA3_Basket", 51,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				  );
 
   int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 66,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				  );
 
   int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 463,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+					);
 
   int CA3_Ivy = sim.createGroup("CA3_Ivy", 233,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+			       );
 
   int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 152,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				     );
 
   int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 7436,
-                                EXCITATORY_NEURON, 0, GPU_CORES);
+                                EXCITATORY_NEURON, 0, GPU_CORES
+				     );
 
   // These commands are at the end of the header file 
   
@@ -452,28 +468,36 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   
   ```
   int CA3_QuadD_LM = sim.createGroup("CA3_QuadD_LM", 328,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				    );
 
   int CA3_Axo_Axonic = sim.createGroup("CA3_Axo_Axonic", 190,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				      );
 
   int CA3_Basket = sim.createGroup("CA3_Basket", 51,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				  );
 
   int CA3_BC_CCK = sim.createGroup("CA3_BC_CCK", 66,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				  );
 
   int CA3_Bistratified = sim.createGroup("CA3_Bistratified", 463,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+					);
 
   int CA3_Ivy = sim.createGroup("CA3_Ivy", 233,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+			       );
 
   int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 152,
-                                INHIBITORY_NEURON, 0, GPU_CORES);
+                                INHIBITORY_NEURON, 0, GPU_CORES
+				     );
 
   int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 7436,
-                                EXCITATORY_NEURON, 0, GPU_CORES);
+                                EXCITATORY_NEURON, 0, GPU_CORES
+				     );
   ```
 
 8. Compile the SNN:
@@ -530,70 +554,89 @@ Suppose we wanted to understand how different representative cell types in area 
 
 ```
 int CA3_Basket = sim.createGroup("CA3_Basket", 3089,
-                              INHIBITORY_NEURON, 0, GPU_CORES);
+                              INHIBITORY_NEURON, 0, GPU_CORES
+			      	);
                               
 int CA3_MFA_ORDEN = sim.createGroup("CA3_MFA_ORDEN", 11771,
-                              INHIBITORY_NEURON, 0, GPU_CORES);
+                              INHIBITORY_NEURON, 0, GPU_CORES
+			      	   );
                               
 int CA3_Pyramidal = sim.createGroup("CA3_Pyramidal", 74366,
-                              EXCITATORY_NEURON, 0, GPU_CORES);
+                              EXCITATORY_NEURON, 0, GPU_CORES
+			      	   );
 
 int DG_Granule = sim.createSpikeGeneratorGroup("DG_Granule", 394502,
-                              EXCITATORY_NEURON, 0, GPU_CORES);
+                              EXCITATORY_NEURON, 0, GPU_CORES
+			      		      );
                               
 sim.setNeuronParameters(CA3_Basket, 45.0, 0.0, 0.9951729, 0.0,
                                                 -57.506126, 0.0, -23.378766, 0.0, 0.003846186,
                                                 0.0, 9.2642765, 0.0, 18.454934,
                                                 0.0, -47.555661, 0.0,
-                                                -6.0, 0.0, 1);
+                                                -6.0, 0.0, 1
+		       );
                      
 sim.setNeuronParameters(CA3_MFA_ORDEN, 209.0, 0.0, 1.37980713457205, 0.0,
                                                 -57.076423571379, 0.0, -39.1020427841762, 0.0, 0.00783805979364104,
                                                 0.0, 12.9332855397722, 0.0, 16.3132681887705,
                                                 0.0, -40.6806648852695, 0.0,
-                                                0.0, 0.0, 1);
+                                                0.0, 0.0, 1
+		       );
                      
 sim.setNeuronParameters(CA3_Pyramidal, 366.0, 0.0, 0.792338703789581, 0.0,
                                                 -63.2044008171655, 0.0, -33.6041733124267, 0.0, 0.00838350334098279,
                                                 0.0, -42.5524776883928, 0.0, 35.8614648558726,
                                                 0.0, -38.8680990294091, 0.0,
-                                                588.0, 0.0, 1);
+                                                588.0, 0.0, 1
+		       );
                      
 sim.connect(CA3_Basket, CA3_Basket, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.005f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 3.281611994f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 3.281611994f, 0.0f
+	   );
                                        
 sim.connect(CA3_Basket, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 5.0f), 0.005f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.808726221f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.808726221f, 0.0f
+	   );
                                        
 sim.connect(CA3_Basket, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.15f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.572405696f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.572405696f, 0.0f
+	   );
                                        
 sim.connect(CA3_MFA_ORDEN, CA3_Basket, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.0072882240621001f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.972333716f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.972333716f, 0.0f
+	   );
                                        
 sim.connect(CA3_MFA_ORDEN, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 5.0f), 0.00210548528014741f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.552656079f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.552656079f, 0.0f
+	   );
                                        
 sim.connect(CA3_MFA_ORDEN, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.0417555599977689f,
-                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.360315289f, 0.0f);
+                                          RangeDelay(1), RadiusRF(-1.0), SYN_PLASTIC, 1.360315289f, 0.0f
+	   );
                                        
 sim.connect(CA3_Pyramidal, CA3_Basket, "random", RangeWeight(0.0f, 1.45f, 5.0f), 0.0197417562762975f,
-                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 1.172460639f, 0.0f);
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 1.172460639f, 0.0f
+	   );
                                    
 sim.connect(CA3_Pyramidal, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 1.25f, 5.0f), 0.0209934225689348f,
-                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.88025265f, 0.0f);
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.88025265f, 0.0f
+	   );
                                    
 sim.connect(CA3_Pyramidal, CA3_Pyramidal, "random", RangeWeight(0.0f, 0.55f, 5.0f), 0.0250664662231983f,
-                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.553062478f, 0.0f);
+                                      RangeDelay(1,2), RadiusRF(-1.0), SYN_PLASTIC, 0.553062478f, 0.0f
+	   );
 
 sim.connect(DG_Granule, CA3_Basket, "random", RangeWeight(0.0f, 0.65f, 2.0f), 0.001f,
-                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.4977493f, 0.0f);
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.4977493f, 0.0f
+	   );
                                        
 sim.connect(DG_Granule, CA3_MFA_ORDEN, "random", RangeWeight(0.0f, 0.75f, 2.0f), 0.001f,
-                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.35876774f, 0.0f);
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.35876774f, 0.0f
+	   );
                                        
 sim.connect(DG_Granule, CA3_Pyramidal, "random", RangeWeight(0.0f, 1.45f, 2.0f), 0.002f,
-                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.262911855f, 0.0f);
+                                          RangeDelay(1,10), RadiusRF(-1.0), SYN_PLASTIC, 1.262911855f, 0.0f
+	   );
                                    
 sim.setSTP(CA3_Basket, CA3_Basket, true, STPu(0.38950627465000004f, 0.0f),
                                          STPtauU(11.19042564f, 0.0f),
@@ -603,7 +646,8 @@ sim.setSTP(CA3_Basket, CA3_Basket, true, STPu(0.38950627465000004f, 0.0f),
                                          STPtdGABAa(3.007016545f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_Basket, CA3_MFA_ORDEN, true, STPu(0.301856475f, 0.0f),
                                          STPtauU(19.60369075f, 0.0f),
@@ -613,7 +657,8 @@ sim.setSTP(CA3_Basket, CA3_MFA_ORDEN, true, STPu(0.301856475f, 0.0f),
                                          STPtdGABAa(5.230610278f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_Basket, CA3_Pyramidal, true, STPu(0.12521945645000002f, 0.0f),
                                          STPtauU(16.73589406f, 0.0f),
@@ -623,7 +668,8 @@ sim.setSTP(CA3_Basket, CA3_Pyramidal, true, STPu(0.12521945645000002f, 0.0f),
                                          STPtdGABAa(7.63862234f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_MFA_ORDEN, CA3_Basket, true, STPu(0.36184299919999996f, 0.0f),
                                          STPtauU(15.70448009f, 0.0f),
@@ -633,7 +679,8 @@ sim.setSTP(CA3_MFA_ORDEN, CA3_Basket, true, STPu(0.36184299919999996f, 0.0f),
                                          STPtdGABAa(3.896195604f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_MFA_ORDEN, CA3_MFA_ORDEN, true, STPu(0.2855712375f, 0.0f),
                                          STPtauU(22.52027885f, 0.0f),
@@ -643,7 +690,8 @@ sim.setSTP(CA3_MFA_ORDEN, CA3_MFA_ORDEN, true, STPu(0.2855712375f, 0.0f),
                                          STPtdGABAa(5.533747322f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_MFA_ORDEN, CA3_Pyramidal, true, STPu(0.11893441670000002f, 0.0f),
                                          STPtauU(20.61711347f, 0.0f),
@@ -653,7 +701,8 @@ sim.setSTP(CA3_MFA_ORDEN, CA3_Pyramidal, true, STPu(0.11893441670000002f, 0.0f),
                                          STPtdGABAa(7.149050278f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(CA3_Pyramidal, CA3_Basket, true, STPu(0.12174287290000001f, 0.0f),
                                      STPtauU(21.16086172f, 0.0f),
@@ -663,7 +712,8 @@ sim.setSTP(CA3_Pyramidal, CA3_Basket, true, STPu(0.12174287290000001f, 0.0f),
                                      STPtdGABAa(6.0f, 0.0f),
                                      STPtdGABAb(150.0f, 0.0f),
                                      STPtrNMDA(0.0f, 0.0f),
-                                     STPtrGABAb(0.0f, 0.0f));
+                                     STPtrGABAb(0.0f, 0.0f)
+	  );
                                  
 sim.setSTP(CA3_Pyramidal, CA3_MFA_ORDEN, true, STPu(0.14716404225000002f, 0.0f),
                                      STPtauU(29.01335489f, 0.0f),
@@ -673,7 +723,8 @@ sim.setSTP(CA3_Pyramidal, CA3_MFA_ORDEN, true, STPu(0.14716404225000002f, 0.0f),
                                      STPtdGABAa(6.0f, 0.0f),
                                      STPtdGABAb(150.0f, 0.0f),
                                      STPtrNMDA(0.0f, 0.0f),
-                                     STPtrGABAb(0.0f, 0.0f));
+                                     STPtrGABAb(0.0f, 0.0f)
+	  );
                                  
 sim.setSTP(CA3_Pyramidal, CA3_Pyramidal, true, STPu(0.27922089865f, 0.0f),
                                      STPtauU(21.44820657f, 0.0f),
@@ -683,7 +734,8 @@ sim.setSTP(CA3_Pyramidal, CA3_Pyramidal, true, STPu(0.27922089865f, 0.0f),
                                      STPtdGABAa(6.0f, 0.0f),
                                      STPtdGABAb(150.0f, 0.0f),
                                      STPtrNMDA(0.0f, 0.0f),
-                                     STPtrGABAb(0.0f, 0.0f));
+                                     STPtrGABAb(0.0f, 0.0f)
+	  );
 
 sim.setSTP(DG_Granule, CA3_Basket, true, STPu(0.187709502f, 0.0f),
                                          STPtauU(30.28628071f, 0.0f),
@@ -693,7 +745,8 @@ sim.setSTP(DG_Granule, CA3_Basket, true, STPu(0.187709502f, 0.0f),
                                          STPtdGABAa(5.0f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
 					 
 sim.setSTP(DG_Granule, CA3_MFA_ORDEN, true, STPu(0.194481964f, 0.0f),
                                          STPtauU(48.64778619f, 0.0f),
@@ -703,7 +756,8 @@ sim.setSTP(DG_Granule, CA3_MFA_ORDEN, true, STPu(0.194481964f, 0.0f),
                                          STPtdGABAa(5.0f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
                                      
 sim.setSTP(DG_Granule, CA3_Pyramidal, true, STPu(0.156887286f, 0.0f),
                                          STPtauU(42.00785645f, 0.0f),
@@ -713,7 +767,8 @@ sim.setSTP(DG_Granule, CA3_Pyramidal, true, STPu(0.156887286f, 0.0f),
                                          STPtdGABAa(5.0f, 0.0f),
                                          STPtdGABAb(150.0f, 0.0f),
                                          STPtrNMDA(0.0f, 0.0f),
-                                         STPtrGABAb(0.0f, 0.0f));
+                                         STPtrGABAb(0.0f, 0.0f)
+	  );
 ```
 
 2. We set excitatory and inhibitory spike-time dependent plasticity for each neuron type, using default parameters:
