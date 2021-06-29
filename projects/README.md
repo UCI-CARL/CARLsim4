@@ -22,14 +22,13 @@ This repository includes information as to how to run an example and full-scale 
 * [Framework to Test Hippocampal Hypotheses](#A-framework-to-test-hypotheses-of-the-hippocampal-formation) 
 
 ## Language and Module Dependencies for the Software:
-Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one will need to install Python 3 as well as the package dependencies included in the table below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
+Beyond the dependencies of CARLsim4 described at the link above, to generate the syntax necessary to run the example and full-scale SNNs one first must be familiar with C++ and Python, with recommended proficiency provided below. One will need to install Python 3 as well as the package dependencies included in the tables below. Additionally, one can install the following [Anaconda distribution](https://docs.anaconda.com/anaconda/install/), which includes Python 3 and pandas, but the xlrd function will still need to be downloaded, as it is an optional dependency of pandas.
 
 ### Programming Languages and Proficiency
 |Language|Proficiency|
 |---|---|
 |C++|basic to intermediate|
 |Python|basic|
-|MATLAB|basic to intermediate|
 
 ### Ubuntu 
 |module|tested version(s)|
