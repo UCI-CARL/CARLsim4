@@ -803,7 +803,7 @@ sim.setSpikeMonitor(CA3_MFA_ORDEN, "DEFAULT");
 sim.setSpikeMonitor(CA3_Pyramidal, "DEFAULT");
 ```
 
-4. Create a PoissonRate object for the Granule cell population, and set the mean firing rate of all neurons to baseline levels observed in vivo:
+4. Create a [PoissonRate object](http://uci-carl.github.io/CARLsim4/ch6_input.html#ch6s1s1_poisson_rate) for the Granule cell population and set the mean firing rate of all neurons to 0.4 Hz, which provides a constant source of random input to the network exhibited during baseline network activity:
 
 ```
 int DG_Granule_frate = 100.0f;
