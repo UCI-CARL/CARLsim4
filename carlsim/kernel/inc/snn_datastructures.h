@@ -406,17 +406,17 @@ typedef struct GroupConfigMD_s {
 * \see SNNState
 */
 typedef struct GroupConfigRT_s {
-	int          netId;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
-	int          gEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lGrpId;        //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lStartN;       //!< published by GroupConfigMD \sa GroupConfigMD
-	int          lEndN;         //!< published by GroupConfigMD \sa GroupConfigMD
-	int          LtoGOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
-	int          GtoLOffset;    //!< published by GroupConfigMD \sa GroupConfigMD
-	unsigned int Type;          //!< published by GroupConfig \sa GroupConfig
-	int          numN;          //!< published by GroupConfig \sa GroupConfig
+	short int    netId;         	//!< published by GroupConfigMD \sa GroupConfigMD
+	short int    gGrpId;        	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          gStartN;       	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          gEndN;         	//!< published by GroupConfigMD \sa GroupConfigMD
+	short int    lGrpId;        	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          lStartN;       	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          lEndN;         	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          LtoGOffset;    	//!< published by GroupConfigMD \sa GroupConfigMD
+	int          GtoLOffset;    	//!< published by GroupConfigMD \sa GroupConfigMD
+	unsigned int Type;          	//!< published by GroupConfig \sa GroupConfig
+	int          numN;          	//!< published by GroupConfig \sa GroupConfig
 	int          numPostSynapses;   //!< the total number of post-connections of a group, published by GroupConfigMD \sa GroupConfigMD
 	int          numPreSynapses;    //!< the total number of pre-connections of a group, published by GroupConfigMD \sa GroupConfigMD
 	bool         isSpikeGenerator;  //!< published by GroupConfig \sa GroupConfig
