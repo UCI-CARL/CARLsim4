@@ -647,15 +647,15 @@ struct RangeRmem{
 
 
 /*!
- * \brief A struct for retrieving STDP related information of a group
+ * \brief A struct for retrieving STDP related information of a connection
  *
- * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getGroupSTDPInfo()
- * for retrieving STDP related information of a group. A developer can write his/her test cases to test the
+ * The struct is used in test suite only. CARLsim API call provides a getter function CARLsim::getConnSTDPInfo()
+ * for retrieving STDP related information of a connection. A developer can write his/her test cases to test the
  * STDP parameters
  *
- * \sa CARLsim::getGroupSTDPInfo()
+ * \sa CARLsim::getConnSTDPInfo()
  */
-typedef struct GroupSTDPInfo_s {
+typedef struct ConnSTDPInfo_s {
 	bool 		WithSTDP;			//!< enable STDP flag
 	bool		WithESTDP;			//!< enable E-STDP flag
 	bool		WithISTDP;			//!< enable I-STDP flag
@@ -676,7 +676,7 @@ typedef struct GroupSTDPInfo_s {
 	float		BETA_LTD;			//!< the amplitude of inhibitory LTD if the pulse I-STDP curve is used
 	float		LAMBDA;				//!< the range of inhibitory LTP if the pulse I-STDP curve is used
 	float		DELTA;				//!< the range of inhibitory LTD if the pulse I-STDP curve is used
-} GroupSTDPInfo;
+} ConnSTDPInfo;
 
 /*!
  * \brief A struct for retrieving neuromodulator information of a group

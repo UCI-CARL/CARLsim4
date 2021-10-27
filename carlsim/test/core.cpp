@@ -510,7 +510,7 @@ TEST(Core, startStopTestingPhase) {
 				RadiusRF(-1), SYN_PLASTIC);
 
 			// set E-STDP to be STANDARD (without neuromodulatory influence) with an EXP_CURVE type.
-			sim->setESTDP(gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));
+			sim->setESTDP(gIn, gExc, true, STANDARD, ExpCurve(2e-4f,20.0f, -6.6e-5f,60.0f));
 			sim->setHomeostasis(gExc, true, 1.0f, 10.0f);  // homeo scaling factor, avg time scale
 			sim->setHomeoBaseFiringRate(gExc, 35.0f, 0.0f); // target firing, target firing st.d.
 
@@ -592,7 +592,7 @@ TEST(Core, saveLoadSimulation) {
 
 					sim->connect(gPre, gPost, "full", RangeWeight(0.0, 20.0f/100, 20.0f/100), 1.0f, RangeDelay(1, 5),
 						RadiusRF(-1), isPlastic?SYN_PLASTIC:SYN_FIXED);
-					sim->setSTDP(gPost, isPlastic, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
+					sim->setSTDP(gPre, gPost, isPlastic, STANDARD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 					sim->setConductances(coba>0);
 
 					if (loadSim) {

@@ -62,7 +62,7 @@ int main(int argc, const char* argv[]) {
 	Stopwatch watch;
 
 	int scale = 10;
-	int nNeur = 1000*scale;		// number of neurons
+	int nNeur = 5000*scale;		// number of neurons
 	int nNeurExc1 = 0.267*nNeur;	// number of excitatory-1 neurons
 	int nNeurExc2 = 0.267*nNeur;	// number of excitatory-2 neurons
 	int nNeurExc3 = 0.267*nNeur;	// number of excitatory-3 neurons
@@ -81,13 +81,13 @@ int main(int argc, const char* argv[]) {
 
 	int gExc1 = sim.createGroupLIF("exc1", nNeurExc1, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.setNeuronParametersLIF(gExc1, tau_m, tau_ref, vTh, vReset, RangeRmem(rMem)); // RS1
-	int gExc2 = sim.createGroupLIF("exc2", nNeurExc2, EXCITATORY_NEURON, 0, GPU_CORES);
+	int gExc2 = sim.createGroupLIF("exc2", nNeurExc2, EXCITATORY_NEURON, 1, GPU_CORES);
 	sim.setNeuronParametersLIF(gExc2, tau_m, tau_ref, vTh, vReset, RangeRmem(rMem)); // RS2
-	int gExc3 = sim.createGroupLIF("exc3", nNeurExc3, EXCITATORY_NEURON, 0, CPU_CORES);
+	int gExc3 = sim.createGroupLIF("exc3", nNeurExc3, EXCITATORY_NEURON, 0, GPU_CORES);
 	sim.setNeuronParametersLIF(gExc3, tau_m, tau_ref, vTh, vReset, RangeRmem(rMem)); // RS3
 	
 	// create the inhibitory group using fast spiking Izhikevich neurons (four parameters)
-	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 1, CPU_CORES);
+	int gInh = sim.createGroup("inh", nNeurInh, INHIBITORY_NEURON, 1, GPU_CORES);
 	sim.setNeuronParameters(gInh, 0.1f, 0.2f, -65.0f, 2.0f); // FS
 
 	// specify connectivity
@@ -120,14 +120,20 @@ int main(int argc, const char* argv[]) {
 	sim.connect(gExc2, gInh, "random", RangeWeight(wtExc), pConn*nNeur/(3*nNeurExc2), RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 	sim.connect(gExc3, gInh, "random", RangeWeight(wtExc), pConn*nNeur/(3*nNeurExc3), RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 
-	// enable STDP on all incoming synapses to gExc
+	// enable E-STDP between gExc1 and all other excitatory groups, and I-STDP to all excitatory groups
 	float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
-	sim.setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc1, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
-	sim.setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc2, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
-	sim.setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-	sim.setISTDP(gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+// 	sim.setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+// 	sim.setISTDP(gExc1, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+// 	sim.setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+// 	sim.setISTDP(gExc2, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+// 	sim.setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+// 	sim.setISTDP(gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	sim.setESTDP(gExc1, gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	sim.setESTDP(gExc1, gExc2, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	sim.setESTDP(gExc1, gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	sim.setISTDP(gInh, gExc1, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
+	sim.setISTDP(gInh, gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+	sim.setISTDP(gInh, gExc3, true, STANDARD, ExpCurve(-alphaPlus, tauPlus, alphaMinus, tauMinus));
 
 	// run CUBA mode
 // 	sim.setConductances(false);
@@ -136,6 +142,9 @@ int main(int argc, const char* argv[]) {
 	// ---------------- SETUP STATE -------------------
 	sim.setupNetwork();
 
+//     PoissonRate gExc1_rate(nNeurExc1, true);
+//     gExc1_rate.setRates(2.5f);
+//     sim.setSpikeRate(gExc1, &gExc1_rate, 1);
 	SpikeMonitor* SMexc1 = sim.setSpikeMonitor(gExc1, "DEFAULT");
 	SpikeMonitor* SMexc2 = sim.setSpikeMonitor(gExc2, "DEFAULT");
 	SpikeMonitor* SMexc3 = sim.setSpikeMonitor(gExc3, "DEFAULT");
@@ -151,6 +160,9 @@ int main(int argc, const char* argv[]) {
 
 	watch.lap("runNetwork");
 
+    // save initial network
+    sim.saveSimulation("networkA.dat", true); // fileName, saveSynapseInfo 
+    
 	for (int t=0; t<3000; t++) {
 		// random thalamic input to a single neuron from either gExc or gInh
 		std::vector<float> thalamCurrExc1(nNeurExc1, 0.0f);
@@ -168,6 +180,7 @@ int main(int argc, const char* argv[]) {
 			} 
 			
 			else if (randNeurId < (nNeurExc1 + nNeurExc2)) {
+// 			if (randNeurId < (nNeurExc1 + nNeurExc2)) {
 				// neurId belongs to gExc
 				thalamCurrExc2[randNeurId - nNeurExc1] = thCurr;
 			} 
@@ -204,5 +217,8 @@ int main(int argc, const char* argv[]) {
 	SMexc3->print(false);
 	SMinh->print(false);
 
+    // save modified network
+    sim.saveSimulation("networkZ.dat", true); // fileName, saveSynapseInfo 
+    
 	return 0;
 }

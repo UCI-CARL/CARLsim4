@@ -175,6 +175,22 @@ void SNN::printConnectionInfo(short int connId) {
 	float avgPreM  = ((float)connConfig.numberOfConnections)/groupConfigMap[connConfig.grpDest].numN;
 	KERNEL_INFO("  - Avg numPreSynapses         = %8.2f", avgPreM );
 	KERNEL_INFO("  - Avg numPostSynapses        = %8.2f", avgPostM );
+    
+	if(connConfig.stdpConfig.WithSTDP) {
+		KERNEL_INFO("  - STDP:")
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     connConfig.stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+			(connConfig.stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     connConfig.stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+			(connConfig.stdpConfig.WithISTDPtype == DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", connConfig.stdpConfig.ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", connConfig.stdpConfig.ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", connConfig.stdpConfig.TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", connConfig.stdpConfig.TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", connConfig.stdpConfig.BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", connConfig.stdpConfig.BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", connConfig.stdpConfig.LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", connConfig.stdpConfig.DELTA);
+	}
 }
 
 // print connection info, akin to printGroupInfo
@@ -197,6 +213,23 @@ void SNN::printConnectionInfo(int netId, std::list<ConnectConfig>::iterator conn
 	float avgPreM  = ((float)connIt->numberOfConnections)/groupConfigMap[connIt->grpDest].numN;
 	KERNEL_INFO("    |- Avg numPreSynapses         = %8.2f", avgPreM );
 	KERNEL_INFO("    |- Avg numPostSynapses        = %8.2f", avgPostM );
+    
+	ConnectConfig connConfig = connectConfigMap[connIt->connId];
+		if(connConfig.stdpConfig.WithSTDP) {
+		KERNEL_INFO("  - STDP:")
+		KERNEL_INFO("      - E-STDP TYPE            = %s",     connConfig.stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+			(connConfig.stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+		KERNEL_INFO("      - I-STDP TYPE            = %s",     connConfig.stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+			(connConfig.stdpConfig.WithISTDPtype == DA_MOD?"  DA_MOD":" UNKNOWN"));
+		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", connConfig.stdpConfig.ALPHA_PLUS_EXC);
+		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", connConfig.stdpConfig.ALPHA_MINUS_EXC);
+		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", connConfig.stdpConfig.TAU_PLUS_INV_EXC);
+		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", connConfig.stdpConfig.TAU_MINUS_INV_EXC);
+		KERNEL_INFO("      - BETA_LTP               = %8.5f", connConfig.stdpConfig.BETA_LTP);
+		KERNEL_INFO("      - BETA_LTD               = %8.5f", connConfig.stdpConfig.BETA_LTD);
+		KERNEL_INFO("      - LAMBDA                 = %8.5f", connConfig.stdpConfig.LAMBDA);
+		KERNEL_INFO("      - DELTA                  = %8.5f", connConfig.stdpConfig.DELTA);
+	}
 }
 
 void SNN::printGroupInfo(int gGrpId) {
@@ -223,21 +256,21 @@ void SNN::printGroupInfo(int gGrpId) {
 		KERNEL_INFO("  - STP:");
 	}
 
-	if(groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
-		KERNEL_INFO("  - STDP:")
-		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
-			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
-		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
-			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD?"  DA_MOD":" UNKNOWN"));
-		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
-		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
-		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
-		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
-		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
-		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
-	}
+// 	if(groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+// 		KERNEL_INFO("  - STDP:")
+// 		KERNEL_INFO("      - E-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+// 			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+// 		KERNEL_INFO("      - I-STDP TYPE            = %s",     groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+// 			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD?"  DA_MOD":" UNKNOWN"));
+// 		KERNEL_INFO("      - ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
+// 		KERNEL_INFO("      - ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
+// 		KERNEL_INFO("      - TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
+// 		KERNEL_INFO("      - TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
+// 		KERNEL_INFO("      - BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
+// 		KERNEL_INFO("      - BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
+// 		KERNEL_INFO("      - LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
+// 		KERNEL_INFO("      - DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
+// 	}
 }
 
 void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
@@ -265,21 +298,21 @@ void SNN::printGroupInfo(int netId, std::list<GroupConfigMD>::iterator grpIt) {
 		KERNEL_INFO("    |-+ STP:");
 	}
 
-	if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
-		KERNEL_INFO("    |-+ STDP:")
-		KERNEL_INFO("      |- E-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
-			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
-		KERNEL_INFO("      |- I-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
-			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
-		KERNEL_INFO("      |- ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
-		KERNEL_INFO("      |- ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
-		KERNEL_INFO("      |- TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
-		KERNEL_INFO("      |- TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
-		KERNEL_INFO("      |- BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
-		KERNEL_INFO("      |- BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
-		KERNEL_INFO("      |- LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
-		KERNEL_INFO("      |- DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
-	}
+// 	if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+// 		KERNEL_INFO("    |-+ STDP:")
+// 		KERNEL_INFO("      |- E-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == STANDARD ? "STANDARD" :
+// 			(groupConfigMap[gGrpId].stdpConfig.WithESTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+// 		KERNEL_INFO("      |- I-STDP TYPE            = %s", groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == STANDARD ? "STANDARD" :
+// 			(groupConfigMap[gGrpId].stdpConfig.WithISTDPtype == DA_MOD ? "  DA_MOD" : " UNKNOWN"));
+// 		KERNEL_INFO("      |- ALPHA_PLUS_EXC         = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC);
+// 		KERNEL_INFO("      |- ALPHA_MINUS_EXC        = %8.5f", groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC);
+// 		KERNEL_INFO("      |- TAU_PLUS_INV_EXC       = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC);
+// 		KERNEL_INFO("      |- TAU_MINUS_INV_EXC      = %8.5f", groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC);
+// 		KERNEL_INFO("      |- BETA_LTP               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTP);
+// 		KERNEL_INFO("      |- BETA_LTD               = %8.5f", groupConfigMap[gGrpId].stdpConfig.BETA_LTD);
+// 		KERNEL_INFO("      |- LAMBDA                 = %8.5f", groupConfigMap[gGrpId].stdpConfig.LAMBDA);
+// 		KERNEL_INFO("      |- DELTA                  = %8.5f", groupConfigMap[gGrpId].stdpConfig.DELTA);
+// 	}
 }
 
 void SNN::printSikeRoutingInfo() {

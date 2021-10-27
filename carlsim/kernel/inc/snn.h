@@ -332,7 +332,7 @@ public:
 	 * \param[in] alphaMinus max magnitude for LTD change (leave positive)
 	 * \param[in] tauMinus decay time constant for LTD
 	 */
-	void setESTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
+	void setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma);
 
 	//! Set the inhibitory spike-timing-dependent plasticity (STDP) with anti-hebbian curve for a neuron group
 	/*
@@ -347,7 +347,7 @@ public:
 	 * \param[in] tau1, the interval for LTP
 	 * \param[in] tau2, the interval for LTD
 	 */
-	void setISTDP(int grpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2);
+	void setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2);
 
 	/*!
 	 * \brief Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -535,6 +535,7 @@ public:
 
 	short int getConnectId(int grpIdPre, int grpIdPost); //!< find connection ID based on pre-post group pair, O(N)
 	ConnectConfig getConnectConfig(short int connectId); //!< required for homeostasis
+	ConnSTDPInfo getConnSTDPInfo(short int connId);
 
 	//! returns the RangeDelay struct of a connection
 	RangeDelay getDelayRange(short int connId);
@@ -553,7 +554,6 @@ public:
 	Grid3D getGroupGrid3D(int grpId);
 	int getGroupId(std::string grpName);
 	std::string getGroupName(int grpId);
-	GroupSTDPInfo getGroupSTDPInfo(int grpId);
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId);
 
 	LoggerMode getLoggerMode() { return loggerMode_; }
@@ -917,6 +917,7 @@ private:
 	void copyWeightState(int netId, int lGrpId, cudaMemcpyKind kind);
 	void copyNetworkConfig(int netId, cudaMemcpyKind kind);
 	void copyGroupConfigs(int netId);
+	void copyConnectConfigs(int netId);
 	void copyGrpIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyConnIdsLookupArray(int netId, cudaMemcpyKind kind);
 	void copyLastSpikeTime(int netId, cudaMemcpyKind kind);

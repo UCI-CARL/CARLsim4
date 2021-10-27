@@ -667,125 +667,125 @@ public:
 	}
 
 	// set STDP, default, wrapper function
-	void setSTDP(int grpId, bool isSet) {
-		setESTDP(grpId, isSet);
+	void setSTDP(int preGrpId, int postGrpId, bool isSet) {
+		setESTDP(preGrpId, postGrpId, isSet);
 	}
 
 	// set STDP, custom, wrapper function
-	void setSTDP(int grpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, 
+	void setSTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, 
 		float tauMinus)
 	{
-		setESTDP(grpId, isSet, type, ExpCurve(alphaPlus, tauPlus, alphaMinus, tauMinus));
+		setESTDP(preGrpId, postGrpId, isSet, type, ExpCurve(alphaPlus, tauPlus, alphaMinus, tauMinus));
 	}
 
 	// set ESTDP, default
-	void setESTDP(int grpId, bool isSet) {
-		std::string funcName = "setESTDP(\""+getGroupName(grpId)+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setESTDP(int preGrpId, int postGrpId, bool isSet) {
+		std::string funcName = "setESTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use default values and type
-			snn_->setESTDP(grpId, true, def_STDP_type_, EXP_CURVE, def_STDP_alphaLTP_, def_STDP_tauLTP_, 
+			snn_->setESTDP(preGrpId, postGrpId, true, def_STDP_type_, EXP_CURVE, def_STDP_alphaLTP_, def_STDP_tauLTP_,  
 				def_STDP_alphaLTD_, def_STDP_tauLTD_, 0.0f);
 		} else { // disable STDP
-			snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+			snn_->setESTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 		}
 	}
 
 	// set ESTDP by stdp curve
-	void setESTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
-		std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, ExpCurve curve) {
+		std::string funcName = "setESTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use custom values
-			snn_->setESTDP(grpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.tauPlus, curve.alphaMinus, 
+			snn_->setESTDP(preGrpId, postGrpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.tauPlus, curve.alphaMinus, 
 				curve.tauMinus, 0.0f);
 		} else { // disable STDP and DA-STDP as well
-			snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+			snn_->setESTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 		}
 	}
 
 	// set ESTDP by stdp curve
-	void setESTDP(int grpId, bool isSet, STDPType type, TimingBasedCurve curve) {
-		std::string funcName = "setESTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, TimingBasedCurve curve) {
+		std::string funcName = "setESTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use custom values
-			snn_->setESTDP(grpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.tauPlus, curve.alphaMinus, 
+			snn_->setESTDP(preGrpId, postGrpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.tauPlus, curve.alphaMinus, 
 				curve.tauMinus, curve.gamma);
 		} else { // disable STDP and DA-STDP as well
-			snn_->setESTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
+			snn_->setESTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f);
 		}
 	}
 
 	// set ISTDP, default
-	void setISTDP(int grpId, bool isSet) {
-		std::string funcName = "setISTDP(\""+getGroupName(grpId)+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setISTDP(int preGrpId, int postGrpId, bool isSet) {
+		std::string funcName = "setISTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use default values and types
-			snn_->setISTDP(grpId, true, def_STDP_type_, PULSE_CURVE, def_STDP_betaLTP_, def_STDP_betaLTD_, 
+			snn_->setISTDP(preGrpId, postGrpId, true, def_STDP_type_, PULSE_CURVE, def_STDP_betaLTP_, def_STDP_betaLTD_, 
 				def_STDP_lambda_, def_STDP_delta_);
 		} else { // disable STDP
-			snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
+			snn_->setISTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 		}
 	}
 
 	// set ISTDP by stdp curve
-	void setISTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
-		std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, ExpCurve curve) {
+		std::string funcName = "setISTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use custom values
-			snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.alphaMinus, curve.tauPlus, 
+			snn_->setISTDP(preGrpId, postGrpId, true, type, curve.stdpCurve, curve.alphaPlus, curve.alphaMinus, curve.tauPlus, 
 				curve.tauMinus);
 		} else { // disable STDP and DA-STDP as well
-			snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
+			snn_->setISTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 		}
 	}
 
 	// set ISTDP by stdp curve
-	void setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
-		std::string funcName = "setISTDP(\""+getGroupName(grpId)+","+stdpType_string[type]+"\")";
-		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(grpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
+	void setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, PulseCurve curve) {
+		std::string funcName = "setISTDP(\""+getGroupName(preGrpId) + ", " + getGroupName(postGrpId) +"\")";
+		UserErrors::assertTrue(!isSet || isSet && !isPoissonGroup(postGrpId), UserErrors::WRONG_NEURON_TYPE, funcName, 
 			funcName);
 		UserErrors::assertTrue(type!=UNKNOWN_STDP, UserErrors::CANNOT_BE_UNKNOWN, funcName, "Mode");
 		UserErrors::assertTrue(carlsimState_==CONFIG_STATE, UserErrors::CAN_ONLY_BE_CALLED_IN_STATE, funcName, 
 			funcName, "CONFIG.");
 
-		hasSetSTDPALL_ = grpId==ALL; // adding groups after this will not have conductances set
+		hasSetSTDPALL_ = postGrpId==ALL; // adding groups after this will not have conductances set
 
 		if (isSet) { // enable STDP, use custom values
-			snn_->setISTDP(grpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lambda, curve.delta);
+			snn_->setISTDP(preGrpId, postGrpId, true, type, curve.stdpCurve, curve.betaLTP, curve.betaLTD, curve.lambda, curve.delta);
 		} else { // disable STDP and DA-STDP as well
-			snn_->setISTDP(grpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
+			snn_->setISTDP(preGrpId, postGrpId, false, UNKNOWN_STDP, UNKNOWN_CURVE, 0.0f, 0.0f, 1.0f, 1.0f);
 		}
 	}
 
@@ -1368,12 +1368,12 @@ public:
 		return snn_->getNumSynapses();
 	}
 
-	GroupSTDPInfo getGroupSTDPInfo(int grpId) {
-		std::stringstream funcName; funcName << "getGroupSTDPInfo(" << grpId << ")";
-		UserErrors::assertTrue(grpId >= 0 && grpId<getNumGroups(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
-			"grpId", "[0,getNumGroups()]");
+	ConnSTDPInfo getConnSTDPInfo(int connId) {
+		std::stringstream funcName; funcName << "getConnSTDPInfo(" << connId << ")";
+		UserErrors::assertTrue(connId >= 0 && connId<getNumConnections(), UserErrors::MUST_BE_IN_RANGE, funcName.str(),
+			"connId", "[0,getNumConnections]");
 
-		return snn_->getGroupSTDPInfo(grpId);
+		return snn_->getConnSTDPInfo(connId);
 	}
 
 	GroupNeuromodulatorInfo getGroupNeuromodulatorInfo(int grpId) {
@@ -1957,39 +1957,39 @@ void CARLsim::setNeuromodulator(int grpId, float tauDP, float tau5HT, float tauA
 }
 
 // Sets default STDP mode and params
-void CARLsim::setSTDP(int grpId, bool isSet) { _impl->setSTDP(grpId, isSet); }
+void CARLsim::setSTDP(int preGrpId, int postGrpId, bool isSet) { _impl->setSTDP(preGrpId, postGrpId, isSet); }
 
 // Sets STDP params for a group, custom
-void CARLsim::setSTDP(int grpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, 
+void CARLsim::setSTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, float alphaPlus, float tauPlus, float alphaMinus, 
 	float tauMinus)
 {
-	_impl->setSTDP(grpId, isSet, type, alphaPlus, tauPlus, alphaMinus, tauMinus);
+	_impl->setSTDP(preGrpId, postGrpId, isSet, type, alphaPlus, tauPlus, alphaMinus, tauMinus);
 }
 
 // Sets default E-STDP mode and parameters
-void CARLsim::setESTDP(int grpId, bool isSet) { _impl->setESTDP(grpId, isSet); }
+void CARLsim::setESTDP(int preGrpId, int postGrpId, bool isSet) { _impl->setESTDP(preGrpId, postGrpId, isSet); }
 
 // Sets E-STDP with the exponential curve
-void CARLsim::setESTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
-	_impl->setESTDP(grpId, isSet, type, curve);
+void CARLsim::setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, ExpCurve curve) {
+	_impl->setESTDP(preGrpId, postGrpId, isSet, type, curve);
 }
 
 // Sets E-STDP with the timing-based curve
-void CARLsim::setESTDP(int grpId, bool isSet, STDPType type, TimingBasedCurve curve) {
-	_impl->setESTDP(grpId, isSet, type, curve);
+void CARLsim::setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, TimingBasedCurve curve) {
+	_impl->setESTDP(preGrpId, postGrpId, isSet, type, curve);
 }
 
 // Sets default I-STDP mode and parameters
-void CARLsim::setISTDP(int grpId, bool isSet) { _impl->setESTDP(grpId, isSet); }
+void CARLsim::setISTDP(int preGrpId, int postGrpId,bool isSet) { _impl->setESTDP(preGrpId, postGrpId, isSet); }
 
 // Sets I-STDP with the exponential curve
-void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, ExpCurve curve) {
-	_impl->setISTDP(grpId, isSet, type, curve);
+void CARLsim::setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, ExpCurve curve) {
+	_impl->setISTDP(preGrpId, postGrpId, isSet, type, curve);
 }
 
 // Sets I-STDP with the pulse curve
-void CARLsim::setISTDP(int grpId, bool isSet, STDPType type, PulseCurve curve) {
-	_impl->setISTDP(grpId, isSet, type, curve);
+void CARLsim::setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, PulseCurve curve) {
+	_impl->setISTDP(preGrpId, postGrpId, isSet, type, curve);
 }
 
 // // Sets STP params U, tau_u, and tau_x of a neuron group (pre-synaptically)
@@ -2184,7 +2184,7 @@ int CARLsim::getGroupEndNeuronId(int grpId) { return _impl->getGroupEndNeuronId(
 int CARLsim::getGroupNumNeurons(int grpId) { return _impl->getGroupNumNeurons(grpId); }
 
 // returns the stdp information of a group specified by grpId
-GroupSTDPInfo CARLsim::getGroupSTDPInfo(int grpId) { return _impl->getGroupSTDPInfo(grpId); }
+ConnSTDPInfo CARLsim::getConnSTDPInfo(int grpId) { return _impl->getConnSTDPInfo(grpId); }
 
 // returns the neuromodulator information of a group specified by grpId
 GroupNeuromodulatorInfo CARLsim::getGroupNeuromodulatorInfo(int grpId) {

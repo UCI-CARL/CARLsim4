@@ -91,6 +91,79 @@ typedef struct SynInfo_s {
 	int nId; //!< neuron id
 } SynInfo;
 
+//!< long-term plasiticity configurations
+typedef struct STDPConfig_s {
+	STDPConfig_s() : WithSTDP(false), WithESTDP(false), WithISTDP(false),
+		WithESTDPtype(UNKNOWN_STDP), WithISTDPtype(UNKNOWN_STDP), WithESTDPcurve(UNKNOWN_CURVE), WithISTDPcurve(UNKNOWN_CURVE)
+	{}
+	bool WithSTDP;
+	bool WithESTDP;
+	bool WithISTDP;
+	STDPType WithESTDPtype;
+	STDPType WithISTDPtype;
+	STDPCurve WithESTDPcurve;
+	STDPCurve WithISTDPcurve;
+	float        TAU_PLUS_INV_EXC;
+	float        TAU_MINUS_INV_EXC;
+	float        ALPHA_PLUS_EXC;
+	float        ALPHA_MINUS_EXC;
+	float        GAMMA;
+	float        KAPPA;
+	float        OMEGA;
+	float        TAU_PLUS_INV_INB;
+	float        TAU_MINUS_INV_INB;
+	float        ALPHA_PLUS_INB;
+	float        ALPHA_MINUS_INB;
+	float        BETA_LTP;
+	float        BETA_LTD;
+	float        LAMBDA;
+	float        DELTA;
+} STDPConfig;
+
+//!< short-term plasiticity configurations
+typedef struct STPConfig_s {
+	STPConfig_s() : WithSTP(false)
+	{}
+
+	bool WithSTP;
+	// float STP_A; // scaling factor
+	// float STP_U;
+	// float STP_tau_u_inv; // facilitatory
+	// float STP_tau_x_inv; // depressive
+} STPConfig;
+
+//!< homeostatic plasticity configurations
+typedef struct HomeostasisConfig_s {
+	HomeostasisConfig_s() : WithHomeostasis(false), baseFiring(-1.0f), baseFiringSD(-1.0f),
+							avgTimeScale(-1.0f), avgTimeScaleInv(-1.0f), avgTimeScaleDecay(-1.0f),
+							homeostasisScale(-1.0f)
+	{}
+
+	bool WithHomeostasis;
+	float baseFiring;
+	float baseFiringSD;
+	float avgTimeScale;
+	float avgTimeScaleInv;
+	float avgTimeScaleDecay;
+	float homeostasisScale;
+} HomeostasisConfig;
+
+//!< neuromodulator configurations
+typedef struct NeuromodulatorConfig_s {
+	NeuromodulatorConfig_s() : baseDP(1.0f), base5HT(1.0f), baseACh(1.0f), baseNE(1.0f),
+							   decayDP(0.99f), decay5HT(0.99f), decayACh(0.99f), decayNE(0.99f)
+	{}
+
+	float baseDP;   //!< baseline concentration of Dopamine
+	float base5HT;  //!< baseline concentration of Serotonin
+	float baseACh;  //!< baseline concentration of Acetylcholine
+	float baseNE;   //!< baseline concentration of Noradrenaline
+	float decayDP;  //!< decay rate for Dopamine
+	float decay5HT; //!< decay rate for Serotonin
+	float decayACh; //!< decay rate for Acetylcholine
+	float decayNE;  //!< decay rate for Noradrenaline
+} NeuromodulatorConfig;
+
 typedef struct ConnectionInfo_s {
 	int grpSrc;
 	int grpDest;
@@ -120,18 +193,6 @@ typedef struct ConnectionInfo_s {
 		return (nSrc + srcGLoffset == conn.nSrc);
 	}
 } ConnectionInfo;
-
-//!< short-term plasiticity configurations
-typedef struct STPConfig_s {
-	STPConfig_s() : WithSTP(false)
-	{}
-
-	bool WithSTP;
-	// float STP_A; // scaling factor
-	// float STP_U;
-	// float STP_tau_u_inv; // facilitatory
-	// float STP_tau_x_inv; // depressive
-} STPConfig;
 
 /*!
  * \brief The configuration of a connection
@@ -180,6 +241,7 @@ typedef struct ConnectConfig_s {
 	float					 STP_rGABAb_std;
 	float					 STP_sGABAb;
 	STPConfig 				 stpConfig;
+	STDPConfig 				 stdpConfig;
 } ConnectConfig;
 
 /*!
@@ -207,6 +269,32 @@ typedef struct ConnectConfigMD_s {
 typedef struct ConnectConfigRT_s {
 	float* mulSynFast; //!< factor to be applied to either gAMPA or gGABAa
 	float* mulSynSlow; //!< factor to be applied to either gNMDA or gGABAb
+    
+	int          grpSrc;
+	int          grpDest;
+    
+	bool         WithSTDP;          //!< published by GroupConfig \sa GroupConfig
+	bool         WithESTDP;         //!< published by GroupConfig \sa GroupConfig
+	bool         WithISTDP;         //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithESTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPType     WithISTDPtype;     //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithESTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	STDPCurve    WithISTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
+	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
+	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
+	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
+	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
+	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
+	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
+	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
+	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
+	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
 } ConnectConfigRT;
 
 typedef struct compConnectionInfo_s {
@@ -264,67 +352,6 @@ typedef struct NeuralDynamicsConfig_s {
 	double		lif_maxRmem;
 } NeuralDynamicsConfig;
 
-//!< long-term plasiticity configurations
-typedef struct STDPConfig_s {
-	STDPConfig_s() : WithSTDP(false), WithESTDP(false), WithISTDP(false),
-		WithESTDPtype(UNKNOWN_STDP), WithISTDPtype(UNKNOWN_STDP), WithESTDPcurve(UNKNOWN_CURVE), WithISTDPcurve(UNKNOWN_CURVE)
-	{}
-	bool WithSTDP;
-	bool WithESTDP;
-	bool WithISTDP;
-	STDPType WithESTDPtype;
-	STDPType WithISTDPtype;
-	STDPCurve WithESTDPcurve;
-	STDPCurve WithISTDPcurve;
-	float        TAU_PLUS_INV_EXC;
-	float        TAU_MINUS_INV_EXC;
-	float        ALPHA_PLUS_EXC;
-	float        ALPHA_MINUS_EXC;
-	float        GAMMA;
-	float        KAPPA;
-	float        OMEGA;
-	float        TAU_PLUS_INV_INB;
-	float        TAU_MINUS_INV_INB;
-	float        ALPHA_PLUS_INB;
-	float        ALPHA_MINUS_INB;
-	float        BETA_LTP;
-	float        BETA_LTD;
-	float        LAMBDA;
-	float        DELTA;
-} STDPConfig;
-
-//!< homeostatic plasticity configurations
-typedef struct HomeostasisConfig_s {
-	HomeostasisConfig_s() : WithHomeostasis(false), baseFiring(-1.0f), baseFiringSD(-1.0f),
-							avgTimeScale(-1.0f), avgTimeScaleInv(-1.0f), avgTimeScaleDecay(-1.0f),
-							homeostasisScale(-1.0f)
-	{}
-
-	bool WithHomeostasis;
-	float baseFiring;
-	float baseFiringSD;
-	float avgTimeScale;
-	float avgTimeScaleInv;
-	float avgTimeScaleDecay;
-	float homeostasisScale;
-} HomeostasisConfig;
-
-//!< neuromodulator configurations
-typedef struct NeuromodulatorConfig_s {
-	NeuromodulatorConfig_s() : baseDP(1.0f), base5HT(1.0f), baseACh(1.0f), baseNE(1.0f),
-							   decayDP(0.99f), decay5HT(0.99f), decayACh(0.99f), decayNE(0.99f)
-	{}
-
-	float baseDP;   //!< baseline concentration of Dopamine
-	float base5HT;  //!< baseline concentration of Serotonin
-	float baseACh;  //!< baseline concentration of Acetylcholine
-	float baseNE;   //!< baseline concentration of Noradrenaline
-	float decayDP;  //!< decay rate for Dopamine
-	float decay5HT; //!< decay rate for Serotonin
-	float decayACh; //!< decay rate for Acetylcholine
-	float decayNE;  //!< decay rate for Noradrenaline
-} NeuromodulatorConfig;
-
 /*!
  * \brief The configuration of a group
  *
@@ -334,7 +361,8 @@ typedef struct NeuromodulatorConfig_s {
  * \see CARLsimState
  */
 typedef struct GroupConfig_s {
-	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false), spikeGenFunc(NULL)
+	GroupConfig_s() : grpName("N/A"), preferredNetId(-2), type(0), numN(-1), isSpikeGenerator(false), spikeGenFunc(NULL),
+	WithSTDP(false), WithDA_MOD(false)
 	{}
 
 	// properties of neural group size and location
@@ -350,11 +378,14 @@ typedef struct GroupConfig_s {
 	float compCouplingUp;
 	float compCouplingDown;
 
+	bool WithSTDP; 
+	bool WithDA_MOD;
+    
 	SpikeGeneratorCore* spikeGenFunc;
 
 	Grid3D grid; //<! location information of neurons
 	NeuralDynamicsConfig neuralDynamicsConfig;
-	STDPConfig stdpConfig;
+// 	STDPConfig stdpConfig;
 	STPConfig stpConfig;
 	HomeostasisConfig homeoConfig;
 	NeuromodulatorConfig neuromodulatorConfig;
@@ -429,6 +460,7 @@ typedef struct GroupConfigRT_s {
 	STDPType     WithISTDPtype;     //!< published by GroupConfig \sa GroupConfig
 	STDPCurve    WithESTDPcurve;    //!< published by GroupConfig \sa GroupConfig
 	STDPCurve    WithISTDPcurve;    //!< published by GroupConfig \sa GroupConfig
+	bool 		 WithDA_MOD;     
 	bool         WithHomeostasis;   //!< published by GroupConfig \sa GroupConfig
 	bool         FixedInputWts;     //!< published by GroupConfigMD \sa GroupConfigMD
 	bool         hasExternalConnect;//!< published by GroupConfigMD \sa GroupConfigMD
@@ -447,21 +479,21 @@ typedef struct GroupConfigRT_s {
 	float        STP_sNMDA;         //!< published by GroupConfig \sa GroupConfig
 	float        STP_rGABAb;        //!< published by GroupConfig \sa GroupConfig
 	float        STP_sGABAb;        //!< published by GroupConfig \sa GroupConfig
-	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
-	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
-	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
-	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
-	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
-	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
-	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
-	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
-	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
-	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
-	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
-	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
+// 	float        TAU_PLUS_INV_EXC;  //!< published by GroupConfig \sa GroupConfig
+// 	float        TAU_MINUS_INV_EXC; //!< published by GroupConfig \sa GroupConfig
+// 	float        ALPHA_PLUS_EXC;    //!< published by GroupConfig \sa GroupConfig
+// 	float        ALPHA_MINUS_EXC;   //!< published by GroupConfig \sa GroupConfig
+// 	float        GAMMA;             //!< published by GroupConfig \sa GroupConfig
+// 	float        KAPPA;             //!< published by GroupConfig \sa GroupConfig
+// 	float        OMEGA;             //!< published by GroupConfig \sa GroupConfig
+// 	float        TAU_PLUS_INV_INB;  //!< published by GroupConfig \sa GroupConfig
+// 	float        TAU_MINUS_INV_INB; //!< published by GroupConfig \sa GroupConfig
+// 	float        ALPHA_PLUS_INB;    //!< published by GroupConfig \sa GroupConfig
+// 	float        ALPHA_MINUS_INB;   //!< published by GroupConfig \sa GroupConfig
+// 	float        BETA_LTP;          //!< published by GroupConfig \sa GroupConfig
+// 	float        BETA_LTD;          //!< published by GroupConfig \sa GroupConfig
+// 	float        LAMBDA;            //!< published by GroupConfig \sa GroupConfig
+// 	float        DELTA;             //!< published by GroupConfig \sa GroupConfig
 
 									//!< homeostatic plasticity variables
 	float avgTimeScale;             //!< published by GroupConfig \sa GroupConfig

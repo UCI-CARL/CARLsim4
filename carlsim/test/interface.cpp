@@ -580,12 +580,12 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setNeuronParameters(g1, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setNeuromodulator(g1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);},"");
 	EXPECT_DEATH({sim->setNeuromodulator(g1, 1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setSTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, g2, true, STPu(1.0), STPtauU(2.0), STPtauX(3.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, g2, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
@@ -622,12 +622,12 @@ TEST(Interface, CARLsimState) {
 	EXPECT_DEATH({sim->setNeuronParameters(g1, 1.0, 2.0, 3.0, 4.0);},"");
 	EXPECT_DEATH({sim->setNeuromodulator(g1, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0);},"");
 	EXPECT_DEATH({sim->setNeuromodulator(g1, 1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setSTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setSTDP(g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true);},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g1, true, STANDARD, 1.0, 2.0, 3.0, 4.0);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true);},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, g2, true, STPu(1.0), STPtauU(2.0), STPtauX(3.0));},"");
 	EXPECT_DEATH({sim->setSTP(g1, g2, true);},"");
 	EXPECT_DEATH({sim->setWeightAndWeightChangeUpdate(INTERVAL_1000MS, true, 0.9f);},"");
@@ -674,36 +674,37 @@ TEST(Interface, setSTDPDeath) {
 
 	int	g1 = sim->createGroup("excit", 800, EXCITATORY_NEURON);
 	sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-
+	sim->connect(g1,g1,"random", RangeWeight(0.0,0.001,0.005), 0.1f, RangeDelay(1,20), RadiusRF(-1), SYN_PLASTIC);
+    
 	// invalid values
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, -2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, -4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(-1.0, -2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, -2.0, -3.0, 4.0));},"");
-	EXPECT_DEATH({sim->setISTDP(g1, true, STANDARD, PulseCurve(1.0, -2.0, 3.0, -4.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(-1.0, 2.0, -3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, -2.0, -3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, 3.0, 4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, 5.0));},"");
-	EXPECT_DEATH({sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, -5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, ExpCurve(1.0, -2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, ExpCurve(1.0, 2.0, 3.0, -4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(-1.0, -2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(1.0, 2.0, 3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(1.0, -2.0, -3.0, 4.0));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g1, true, STANDARD, PulseCurve(1.0, -2.0, 3.0, -4.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, TimingBasedCurve(-1.0, 2.0, -3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, TimingBasedCurve(1.0, -2.0, -3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, 3.0, 4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, 5.0));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g1, true, STANDARD, TimingBasedCurve(1.0, 2.0, -3.0, -4.0, -5.0));},"");
 
 	// setting on spikeGenFunc
 	int g0 = sim->createSpikeGeneratorGroup("gen", 20, EXCITATORY_NEURON);
-	EXPECT_DEATH({sim->setSTDP(g0,true);},"");
-	EXPECT_DEATH({sim->setSTDP(g0,true,STANDARD,1.0f,2.0f,3.0f,4.0f);},"");
-	EXPECT_DEATH({sim->setESTDP(g0, true);},"");
-	EXPECT_DEATH({sim->setESTDP(g0, true, STANDARD, ExpCurve(1.0f,2.0f,3.0f,4.0f));},"");
-	EXPECT_DEATH({sim->setESTDP(g0, true, STANDARD, TimingBasedCurve(1.0f,2.0f,-3.0f,4.0f,5.0f));},"");
-	EXPECT_DEATH({sim->setISTDP(g0, true);},"");
-	EXPECT_DEATH({sim->setISTDP(g0, true, STANDARD, ExpCurve(1.0f,2.0f,3.0f,4.0f));},"");
-	EXPECT_DEATH({sim->setISTDP(g0, true, STANDARD, PulseCurve(1.0f,-2.0f,3.0f,4.0f));},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g0,true);},"");
+	EXPECT_DEATH({sim->setSTDP(g1, g0,true,STANDARD,1.0f,2.0f,3.0f,4.0f);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g0, true);},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g0, true, STANDARD, ExpCurve(1.0f,2.0f,3.0f,4.0f));},"");
+	EXPECT_DEATH({sim->setESTDP(g1, g0, true, STANDARD, TimingBasedCurve(1.0f,2.0f,-3.0f,4.0f,5.0f));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g0, true);},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g0, true, STANDARD, ExpCurve(1.0f,2.0f,3.0f,4.0f));},"");
+	EXPECT_DEATH({sim->setISTDP(g1, g0, true, STANDARD, PulseCurve(1.0f,-2.0f,3.0f,4.0f));},"");
 
 	// setting on fixed synapses
-	sim->setSTDP(g1,true,STANDARD,1.0f,2.0f,3.0f,4.0f);
 	sim->connect(g0, g1, "random", RangeWeight(0.1f), 0.1f);
 	sim->setConductances(true);
-
+	sim->setSTDP(g0,g1,true,STANDARD,1.0f,2.0f,3.0f,4.0f);
+    
 	EXPECT_DEATH({sim->setupNetwork();},"");
 
 	delete sim;

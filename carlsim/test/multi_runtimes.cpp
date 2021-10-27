@@ -282,9 +282,9 @@ TEST(MultiRuntimes, spikesSingleVsMultiX4) {
 
 		float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
 		//sim->setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc1, gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc2, gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc3, gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
 
 		// build the network
 		sim->setupNetwork();
@@ -380,9 +380,9 @@ TEST(MultiRuntimes, spikesSingleVsMultiX4_4_GPU_MultiGPU) {
 
 		float alphaPlus = 0.1f, tauPlus = 20.0f, alphaMinus = 0.1f, tauMinus = 20.0f;
 		//sim->setESTDP(gExc1, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
-		sim->setESTDP(gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc1, gExc2, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc2, gExc3, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
+		sim->setESTDP(gExc3, gExc4, true, STANDARD, ExpCurve(alphaPlus, tauPlus, -alphaMinus, tauMinus));
 
 		// build the network
 		sim->setupNetwork();

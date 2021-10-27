@@ -205,7 +205,8 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 
 	// initialize the configuration of a connection
 	ConnectConfig connConfig;
-
+	STDPConfig stdpConfig;
+    
 	connConfig.grpSrc   = grpId1;
 	connConfig.grpDest  = grpId2;
 	connConfig.initWt	  = 0.0f;
@@ -220,6 +221,7 @@ short int SNN::connect(int grpId1, int grpId2, ConnectionGeneratorCore* conn, fl
 	connConfig.connectionMonitorId = -1;
 	connConfig.connId = -1;
 	connConfig.numberOfConnections = 0;
+	connConfig.stdpConfig = stdpConfig;
 	connConfig.STP_U_mean = 0.0f;
 	connConfig.STP_U_std = 0.0f;
 	connConfig.STP_tau_u_mean = 0.0f;
@@ -317,6 +319,9 @@ int SNN::createGroup(const std::string& grpName, const Grid3D& grid, int neurTyp
 	grpConfig.isSpikeGenerator = false;
 	grpConfig.grid = grid;
 	grpConfig.isLIF = false;
+    
+	grpConfig.WithSTDP = false;
+	grpConfig.WithDA_MOD = false;    
 
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
@@ -365,6 +370,9 @@ int SNN::createGroupLIF(const std::string& grpName, const Grid3D& grid, int neur
 	grpConfig.isSpikeGenerator = false;
 	grpConfig.grid = grid;
 
+	grpConfig.WithSTDP = false;
+	grpConfig.WithDA_MOD = false;
+    
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
 	} else if (preferredBackend == CPU_CORES) {
@@ -408,6 +416,9 @@ int SNN::createSpikeGeneratorGroup(const std::string& grpName, const Grid3D& gri
 	grpConfig.grid = grid;
 	grpConfig.isLIF = false;
 
+	grpConfig.WithSTDP = false;
+	grpConfig.WithDA_MOD = false;
+    
 	if (preferredPartition == ANY) {
 		grpConfig.preferredNetId = ANY;
 	}
@@ -705,83 +716,97 @@ void SNN::setNeuromodulator(int gGrpId, float baseDP, float tauDP, float base5HT
 }
 
 // set ESTDP params
-void SNN::setESTDP(int gGrpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma) {
-	assert(gGrpId >= -1);
+void SNN::setESTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, STDPCurve curve, float alphaPlus, float tauPlus, float alphaMinus, float tauMinus, float gamma) {
+	assert(preGrpId >= -1);
+	assert(postGrpId >= -1);
+    
 	if (isSet) {
 		assert(type!=UNKNOWN_STDP);
 		assert(tauPlus > 0.0f); assert(tauMinus > 0.0f); assert(gamma >= 0.0f);
 	}
 
-	if (gGrpId == ALL) { // shortcut for all groups
-		for(int grpId = 0; grpId < numGroups; grpId++) {
-			setESTDP(grpId, isSet, type, curve, alphaPlus, tauPlus, alphaMinus, tauMinus, gamma);
-		}
-	} else {
-		// set STDP for a given group
-		// set params for STDP curve
-		groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC 	= alphaPlus;
-		groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC 	= alphaMinus;
-		groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC 	= 1.0f / tauPlus;
-		groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC	= 1.0f / tauMinus;
-		groupConfigMap[gGrpId].stdpConfig.GAMMA				= gamma;
-		groupConfigMap[gGrpId].stdpConfig.KAPPA				= (1 + exp(-gamma / tauPlus)) / (1 - exp(-gamma / tauPlus));
-		groupConfigMap[gGrpId].stdpConfig.OMEGA				= alphaPlus * (1 - groupConfigMap[gGrpId].stdpConfig.KAPPA);
-		// set flags for STDP function
-		groupConfigMap[gGrpId].stdpConfig.WithESTDPtype	= type;
-		groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve = curve;
-		groupConfigMap[gGrpId].stdpConfig.WithESTDP		= isSet;
-		groupConfigMap[gGrpId].stdpConfig.WithSTDP		|= groupConfigMap[gGrpId].stdpConfig.WithESTDP;
-		sim_with_stdp									|= groupConfigMap[gGrpId].stdpConfig.WithSTDP;
-
-		KERNEL_INFO("E-STDP %s for %s(%d)", isSet?"enabled":"disabled", groupConfigMap[gGrpId].grpName.c_str(), gGrpId);
+	short int connId = getConnectId(preGrpId, postGrpId);
+	if (connId < 0) {
+		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", preGrpId, getGroupName(preGrpId).c_str(),
+			postGrpId, getGroupName(postGrpId).c_str());
+		exitSimulation(1);
 	}
-}
+
+	// set STDP for a given connection
+	// set params for STDP curve
+	connectConfigMap[connId].stdpConfig.ALPHA_PLUS_EXC 	    = alphaPlus;
+	connectConfigMap[connId].stdpConfig.ALPHA_MINUS_EXC 	= alphaMinus;
+	connectConfigMap[connId].stdpConfig.TAU_PLUS_INV_EXC 	= 1.0f / tauPlus;
+	connectConfigMap[connId].stdpConfig.TAU_MINUS_INV_EXC	= 1.0f / tauMinus;
+	connectConfigMap[connId].stdpConfig.GAMMA				= gamma;
+	connectConfigMap[connId].stdpConfig.KAPPA				= (1 + exp(-gamma / tauPlus)) / (1 - exp(-gamma / tauPlus));
+	connectConfigMap[connId].stdpConfig.OMEGA				= alphaPlus * (1 - connectConfigMap[connId].stdpConfig.KAPPA);
+	// set flags for STDP function
+	connectConfigMap[connId].stdpConfig.WithESTDPtype	= type;
+	connectConfigMap[connId].stdpConfig.WithESTDPcurve  = curve;
+	connectConfigMap[connId].stdpConfig.WithESTDP		= isSet;
+	connectConfigMap[connId].stdpConfig.WithSTDP		|= connectConfigMap[connId].stdpConfig.WithESTDP;
+	sim_with_stdp										|= connectConfigMap[connId].stdpConfig.WithSTDP;
+
+	groupConfigMap[postGrpId].WithSTDP					|= connectConfigMap[connId].stdpConfig.WithSTDP;
+	groupConfigMap[postGrpId].WithDA_MOD				|= (type == DA_MOD);
+
+	KERNEL_INFO("E-STDP %s for %s(%d) to %s(%d)", isSet?"enabled":"disabled", groupConfigMap[preGrpId].grpName.c_str(), preGrpId,
+				groupConfigMap[postGrpId].grpName.c_str(), postGrpId);
+	}
 
 // set ISTDP params
-void SNN::setISTDP(int gGrpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2) {
-	assert(gGrpId >= -1);
+void SNN::setISTDP(int preGrpId, int postGrpId, bool isSet, STDPType type, STDPCurve curve, float ab1, float ab2, float tau1, float tau2) {
+	assert(preGrpId >= -1);
+	assert(postGrpId >= -1);
+
 	if (isSet) {
 		assert(type != UNKNOWN_STDP);
 		assert(tau1 > 0); assert(tau2 > 0);
 	}
 
-	if (gGrpId==ALL) { // shortcut for all groups
-		for(int grpId = 0; grpId < numGroups; grpId++) {
-			setISTDP(grpId, isSet, type, curve, ab1, ab2, tau1, tau2);
-		}
-	} else {
-		// set STDP for a given group
-		// set params for STDP curve
-		if (curve == EXP_CURVE) {
-			groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB = ab1;
-			groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB = ab2;
-			groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB = 1.0f / tau1;
-			groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB = 1.0f / tau2;
-			groupConfigMap[gGrpId].stdpConfig.BETA_LTP 		= 0.0f;
-			groupConfigMap[gGrpId].stdpConfig.BETA_LTD 		= 0.0f;
-			groupConfigMap[gGrpId].stdpConfig.LAMBDA			= 1.0f;
-			groupConfigMap[gGrpId].stdpConfig.DELTA			= 1.0f;
-		} else {
-			groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB = 0.0f;
-			groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB = 0.0f;
-			groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB = 1.0f;
-			groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB = 1.0f;
-			groupConfigMap[gGrpId].stdpConfig.BETA_LTP 		= ab1;
-			groupConfigMap[gGrpId].stdpConfig.BETA_LTD 		= ab2;
-			groupConfigMap[gGrpId].stdpConfig.LAMBDA			= tau1;
-			groupConfigMap[gGrpId].stdpConfig.DELTA			= tau2;
-		}
-		// set flags for STDP function
-		//FIXME: separate STDPType to ESTDPType and ISTDPType
-		groupConfigMap[gGrpId].stdpConfig.WithISTDPtype	= type;
-		groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve = curve;
-		groupConfigMap[gGrpId].stdpConfig.WithISTDP		= isSet;
-		groupConfigMap[gGrpId].stdpConfig.WithSTDP		|= groupConfigMap[gGrpId].stdpConfig.WithISTDP;
-		sim_with_stdp					|= groupConfigMap[gGrpId].stdpConfig.WithSTDP;
-
-		KERNEL_INFO("I-STDP %s for %s(%d)", isSet?"enabled":"disabled", groupConfigMap[gGrpId].grpName.c_str(), gGrpId);
+	short int connId = getConnectId(preGrpId, postGrpId);
+	if (connId < 0) {
+		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", preGrpId, getGroupName(preGrpId).c_str(),
+			postGrpId, getGroupName(postGrpId).c_str());
+		exitSimulation(1);
 	}
-}
+
+	// set STDP for a given connection
+	// set params for STDP curve
+	if (curve == EXP_CURVE) {
+		connectConfigMap[connId].stdpConfig.ALPHA_PLUS_INB = ab1;
+		connectConfigMap[connId].stdpConfig.ALPHA_MINUS_INB = ab2;
+		connectConfigMap[connId].stdpConfig.TAU_PLUS_INV_INB = 1.0f / tau1;
+		connectConfigMap[connId].stdpConfig.TAU_MINUS_INV_INB = 1.0f / tau2;
+		connectConfigMap[connId].stdpConfig.BETA_LTP 		= 0.0f;
+		connectConfigMap[connId].stdpConfig.BETA_LTD 		= 0.0f;
+		connectConfigMap[connId].stdpConfig.LAMBDA			= 1.0f;
+		connectConfigMap[connId].stdpConfig.DELTA			= 1.0f;
+	} else {
+		connectConfigMap[connId].stdpConfig.ALPHA_PLUS_INB = 0.0f;
+		connectConfigMap[connId].stdpConfig.ALPHA_MINUS_INB = 0.0f;
+		connectConfigMap[connId].stdpConfig.TAU_PLUS_INV_INB = 1.0f;
+		connectConfigMap[connId].stdpConfig.TAU_MINUS_INV_INB = 1.0f;
+		connectConfigMap[connId].stdpConfig.BETA_LTP 		= ab1;
+		connectConfigMap[connId].stdpConfig.BETA_LTD 		= ab2;
+		connectConfigMap[connId].stdpConfig.LAMBDA			= tau1;
+		connectConfigMap[connId].stdpConfig.DELTA			= tau2;
+	}
+	// set flags for STDP function
+	//FIXME: separate STDPType to ESTDPType and ISTDPType
+	connectConfigMap[connId].stdpConfig.WithISTDPtype	= type;
+	connectConfigMap[connId].stdpConfig.WithISTDPcurve  = curve;
+	connectConfigMap[connId].stdpConfig.WithISTDP		= isSet;
+	connectConfigMap[connId].stdpConfig.WithSTDP	   |= connectConfigMap[connId].stdpConfig.WithISTDP;
+	sim_with_stdp									   |= connectConfigMap[connId].stdpConfig.WithSTDP;
+
+	groupConfigMap[postGrpId].WithSTDP				   |= connectConfigMap[connId].stdpConfig.WithSTDP;
+	groupConfigMap[postGrpId].WithDA_MOD			   |= (type == DA_MOD);
+
+	KERNEL_INFO("I-STDP %s for %s(%d) to %s(%d)", isSet?"enabled":"disabled", groupConfigMap[preGrpId].grpName.c_str(), preGrpId,
+				groupConfigMap[postGrpId].grpName.c_str(), postGrpId);
+	}
 
 // set STP params
 //void SNN::setSTP(int gGrpId, bool isSet, float STP_U, float STP_tau_u, float STP_tau_x) {
@@ -799,7 +824,7 @@ void SNN::setSTP(int preGrpId, int postGrpId, bool isSet, float STP_U_mean, floa
 // 		assert(STP_trNMDA_std!=STP_tdNMDA_std); assert(STP_trGABAb_std!=STP_tdGABAb_std); // avoid singularity
 	}
 
-	// set STDP for a given group
+	// set STP for a given group
 	short int connId = getConnectId(preGrpId, postGrpId);
 	if (connId<0) {
 		KERNEL_ERROR("No connection found from group %d(%s) to group %d(%s)", preGrpId, getGroupName(preGrpId).c_str(),
@@ -1997,31 +2022,31 @@ std::string SNN::getGroupName(int gGrpId) {
 	return groupConfigMap[gGrpId].grpName;
 }
 
-GroupSTDPInfo SNN::getGroupSTDPInfo(int gGrpId) {
-	GroupSTDPInfo gInfo;
+ConnSTDPInfo SNN::getConnSTDPInfo(short int connId) {
+	ConnSTDPInfo cInfo;
 
-	gInfo.WithSTDP = groupConfigMap[gGrpId].stdpConfig.WithSTDP;
-	gInfo.WithESTDP = groupConfigMap[gGrpId].stdpConfig.WithESTDP;
-	gInfo.WithISTDP = groupConfigMap[gGrpId].stdpConfig.WithISTDP;
-	gInfo.WithESTDPtype = groupConfigMap[gGrpId].stdpConfig.WithESTDPtype;
-	gInfo.WithISTDPtype = groupConfigMap[gGrpId].stdpConfig.WithISTDPtype;
-	gInfo.WithESTDPcurve = groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
-	gInfo.WithISTDPcurve = groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
-	gInfo.ALPHA_MINUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC;
-	gInfo.ALPHA_PLUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC;
-	gInfo.TAU_MINUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC;
-	gInfo.TAU_PLUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC;
-	gInfo.ALPHA_MINUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB;
-	gInfo.ALPHA_PLUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB;
-	gInfo.TAU_MINUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB;
-	gInfo.TAU_PLUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB;
-	gInfo.GAMMA = groupConfigMap[gGrpId].stdpConfig.GAMMA;
-	gInfo.BETA_LTP = groupConfigMap[gGrpId].stdpConfig.BETA_LTP;
-	gInfo.BETA_LTD = groupConfigMap[gGrpId].stdpConfig.BETA_LTD;
-	gInfo.LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
-	gInfo.DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
+	cInfo.WithSTDP = connectConfigMap[connId].stdpConfig.WithSTDP;
+	cInfo.WithESTDP = connectConfigMap[connId].stdpConfig.WithESTDP;
+	cInfo.WithISTDP = connectConfigMap[connId].stdpConfig.WithISTDP;
+	cInfo.WithESTDPtype = connectConfigMap[connId].stdpConfig.WithESTDPtype;
+	cInfo.WithISTDPtype = connectConfigMap[connId].stdpConfig.WithISTDPtype;
+	cInfo.WithESTDPcurve = connectConfigMap[connId].stdpConfig.WithESTDPcurve;
+	cInfo.WithISTDPcurve = connectConfigMap[connId].stdpConfig.WithISTDPcurve;
+	cInfo.ALPHA_MINUS_EXC = connectConfigMap[connId].stdpConfig.ALPHA_MINUS_EXC;
+	cInfo.ALPHA_PLUS_EXC = connectConfigMap[connId].stdpConfig.ALPHA_PLUS_EXC;
+	cInfo.TAU_MINUS_INV_EXC = connectConfigMap[connId].stdpConfig.TAU_MINUS_INV_EXC;
+	cInfo.TAU_PLUS_INV_EXC = connectConfigMap[connId].stdpConfig.TAU_PLUS_INV_EXC;
+	cInfo.ALPHA_MINUS_INB = connectConfigMap[connId].stdpConfig.ALPHA_MINUS_INB;
+	cInfo.ALPHA_PLUS_INB = connectConfigMap[connId].stdpConfig.ALPHA_PLUS_INB;
+	cInfo.TAU_MINUS_INV_INB = connectConfigMap[connId].stdpConfig.TAU_MINUS_INV_INB;
+	cInfo.TAU_PLUS_INV_INB = connectConfigMap[connId].stdpConfig.TAU_PLUS_INV_INB;
+	cInfo.GAMMA = connectConfigMap[connId].stdpConfig.GAMMA;
+	cInfo.BETA_LTP = connectConfigMap[connId].stdpConfig.BETA_LTP;
+	cInfo.BETA_LTD = connectConfigMap[connId].stdpConfig.BETA_LTD;
+	cInfo.LAMBDA = connectConfigMap[connId].stdpConfig.LAMBDA;
+	cInfo.DELTA = connectConfigMap[connId].stdpConfig.DELTA;
 
-	return gInfo;
+	return cInfo;
 }
 
 GroupNeuromodulatorInfo SNN::getGroupNeuromodulatorInfo(int gGrpId) {
@@ -3161,13 +3186,14 @@ void SNN::generateRuntimeGroupConfigs() {
 			groupConfigs[netId][lGrpId].isSpikeGenerator = groupConfigMap[gGrpId].isSpikeGenerator;
 			groupConfigs[netId][lGrpId].isSpikeGenFunc = groupConfigMap[gGrpId].spikeGenFunc != NULL ? true : false;
 			groupConfigs[netId][lGrpId].WithSTP =  groupConfigMap[gGrpId].stpConfig.WithSTP;
-			groupConfigs[netId][lGrpId].WithSTDP =  groupConfigMap[gGrpId].stdpConfig.WithSTDP;
-			groupConfigs[netId][lGrpId].WithESTDP =  groupConfigMap[gGrpId].stdpConfig.WithESTDP;
-			groupConfigs[netId][lGrpId].WithISTDP = groupConfigMap[gGrpId].stdpConfig.WithISTDP;
-			groupConfigs[netId][lGrpId].WithESTDPtype = groupConfigMap[gGrpId].stdpConfig.WithESTDPtype;
-			groupConfigs[netId][lGrpId].WithISTDPtype =  groupConfigMap[gGrpId].stdpConfig.WithISTDPtype;
-			groupConfigs[netId][lGrpId].WithESTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
-			groupConfigs[netId][lGrpId].WithISTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
+			groupConfigs[netId][lGrpId].WithSTDP =  groupConfigMap[gGrpId].WithSTDP;
+			groupConfigs[netId][lGrpId].WithDA_MOD =  groupConfigMap[gGrpId].WithDA_MOD;
+// 			groupConfigs[netId][lGrpId].WithESTDP =  groupConfigMap[gGrpId].stdpConfig.WithESTDP;
+// 			groupConfigs[netId][lGrpId].WithISTDP = groupConfigMap[gGrpId].stdpConfig.WithISTDP;
+// 			groupConfigs[netId][lGrpId].WithESTDPtype = groupConfigMap[gGrpId].stdpConfig.WithESTDPtype;
+// 			groupConfigs[netId][lGrpId].WithISTDPtype =  groupConfigMap[gGrpId].stdpConfig.WithISTDPtype;
+// 			groupConfigs[netId][lGrpId].WithESTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithESTDPcurve;
+// 			groupConfigs[netId][lGrpId].WithISTDPcurve =  groupConfigMap[gGrpId].stdpConfig.WithISTDPcurve;
 			groupConfigs[netId][lGrpId].WithHomeostasis =  groupConfigMap[gGrpId].homeoConfig.WithHomeostasis;
 			groupConfigs[netId][lGrpId].FixedInputWts = grpIt->fixedInputWts;
 			groupConfigs[netId][lGrpId].hasExternalConnect = grpIt->hasExternalConnect;
@@ -3177,21 +3203,21 @@ void SNN::generateRuntimeGroupConfigs() {
 			// groupConfigs[netId][lGrpId].STP_U = groupConfigMap[gGrpId].stpConfig.STP_U;
 			// groupConfigs[netId][lGrpId].STP_tau_u_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_u_inv; 
 			// groupConfigs[netId][lGrpId].STP_tau_x_inv = groupConfigMap[gGrpId].stpConfig.STP_tau_x_inv;
-			groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC;
-			groupConfigs[netId][lGrpId].TAU_MINUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC;
-			groupConfigs[netId][lGrpId].ALPHA_PLUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC;
-			groupConfigs[netId][lGrpId].ALPHA_MINUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC;
-			groupConfigs[netId][lGrpId].GAMMA = groupConfigMap[gGrpId].stdpConfig.GAMMA;
-			groupConfigs[netId][lGrpId].KAPPA = groupConfigMap[gGrpId].stdpConfig.KAPPA;
-			groupConfigs[netId][lGrpId].OMEGA = groupConfigMap[gGrpId].stdpConfig.OMEGA;
-			groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB;
-			groupConfigs[netId][lGrpId].TAU_MINUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB;
-			groupConfigs[netId][lGrpId].ALPHA_PLUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB;
-			groupConfigs[netId][lGrpId].ALPHA_MINUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB;
-			groupConfigs[netId][lGrpId].BETA_LTP = groupConfigMap[gGrpId].stdpConfig.BETA_LTP;
-			groupConfigs[netId][lGrpId].BETA_LTD = groupConfigMap[gGrpId].stdpConfig.BETA_LTD;
-			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
-			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
+// 			groupConfigs[netId][lGrpId].TAU_PLUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_EXC;
+// 			groupConfigs[netId][lGrpId].TAU_MINUS_INV_EXC = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_EXC;
+// 			groupConfigs[netId][lGrpId].ALPHA_PLUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_EXC;
+// 			groupConfigs[netId][lGrpId].ALPHA_MINUS_EXC = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_EXC;
+// 			groupConfigs[netId][lGrpId].GAMMA = groupConfigMap[gGrpId].stdpConfig.GAMMA;
+// 			groupConfigs[netId][lGrpId].KAPPA = groupConfigMap[gGrpId].stdpConfig.KAPPA;
+// 			groupConfigs[netId][lGrpId].OMEGA = groupConfigMap[gGrpId].stdpConfig.OMEGA;
+// 			groupConfigs[netId][lGrpId].TAU_PLUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_PLUS_INV_INB;
+// 			groupConfigs[netId][lGrpId].TAU_MINUS_INV_INB = groupConfigMap[gGrpId].stdpConfig.TAU_MINUS_INV_INB;
+// 			groupConfigs[netId][lGrpId].ALPHA_PLUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_PLUS_INB;
+// 			groupConfigs[netId][lGrpId].ALPHA_MINUS_INB = groupConfigMap[gGrpId].stdpConfig.ALPHA_MINUS_INB;
+// 			groupConfigs[netId][lGrpId].BETA_LTP = groupConfigMap[gGrpId].stdpConfig.BETA_LTP;
+// 			groupConfigs[netId][lGrpId].BETA_LTD = groupConfigMap[gGrpId].stdpConfig.BETA_LTD;
+// 			groupConfigs[netId][lGrpId].LAMBDA = groupConfigMap[gGrpId].stdpConfig.LAMBDA;
+// 			groupConfigs[netId][lGrpId].DELTA = groupConfigMap[gGrpId].stdpConfig.DELTA;
 
 			groupConfigs[netId][lGrpId].numCompNeighbors = 0;
 			groupConfigs[netId][lGrpId].withCompartments = groupConfigMap[gGrpId].withCompartments;
@@ -3256,11 +3282,67 @@ void SNN::generateRuntimeConnectConfigs() {
 	// sync localConnectLists and connectConfigMap
 	for (int netId = 0; netId < MAX_NET_PER_SNN; netId++) {
 		for (std::list<ConnectConfig>::iterator connIt = localConnectLists[netId].begin(); connIt != localConnectLists[netId].end(); connIt++) {
-			connectConfigMap[connIt->connId] = *connIt;
+			int lConnId = connIt->connId;
+			connectConfigMap[lConnId] = *connIt;
+
+			connectConfigs[netId][lConnId].grpSrc =  connIt->grpSrc;
+			connectConfigs[netId][lConnId].grpDest =  connIt->grpDest;
+
+			connectConfigs[netId][lConnId].WithSTDP =  connectConfigMap[lConnId].stdpConfig.WithSTDP;
+			connectConfigs[netId][lConnId].WithESTDP =  connectConfigMap[lConnId].stdpConfig.WithESTDP;
+			connectConfigs[netId][lConnId].WithISTDP = connectConfigMap[lConnId].stdpConfig.WithISTDP;
+			connectConfigs[netId][lConnId].WithESTDPtype = connectConfigMap[lConnId].stdpConfig.WithESTDPtype;
+			connectConfigs[netId][lConnId].WithISTDPtype =  connectConfigMap[lConnId].stdpConfig.WithISTDPtype;
+			connectConfigs[netId][lConnId].WithESTDPcurve =  connectConfigMap[lConnId].stdpConfig.WithESTDPcurve;
+			connectConfigs[netId][lConnId].WithISTDPcurve =  connectConfigMap[lConnId].stdpConfig.WithISTDPcurve;
+
+			connectConfigs[netId][lConnId].TAU_PLUS_INV_EXC = connectConfigMap[lConnId].stdpConfig.TAU_PLUS_INV_EXC;
+			connectConfigs[netId][lConnId].TAU_MINUS_INV_EXC = connectConfigMap[lConnId].stdpConfig.TAU_MINUS_INV_EXC;
+			connectConfigs[netId][lConnId].ALPHA_PLUS_EXC = connectConfigMap[lConnId].stdpConfig.ALPHA_PLUS_EXC;
+			connectConfigs[netId][lConnId].ALPHA_MINUS_EXC = connectConfigMap[lConnId].stdpConfig.ALPHA_MINUS_EXC;
+			connectConfigs[netId][lConnId].GAMMA = connectConfigMap[lConnId].stdpConfig.GAMMA;
+			connectConfigs[netId][lConnId].KAPPA = connectConfigMap[lConnId].stdpConfig.KAPPA;
+			connectConfigs[netId][lConnId].OMEGA = connectConfigMap[lConnId].stdpConfig.OMEGA;
+			connectConfigs[netId][lConnId].TAU_PLUS_INV_INB = connectConfigMap[lConnId].stdpConfig.TAU_PLUS_INV_INB;
+			connectConfigs[netId][lConnId].TAU_MINUS_INV_INB = connectConfigMap[lConnId].stdpConfig.TAU_MINUS_INV_INB;
+			connectConfigs[netId][lConnId].ALPHA_PLUS_INB = connectConfigMap[lConnId].stdpConfig.ALPHA_PLUS_INB;
+			connectConfigs[netId][lConnId].ALPHA_MINUS_INB = connectConfigMap[lConnId].stdpConfig.ALPHA_MINUS_INB;
+			connectConfigs[netId][lConnId].BETA_LTP = connectConfigMap[lConnId].stdpConfig.BETA_LTP;
+			connectConfigs[netId][lConnId].BETA_LTD = connectConfigMap[lConnId].stdpConfig.BETA_LTD;
+			connectConfigs[netId][lConnId].LAMBDA = connectConfigMap[lConnId].stdpConfig.LAMBDA;
+			connectConfigs[netId][lConnId].DELTA = connectConfigMap[lConnId].stdpConfig.DELTA;
 		}
 
 		for (std::list<ConnectConfig>::iterator connIt = externalConnectLists[netId].begin(); connIt != externalConnectLists[netId].end(); connIt++) {
-			connectConfigMap[connIt->connId] = *connIt;
+			int lConnId = connIt->connId;
+			connectConfigMap[lConnId] = *connIt;
+
+			connectConfigs[netId][lConnId].grpSrc =  connIt->grpSrc;
+			connectConfigs[netId][lConnId].grpDest =  connIt->grpDest;
+
+			connectConfigs[netId][lConnId].WithSTDP =  connectConfigMap[lConnId].stdpConfig.WithSTDP;
+			connectConfigs[netId][lConnId].WithESTDP =  connectConfigMap[lConnId].stdpConfig.WithESTDP;
+			connectConfigs[netId][lConnId].WithISTDP = connectConfigMap[lConnId].stdpConfig.WithISTDP;
+			connectConfigs[netId][lConnId].WithESTDPtype = connectConfigMap[lConnId].stdpConfig.WithESTDPtype;
+			connectConfigs[netId][lConnId].WithISTDPtype =  connectConfigMap[lConnId].stdpConfig.WithISTDPtype;
+			connectConfigs[netId][lConnId].WithESTDPcurve =  connectConfigMap[lConnId].stdpConfig.WithESTDPcurve;
+			connectConfigs[netId][lConnId].WithISTDPcurve =  connectConfigMap[lConnId].stdpConfig.WithISTDPcurve;
+
+			connectConfigs[netId][lConnId].TAU_PLUS_INV_EXC = connectConfigMap[lConnId].stdpConfig.TAU_PLUS_INV_EXC;
+			connectConfigs[netId][lConnId].TAU_MINUS_INV_EXC = connectConfigMap[lConnId].stdpConfig.TAU_MINUS_INV_EXC;
+			connectConfigs[netId][lConnId].ALPHA_PLUS_EXC = connectConfigMap[lConnId].stdpConfig.ALPHA_PLUS_EXC;
+			connectConfigs[netId][lConnId].ALPHA_MINUS_EXC = connectConfigMap[lConnId].stdpConfig.ALPHA_MINUS_EXC;
+			connectConfigs[netId][lConnId].GAMMA = connectConfigMap[lConnId].stdpConfig.GAMMA;
+			connectConfigs[netId][lConnId].KAPPA = connectConfigMap[lConnId].stdpConfig.KAPPA;
+			connectConfigs[netId][lConnId].OMEGA = connectConfigMap[lConnId].stdpConfig.OMEGA;
+			connectConfigs[netId][lConnId].TAU_PLUS_INV_INB = connectConfigMap[lConnId].stdpConfig.TAU_PLUS_INV_INB;
+			connectConfigs[netId][lConnId].TAU_MINUS_INV_INB = connectConfigMap[lConnId].stdpConfig.TAU_MINUS_INV_INB;
+			connectConfigs[netId][lConnId].ALPHA_PLUS_INB = connectConfigMap[lConnId].stdpConfig.ALPHA_PLUS_INB;
+			connectConfigs[netId][lConnId].ALPHA_MINUS_INB = connectConfigMap[lConnId].stdpConfig.ALPHA_MINUS_INB;
+			connectConfigs[netId][lConnId].BETA_LTP = connectConfigMap[lConnId].stdpConfig.BETA_LTP;
+			connectConfigs[netId][lConnId].BETA_LTD = connectConfigMap[lConnId].stdpConfig.BETA_LTD;
+			connectConfigs[netId][lConnId].LAMBDA = connectConfigMap[lConnId].stdpConfig.LAMBDA;
+			connectConfigs[netId][lConnId].DELTA = connectConfigMap[lConnId].stdpConfig.DELTA;
 		}
 	}
 }
@@ -5278,36 +5360,43 @@ void SNN::verifyCompartments() {
 	}
 }
 
-// checks whether STDP is set on a post-group with incoming plastic connections
+// checks whether STDP is set on a plastic connection
 void SNN::verifySTDP() {
-	for (int gGrpId=0; gGrpId<getNumGroups(); gGrpId++) {
-		if (groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
-			// for each post-group, check if any of the incoming connections are plastic
-			bool isAnyPlastic = false;
+	// for (int gGrpId=0; gGrpId<getNumGroups(); gGrpId++) {
+		// if (groupConfigMap[gGrpId].WithSTDP) {
+		// 	// for each post-group, check if any of the incoming connections are plastic
+		// 	bool isAnyPlastic = false;
 			for (std::map<int, ConnectConfig>::iterator it = connectConfigMap.begin(); it != connectConfigMap.end(); it++) {
-				if (it->second.grpDest == gGrpId) {
-					// get syn wt type from connection property
-					isAnyPlastic |= GET_FIXED_PLASTIC(it->second.connProp);
-					if (isAnyPlastic) {
-						// at least one plastic connection found: break while
+				// get syn wt type from connection property
+				if (it->second.stdpConfig.WithSTDP) {
+					if (GET_FIXED_PLASTIC(it->second.connProp)) {
 						break;
+					} else {
+						KERNEL_ERROR("If STDP on connection %d is set, connection must be plastic.",it->second.connId);
+						exitSimulation(1);
 					}
 				}
+				// isAnyPlastic |= GET_FIXED_PLASTIC(it->second.connProp);
+				// if (isAnyPlastic) {
+				// 	// at least one plastic connection found: break while
+				// 	break;
+				// }
 			}
-			if (!isAnyPlastic) {
-				KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
-					gGrpId, groupConfigMap[gGrpId].grpName.c_str());
-				exitSimulation(1);
-			}
-		}
-	}
+			// if (!isAnyPlastic) {
+			// 	KERNEL_ERROR("If STDP on group %d (%s) is set, group must have some incoming plastic connections.",
+			// 		gGrpId, groupConfigMap[gGrpId].grpName.c_str());
+			// 	exitSimulation(1);
+			// }
+	// 	}
+	// }
 }
 
 // checks whether every group with Homeostasis also has STDP
 void SNN::verifyHomeostasis() {
 	for (int gGrpId=0; gGrpId<getNumGroups(); gGrpId++) {
 		if (groupConfigMap[gGrpId].homeoConfig.WithHomeostasis) {
-			if (!groupConfigMap[gGrpId].stdpConfig.WithSTDP) {
+			KERNEL_INFO("group %d STDP %d", gGrpId, groupConfigMap[gGrpId].WithSTDP);
+			if (!groupConfigMap[gGrpId].WithSTDP) {
 				KERNEL_ERROR("If homeostasis is enabled on group %d (%s), then STDP must be enabled, too.",
 					gGrpId, groupConfigMap[gGrpId].grpName.c_str());
 				exitSimulation(1);

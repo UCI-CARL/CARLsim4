@@ -81,26 +81,30 @@ TEST(STDP, setSTDPTrue) {
 				sim = new CARLsim("STDP.setSTDPTrue",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 				int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+				int g2=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+
+				short int connId = sim->connect(g1,g2,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+                
 				sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
 				if (stdpType == 0) {
 					if (stdpCurve == 0) {
-						sim->setESTDP(g1, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
-						sim->setISTDP(g1, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setESTDP(g1, g2, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setISTDP(g1, g2, true, STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
-						sim->setISTDP(g1, true, STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
+						sim->setESTDP(g1, g2, true, STANDARD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
+						sim->setISTDP(g1, g2, true, STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				} else { // stdpType == 1
 					if (stdpCurve == 0) {
-						sim->setESTDP(g1, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
-						sim->setISTDP(g1, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setESTDP(g1, g2, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+						sim->setISTDP(g1, g2, true, DA_MOD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
 					} else { //stdpCurve == 1
-						sim->setESTDP(g1, true, DA_MOD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
-						sim->setISTDP(g1, true, DA_MOD, PulseCurve(betaLTP,betaLTD,lambda,delta));
+						sim->setESTDP(g1, g2, true, DA_MOD, TimingBasedCurve(alphaPlus,tauPlus,alphaMinus,tauMinus, gamma));
+						sim->setISTDP(g1, g2, true, DA_MOD, PulseCurve(betaLTP,betaLTD,lambda,delta));
 					}
 				}
 
-				GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
+				ConnSTDPInfo gInfo = sim->getConnSTDPInfo(connId);
 				EXPECT_TRUE(gInfo.WithSTDP);
 				EXPECT_TRUE(gInfo.WithESTDP);
 				EXPECT_TRUE(gInfo.WithISTDP);
@@ -163,11 +167,15 @@ TEST(STDP, setSTDPFalse) {
 		sim = new CARLsim("STDP.setSTDPFalse",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
-		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setESTDP(g1,false,STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
-		sim->setISTDP(g1,false,STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
+		int g2=sim->createGroup("excit", 10, EXCITATORY_NEURON);
 
-		GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
+		short int connId = sim->connect(g1,g2,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+        
+		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
+		sim->setESTDP(g1,g2,false,STANDARD, ExpCurve(alphaPlus,tauPlus,alphaMinus,tauMinus));
+		sim->setISTDP(g1,g2,false,STANDARD, PulseCurve(betaLTP,betaLTD,lambda,delta));
+
+		ConnSTDPInfo gInfo = sim->getConnSTDPInfo(connId);
 		EXPECT_FALSE(gInfo.WithSTDP);
 		EXPECT_FALSE(gInfo.WithESTDP);
 		EXPECT_FALSE(gInfo.WithISTDP);
@@ -213,13 +221,17 @@ TEST(STDP, setNeuromodulatorParameters) {
 		sim = new CARLsim("STDP.setNeuromodulatorParameters",mode?GPU_MODE:CPU_MODE,SILENT,1,42);
 
 		int g1=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+		int g2=sim->createGroup("excit", 10, EXCITATORY_NEURON);
+
+		short int connId = sim->connect(g1,g2,"one-to-one", RangeWeight(0.0, 1.0f/100, 20.0f/100), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
+        
 		sim->setNeuronParameters(g1, 0.02f, 0.2f, -65.0f, 8.0f);
-		sim->setSTDP(g1,true,DA_MOD,alphaPlus,tauPlus,alphaMinus,tauMinus);
+		sim->setSTDP(g1,g2,true,DA_MOD,alphaPlus,tauPlus,alphaMinus,tauMinus);
 		sim->setNeuromodulator(g1, baseDP, tauDP, base5HT, tau5HT, baseACh, tauACh, baseNE, tauNE);
 
 		// Temporarily mark out the testing code
 		// Discuss whether carlsim user interface needs to spport GroupConfigRT
-		GroupSTDPInfo gInfo = sim->getGroupSTDPInfo(g1);
+		ConnSTDPInfo gInfo = sim->getConnSTDPInfo(g1);
 		EXPECT_TRUE(gInfo.WithSTDP);
 		EXPECT_TRUE(gInfo.WithESTDPtype == DA_MOD);
 
@@ -275,13 +287,13 @@ TEST(STDP, DASTDPWeightBoost_Adv) {
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// enable COBA, set up STDP, enable dopamine-modulated STDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setSTDP(g1, true, DA_MOD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
+					sim->setSTDP(gin, g1, true, DA_MOD, alphaPlus/100, tauPlus, alphaMinus/100, tauMinus);
 				} else { // cuba mode
 					sim->connect(gin,g1,"one-to-one", RangeWeight(0.0, 1.0f, 20.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 					sim->connect(g1noise, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gda, g1, "full", RangeWeight(0.0), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					// set up STDP, enable dopamine-modulated STDP
-					sim->setSTDP(g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
+					sim->setSTDP(gin, g1, true, DA_MOD, alphaPlus, tauPlus, alphaMinus, tauMinus);
 					sim->setConductances(false);
 				}
 
@@ -396,7 +408,8 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU_Adv) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true, 5, 150, 6, 150);
-					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP));
+					sim->setESTDP(gex1, g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP));
+					sim->setESTDP(gex2, g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP));
 				}
 				else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -404,7 +417,8 @@ TEST(STDP, ESTDPExpCurveCPUvsGPU_Adv) {
 
 					// set up ESTDP
 					sim->setConductances(false);
-					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+					sim->setESTDP(gex1, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+					sim->setESTDP(gex2, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
 				}
 
 				// set up spike controller on DA neurons
@@ -490,14 +504,16 @@ TEST(STDP, ESTDPExpCurve_Adv) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+					sim->setESTDP(gex1, g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
+					sim->setESTDP(gex2, g1, true, STANDARD, ExpCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP));
 				} else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
 					sim->setConductances(false);
-					sim->setESTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+					sim->setESTDP(gex1, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
+					sim->setESTDP(gex2, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP));
 				}
 
 				// set up spike controller on DA neurons
@@ -595,7 +611,8 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU_Adv) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true, 5, 150, 6, 150);
-					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP, GAMMA));
+					sim->setESTDP(gex1, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP, GAMMA));
+					sim->setESTDP(gex2, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTP, GAMMA));
 				}
 				else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -603,7 +620,8 @@ TEST(STDP, ESTDPTimingBasedCurveCPUvsGPU_Adv) {
 
 					// set up ESTDP
 					sim->setConductances(false, 0, 0, 0, 0);
-					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+					sim->setESTDP(gex1, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+					sim->setESTDP(gex2, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
 				}
 
 				sim->setSpikeGenerator(gex1, prePostSpikeGen);
@@ -675,14 +693,16 @@ TEST(STDP, ESTDPTimingBasedCurve_Adv) {
 
 					// enable COBA, set up ESTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
+					sim->setESTDP(gex1, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
+					sim->setESTDP(gex2, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP/100, TAU_LTP, ALPHA_LTD/100, TAU_LTP, GAMMA));
 				} else { // current-based
 					sim->connect(gex1, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gex2, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ESTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setESTDP(g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+					sim->setESTDP(gex1, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
+					sim->setESTDP(gex2, g1, true, STANDARD, TimingBasedCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTP, GAMMA));
 				}
 
 				sim->setSpikeGenerator(gex1, prePostSpikeGen);
@@ -772,7 +792,8 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU_Adv) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true, 5, 150, 6, 150);
-					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP / 100, BETA_LTD / 100, LAMBDA, DELTA));
+					sim->setISTDP(gex, g1, true, STANDARD, PulseCurve(BETA_LTP / 100, BETA_LTD / 100, LAMBDA, DELTA));
+					sim->setISTDP(gin, g1, true, STANDARD, PulseCurve(BETA_LTP / 100, BETA_LTD / 100, LAMBDA, DELTA));
 				}
 				else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -780,7 +801,8 @@ TEST(STDP, ISTDPPulseCurveCPUvsGPU_Adv) {
 
 					// set up ISTDP
 					sim->setConductances(false, 0, 0, 0, 0);
-					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
+					sim->setISTDP(gex, g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
+					sim->setISTDP(gin, g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
 				}
 
 				sim->setSpikeGenerator(gex, prePostSpikeGen);
@@ -868,14 +890,16 @@ TEST(STDP, ISTDPulseCurve_Adv) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true,5,150,6,150);
-					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP / 100, BETA_LTD / 100, LAMBDA, DELTA));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTD));
 				} else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
 					sim->connect(gin, g1, "one-to-one", RangeWeight(minInhWeight, initWeight, maxInhWeight), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_PLASTIC);
 
 					// set up ISTDP
 					sim->setConductances(false,0,0,0,0);
-					sim->setISTDP(g1, true, STANDARD, PulseCurve(BETA_LTP, BETA_LTD, LAMBDA, DELTA));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
 				}
 
 				sim->setSpikeGenerator(gex, prePostSpikeGen);
@@ -973,7 +997,8 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU_Adv) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true, 5, 150, 6, 150);
-					sim->setISTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTD));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
 				}
 				else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -981,7 +1006,8 @@ TEST(STDP, ISTDPExpCurveCPUvsGPU_Adv) {
 
 					// set up ISTDP
 					sim->setConductances(false, 0, 0, 0, 0);
-					sim->setISTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
 				}
 
 				sim->setSpikeGenerator(gex, prePostSpikeGen);
@@ -1072,7 +1098,8 @@ TEST(STDP, ISTDPExpCurve_Adv) {
 
 					// enable COBA, set up ISTDP
 					sim->setConductances(true, 5, 150, 6, 150);
-					sim->setISTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP / 100, TAU_LTP, ALPHA_LTD / 100, TAU_LTD));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
 				}
 				else { // current-based
 					sim->connect(gex, g1, "one-to-one", RangeWeight(40.0f), 1.0f, RangeDelay(1), RadiusRF(-1), SYN_FIXED);
@@ -1080,7 +1107,8 @@ TEST(STDP, ISTDPExpCurve_Adv) {
 
 					// set up ISTDP
 					sim->setConductances(false, 0, 0, 0, 0);
-					sim->setISTDP(g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gex, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
+					sim->setISTDP(gin, g1, true, STANDARD, ExpCurve(ALPHA_LTP, TAU_LTP, ALPHA_LTD, TAU_LTD));
 				}
 
 				sim->setSpikeGenerator(gex, prePostSpikeGen);
