@@ -310,8 +310,14 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   export CARLSIM_FASTMATH=0
   export CARLSIM_CUOPTLEVEL=3
   ```
-  
-2. Switch to your home directory and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
+
+2. Once the changes to the bashrc have been added, press Control and O, enter, and Control and X, to write the changes to the bashrc and exit the file. After doing so, source the changes in your terminal with:
+
+  ```
+  source ~/.bashrc
+  ```
+
+3. Switch to your home directory and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
 
   ```
   cd /home/username
@@ -319,20 +325,20 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   
   ```
   
-3. Switch to the newly created CARLsim4 folder
+4. Switch to the newly created CARLsim4 folder
 
   ```
   cd CARLsim4_hc
   ```
   
-4. Make and install the CARLsim4 software:
+5. Make and install the CARLsim4 software:
 
   ```
   make distclean && make -j32
   make install
   ```
   
-5. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
+6. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
 
   ```
   # Switch directory
@@ -342,7 +348,7 @@ For users compiling and running simulations with Ubuntu, the following steps wil
   python3 generateSNNSyntax.py
   ```
   
-6. The example network uses an order of magnitude less neurons than the full-scale network, and doesn't involve the monitoring of the membrane potential due to memory constraints, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
+7. The example network uses an order of magnitude less neurons than the full-scale network, and doesn't involve the monitoring of the membrane potential due to memory constraints, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
 
   ```
   nano generateCONFIGStateSTP.h
