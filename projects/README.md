@@ -458,8 +458,14 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   export CARLSIM_FASTMATH=0
   export CARLSIM_CUOPTLEVEL=3
   ```
-  
-2. Create a Python Virtual Environment using virtualenv, along with installation of packages necessary for syntax generation from an input XL file.
+
+2. Once the changes to the bashrc have been added, press Control and O, enter, and Control and X, to write the changes to the bashrc and exit the file. After doing so, source the changes in your terminal with:
+
+  ```
+  source ~/.bashrc
+  ```
+
+3. Create a Python Virtual Environment using virtualenv, along with installation of packages necessary for syntax generation from an input XL file.
 
   ```
   # Load the Python module
@@ -480,27 +486,27 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   pip install xlrd==1.2.0
   ```
   
-3. Switch to the scratch directory for your account and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
+4. Switch to the scratch directory for your account and download the repository from GitHub into a folder name of your choice (CARLsim4_hc used in the example below):
 
   ```
   cd /scratch/username
   git clone https://github.com/UCI-CARL/CARLsim4.git -b feat/meansdSTPPost_hc CARLsim4_hc
   ```
   
-4. Switch to the newly created CARLsim4 folder
+5. Switch to the newly created CARLsim4 folder
 
   ```
   cd CARLsim4_hc
   ```
   
-5. Make and install the CARLsim4 software:
+6. Make and install the CARLsim4 software:
 
   ```
   make distclean && make -j32
   make install
   ```
   
-6. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
+7. Switch to the directory of the network that you would like to simulate (the code below uses the [example network](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21)), and run the following commands:
 
   ```
   # Switch directory
@@ -510,7 +516,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   python generateSNNSyntax.py
   ```
   
-7. The example network uses an order of magnitude less neurons that the full-scale network, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
+8. The example network uses an order of magnitude less neurons that the full-scale network, so the generateCONFIGStateSTP.h [header file](https://github.com/UCI-CARL/CARLsim4/tree/feat/meansdSTPPost_hc/projects/ca3_example_net_02_26_21/generateCONFIGStateSTP.h) needs to now be updated:
 
   ```
   nano generateCONFIGStateSTP.h
@@ -550,14 +556,14 @@ For users with an ARGO account at GMU, the following steps will need to be taken
 				     );
   ```
 
-8. Compile the SNN:
+9. Compile the SNN:
 
   ```
   # Clear the contents of the results directory and any previous version of executables, and then compile the SNN to create a new executable
   make distclean && make -j32
   ```
 
-9. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
+10. Update the SLURM submission script (slurm_wrapper.sh) so that the output goes to the directory of your choice (example used is in the current folder you are in):
 
   ```
   nano slurm_wrapper.sh
@@ -566,9 +572,7 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   ```
   #!/bin/bash
   #SBATCH --partition=gpuq
-  #SBATCH --qos gaqos
   #SBATCH --gres=gpu:1
-  #SBATCH --exclude=NODE0[40,50,56]
   #SBATCH --job-name="ca3_ex_net"
   #SBATCH --output /scratch/username/CARLsim4_hc/projects/ca3_example_net_02_26_21/HC_IM_02_26_ca3_example_net_results.txt
   #SBATCH --mail-type=END,FAIL
@@ -577,19 +581,19 @@ For users with an ARGO account at GMU, the following steps will need to be taken
   srun ./ca3_snn_GPU
   ```
   
-10. Submit the SLURM script to the ARGO Supercomputing Cluster:
+11. Submit the SLURM script to the ARGO Supercomputing Cluster:
 
   ```
   sbatch slurm_wrapper.sh
   ```
   
-11. Verify that a SLURM job was created after running your SLURM script
+12. Verify that a SLURM job was created after running your SLURM script
 
   ```
   squeue -u username
   ```
   
-12. Once the simulation has been finished (either by checking the squeue command to see if the simulation is still running and/or checking the email provided that will update you when the simulation has finished), view the simulation summary:
+13. Once the simulation has been finished (either by checking the squeue command to see if the simulation is still running and/or checking the email provided that will update you when the simulation has finished), view the simulation summary:
 
   ```
   cat HC_IM_02_26_ca3_example_net_results.txt
